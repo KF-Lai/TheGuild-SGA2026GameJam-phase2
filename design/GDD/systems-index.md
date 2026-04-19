@@ -1,0 +1,300 @@
+# 系統索引（Systems Index）
+
+_建立時間：2026-04-19_
+_狀態：草稿_
+
+---
+
+## 系統總覽
+
+本專案採用**資料驅動架構**：所有遊戲內容由 CSV 表格控制，程式碼作為通用引擎讀取資料並執行規則。系統間透過 ID 互相引用，修改內容只需改資料表，不需改程式碼。
+
+**資料來源**：Google Sheets（[Drive 資料夾](https://drive.google.com/drive/u/2/folders/15YHlbfqaza7F4DPXLlIdb30zW0TiGVk-)）→ 匯出 CSV → `Assets/Resources/Data/Tables/`
+
+---
+
+## 系統列舉（24 個系統）
+
+### Foundation 層（零依賴）
+
+| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
+|----|------|------|----------|-----------|
+| F-01 | **DataManager** | CSV 載入、表格快取、ID 查詢 API、隨機池工具 | ✅ 已設計 | — （基礎設施） |
+| F-02 | **Time System** | 即時計時、離線時間差、每日重置（00:00） | 待設計 | `SystemConstants` |
+| F-03 | **Resource Management** | 金幣（可負值）、聲望（-100~100）統一管理、破產警告 | ✅ 已設計 | `SystemConstants`, `BankruptcyThresholdTable` |
+
+### Core 層（依賴 Foundation）
+
+| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
+|----|------|------|----------|-----------|
+| C-01 | **Mission Database** | 任務模板、難度（F~SSS）、類型、報酬、時長；D-02 文字 Facade | ✅ 已設計 | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `RewardTable`, `DurationTable` |
+| C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊 | 待設計 | `AdventurerTemplate`, `RecruitCostTable` |
+| C-03 | **Profession System** | 7 種職業定義、擅長/弱點、成功率修正 | ✅ 已設計 | `ProfessionTable` |
+| C-04 | **Race System** | 種族定義、屬性修正（如精靈調查+10%） | 待設計 | `RaceTable`, `ProfessionRacePool` |
+| C-05 | **Trait System** | 個性特質、行為/數值影響、隨機抽取群組 | 待設計 | `TraitTable`, `TraitGroupTable` |
+| C-06 | **World Danger System** | 5 階全局壓力、時間閘+進度閘、任務池偏移 | 待設計 | `WorldDangerTable`, `MissionPoolWeights`, `DebtLimitTable` |
+
+### Feature 層（依賴 Core）
+
+| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
+|----|------|------|----------|-----------|
+| FT-01 | **Adventurer Recruitment** | 新手自薦（自動刷新）、老手邀請（費用+聲望） | 待設計 | `RecruitCostTable` |
+| FT-02 | **Mission Dispatch** | 推薦機制、rankDiff、成功率/死亡率公式 | 待設計 | `SuccessRateTable`, `DeathRateTable` |
+| FT-03 | **NPC Decision System** | willingness 公式、接受/拒絕、閒置自主接單 | 待設計 | `SystemConstants` |
+| FT-04 | **Outcome Resolution** | 4 種結算結果、傭金/賠償、冒險者狀態更新 | 待設計 | `ReputationDeltaTable`, `SystemConstants` |
+| FT-05 | **Commission Flow** | 預收→結算→退還/賠償的金流、債務狀態 | 待設計 | `SystemConstants` |
+| FT-06 | **Guild Core** | 公會等級（Lv1~5）、聲望門檻、容量上限 | 待設計 | `GuildLevelTable` |
+| FT-07 | **Guild Building System** | 建設項目、升級系統、效果解鎖 | 待設計 | `BuildingTable` |
+| FT-08 | **Guild Staff System** | 3 種職員、面試招募、被動/指派加成 | 待設計 | `StaffTable` |
+| FT-09 | **Faction Story System** | styleTag 累積、陣營路線、劇情節點 | 待設計 | `FactionRouteTable`, `StoryNodeTable` |
+| FT-10 | **Save/Load System** | Unity 本地存檔、離線計算 | 待設計 | — |
+
+### Presentation 層（UI）
+
+| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
+|----|------|------|----------|-----------|
+| P-01 | **Desktop Transparent Window** | Windows API 透明視窗、點擊穿透、前置 | 待設計 | — |
+| P-02 | **Main UI Framework** | 委託板、名冊、公會總覽、招募等畫面管理 | 待設計 | `UIText` |
+| P-03 | **Notification System** | 結算通知、事件提醒、桌面推播 | 待設計 | `NotificationTemplate` |
+
+### Data 層（內容資料庫）
+
+| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
+|----|------|------|----------|-----------|
+| D-01 | **Character Content Database** | 冒險者名字池、背景故事模板 | 待設計 | `NamePool`, `BioPool` |
+| D-02 | **Mission Content Database** | 任務名稱池、描述模板 | 待設計 | `MissionNamePool` |
+
+---
+
+## 依賴圖
+
+```
+Foundation 層
+┌─────────────┐  ┌─────────────┐  ┌──────────────────┐
+│  F-01       │  │  F-02       │  │  F-03            │
+│  DataManager│  │  Time System│  │  Resource Mgmt   │
+└──────┬──────┘  └──────┬──────┘  └────────┬─────────┘
+       │                │                  │
+       ▼                ▼                  ▼
+Core 層（全部依賴 F-01 DataManager）
+┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+│ C-01       │ │ C-02       │ │ C-03       │ │ C-04       │ │ C-05       │ │ C-06       │
+│ Mission DB │ │ Adv Mgmt   │ │ Profession │ │ Race       │ │ Trait      │ │ World      │
+│            │ │            │ │            │ │            │ │            │ │ Danger     │
+└─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘
+      │              │              │              │              │              │
+      ▼              ▼              ▼              ▼              ▼              ▼
+Feature 層
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                      │
+│  FT-01 Recruitment ──────► C-02, C-03, C-04, C-05 (生成冒險者)                      │
+│  FT-02 Dispatch ─────────► C-01, C-02, C-03, C-04, C-05 (計算成功率)                │
+│  FT-03 NPC Decision ────► FT-02 (讀取 willingness 計算結果)                         │
+│  FT-04 Outcome ──────────► FT-02, F-03 (結算 + 更新資源)                            │
+│  FT-05 Commission Flow ─► FT-04, F-03 (金流計算)                                   │
+│  FT-06 Guild Core ──────► F-03 (聲望門檻判定)                                       │
+│  FT-07 Guild Building ──► FT-06 (等級需求)                                          │
+│  FT-08 Guild Staff ─────► FT-06, FT-07 (等級需求 + 指派欄位需建築)                  │
+│  FT-09 Faction Story ───► FT-04, C-01 (結算觸發 + styleTag)                        │
+│  FT-10 Save/Load ───────► ALL (序列化所有系統狀態)                                   │
+│                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+      │
+      ▼
+Presentation 層
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ P-01         │  │ P-02         │  │ P-03         │
+│ Desktop      │  │ Main UI      │  │ Notification │
+│ Window       │  │ Framework    │  │ System       │
+└──────────────┘  └──────────────┘  └──────────────┘
+```
+
+### 關鍵依賴路徑（Critical Path）
+
+```
+DataManager → Mission DB ──┐
+DataManager → Adv Mgmt ────┤
+DataManager → Profession ──┼──► Dispatch → NPC Decision → Outcome → Commission Flow
+DataManager → Race ────────┤
+DataManager → Trait ───────┘
+Time System ──────────────────► Outcome（計時完成觸發結算）
+Resource Mgmt ────────────────► Commission Flow（金幣/聲望增減）
+```
+
+**無循環依賴** ✅
+
+---
+
+## 資料表架構（CSV Table Schema）
+
+### 系統常數表（SystemConstants.csv）
+
+| key | value | description |
+|-----|-------|-------------|
+| GOLD_INITIAL | 100 | 玩家起始金幣 |
+| GOLD_MAX | 9999999 | 金幣上限 |
+| COMMISSION_RATE | 0.20 | 成功傭金比例 |
+| PENALTY_RATE | 0.10 | 失敗賠償比例 |
+| DEATH_AVERSION | 0.5 | NPC 死亡迴避係數 |
+| ACCEPTANCE_THRESHOLD | 0.25 | NPC 接單意願門檻 |
+| WILLINGNESS_JITTER | 0.10 | NPC 意願隨機波動 |
+| DAILY_FREE_REFRESH | 1 | 每日免費手動刷新次數 |
+| REFRESH_COST | 150 | 額外手動刷新費用 |
+| DAILY_RESET_HOUR | 0 | 每日重置時間（24hr） |
+| OFFLINE_MAX_SECONDS | 604800 | 離線時間上限（秒），超過截斷 |
+| FACTION_NEUTRAL_ID | 0 | neutral 陣營的保留 ID，factionID 等於此值時不計入任何陣營分數 |
+| ESCORT_TYPE_ID | 2 | 護送任務的 typeID 保留值，程式以此判斷護送約束（限 D~A 難度） |
+| RECRUIT_POOL_SIZE | 4 | 候選池每批人數 |
+| ESCORT_DURATION_MULTIPLIER_MIN | 3.0 | 護送任務時長倍率下限 |
+| ESCORT_DURATION_MULTIPLIER_MAX | 5.0 | 護送任務時長倍率上限 |
+| REPUTATION_MIN | -100 | 聲望下限 |
+| REPUTATION_MAX | 100 | 聲望上限 |
+| STRONG_TYPE_BONUS | 0.20 | 擅長任務類型成功率加成 |
+| WEAK_TYPE_PENALTY | 0.15 | 弱點任務類型成功率懲罰 |
+
+### 參數表（Per-System）
+
+| 表格名稱 | PK | 主要欄位 | 引用 |
+|----------|-----|----------|------|
+| `ProfessionTable` | professionID | name, description, strongType, weakType | — |
+| `RaceTable` | raceID | name, description, statModifiers (JSON) | — |
+| `TraitTable` | traitID | name, description, effectType, effectTarget, effectValue | — |
+| `TraitGroupTable` | groupID | groupName, traitIDs (CSV list), pickCount, pickMode | traitID |
+| `ProfessionRacePool` | professionID | raceIDs (CSV list), weights (CSV list) | professionID, raceID |
+| `ProfessionTraitPool` | professionID | traitGroupIDs (CSV list) | professionID, groupID |
+| `AdventurerTemplate` | templateID (int) | name, rank, professionID, raceID, fixedTraits, factionID, isUnique | professionID, raceID, traitID, FactionRouteTable |
+| `RecruitCostTable` | rank | cost, reputationReq | — |
+| `MissionTemplate` | missionID (int) | difficulty, typeID, factionID, categoryID | MissionTypeTable, MissionCategoryTable, FactionRouteTable |
+| `MissionTypeTable` | typeID (int) | typeName | — |
+| `MissionCategoryTable` | categoryID (int) | categoryName | — |
+| `RewardTable` | difficulty | baseReward | — |
+| `DurationTable` | difficulty | baseDuration | — |
+| `SuccessRateTable` | rankDiff | successRate | — |
+| `DeathRateTable` | difficulty | baseDeathRate | — |
+| `ReputationDeltaTable` | difficulty | successDelta, failDelta | — |
+| `GuildLevelTable` | level | title, reputationThreshold, maxMissions, rosterCap, maxDifficulty | — |
+| `BuildingTable` | buildingID | name, effect, levelReq, baseCost, maxUpgradeLevel, upgradeEffects | — |
+| `StaffTable` | staffID (int) | name, passiveEffect, slotEffect, slotBuildingID, recruitCost, guildLevelReq, factionID | buildingID, FactionRouteTable |
+| `WorldDangerTable` | dangerLevel | name, timeThreshold, missionCountReq, minDifficulty | — |
+| `MissionPoolWeights` | dangerLevel | F, E, D, C, B, A, S_SSS (各難度權重) | — |
+| `BankruptcyThresholdTable` | reputationMin | reputationMax, bankruptcyThreshold, warningDurationSec | — |
+| `FactionRouteTable` | factionID (int) | name, description, threshold | — |
+| `StoryNodeTable` | nodeID | factionID, nodeIndex, triggerCondition, missionID, dialogueKey | factionID |
+| `ReputationLabelTable` | labelID | name, minReputation, maxReputation | — |
+
+### 文字表（Standalone Text Tables）
+
+| 表格名稱 | PK | 主要欄位 | 用途 |
+|----------|-----|----------|------|
+| `NamePool` | nameID | firstName, lastName, gender, raceID | 冒險者隨機名字 |
+| `BioPool` | bioID | raceID, professionID, template (含 {name} 等變數) | 冒險者背景故事 |
+| `MissionNamePool` | nameID | difficulty, type, missionName, missionDesc | 任務名稱描述 |
+| `UIText` | key | zhTW, en | UI 固定文字 |
+| `DialogueTable` | dialogueID | speakerId, context, text | 對話內容 |
+| `NotificationTemplate` | templateID | eventType, titleTemplate, bodyTemplate | 通知模板 |
+
+---
+
+## 開發優先序（Game Jam 時程）
+
+### MVP（開發 Day 1-3）— 核心循環可玩
+
+**設計順序**（依賴由上而下）：
+
+| 順序 | 系統 | 理由 |
+|------|------|------|
+| 1 | F-01 DataManager | 所有系統的基礎，CSV 載入 + ID 查詢 |
+| 2 | F-02 Time System | 計時與離線計算 |
+| 3 | F-03 Resource Management | 金幣/聲望管理 |
+| 4 | C-01 Mission Database | 任務模板載入 |
+| 5 | C-03 Profession System | 職業定義（Race/Trait 可延後） |
+| 6 | C-02 Adventurer Management | 冒險者實例管理 |
+| 7 | FT-02 Mission Dispatch | 派遣 + 成功率計算 |
+| 8 | FT-03 NPC Decision System | 接受/拒絕判定 |
+| 9 | FT-04 Outcome Resolution | 結算 |
+| 10 | FT-05 Commission Flow | 金流 |
+| 11 | FT-01 Adventurer Recruitment | 招募（簡化版：僅新手自薦） |
+| 12 | P-02 Main UI Framework | 基礎 UI（委託板 + 名冊） |
+
+### 垂直切片（開發 Day 4-6）— 深度系統
+
+| 順序 | 系統 | 理由 |
+|------|------|------|
+| 13 | C-04 Race System | 種族 + 屬性修正 |
+| 14 | C-05 Trait System | 個性特質 + 隨機群組 |
+| 15 | C-06 World Danger System | 全局壓力 |
+| 16 | FT-06 Guild Core | 公會等級 |
+| 17 | FT-07 Guild Building System | 建設升級 |
+| 18 | FT-08 Guild Staff System | 職員面試 |
+| 19 | FT-01 Adventurer Recruitment | 完整版（老手邀請） |
+| 20 | D-01 Character Content DB | 名字/背景故事池 |
+| 21 | D-02 Mission Content DB | 任務名稱/描述池 |
+
+### Game Jam 完成版（開發 Day 7-8）— 完整體驗
+
+| 順序 | 系統 | 理由 |
+|------|------|------|
+| 22 | FT-09 Faction Story System | 陣營劇情 |
+| 23 | FT-10 Save/Load System | 存檔 |
+| 24 | P-01 Desktop Transparent Window | 桌面透明視窗 |
+| 25 | P-03 Notification System | 通知 |
+
+### 美術置入 + Debug（Day 9-15）
+
+- 角色立繪替換
+- UI 素材置入
+- 平衡調整（修改 CSV 即可）
+- 最終測試
+
+---
+
+## GDD 設計順序
+
+個別系統 GDD 的撰寫順序（使用 `/design-system`）：
+
+| 優先序 | 系統 | 設計依賴 |
+|--------|------|----------|
+| **1** | DataManager + 資料表架構 | 無（定義所有表格 schema） |
+| **2** | Mission Database | DataManager schema |
+| **3** | Profession + Race + Trait | DataManager schema |
+| **4** | Adventurer Management | Profession, Race, Trait |
+| **5** | Mission Dispatch + NPC Decision | Mission DB, Adventurer |
+| **6** | Outcome Resolution + Commission Flow | Dispatch |
+| **7** | World Danger | Mission DB |
+| **8** | Guild Core + Building + Staff | Resource Mgmt |
+| **9** | Recruitment | Adventurer, Guild Core |
+| **10** | Faction Story | Outcome, Mission DB |
+| **11** | Save/Load | ALL |
+| **12** | UI Framework | ALL gameplay systems |
+| **13** | Desktop Window | UI Framework |
+
+---
+
+## 進度追蹤
+
+| 系統 | 概念 | GDD | 實作 | 測試 |
+|------|------|-----|------|------|
+| F-01 DataManager | ✅ | ✅ | ⬜ | ⬜ |
+| F-02 Time System | ✅ | ✅ | ⬜ | ⬜ |
+| F-03 Resource Management | ✅ | ✅ | ⬜ | ⬜ |
+| C-01 Mission Database | ✅ | ✅ | ⬜ | ⬜ |
+| C-02 Adventurer Management | ✅ | ⬜ | ⬜ | ⬜ |
+| C-03 Profession System | ✅ | ⬜ | ⬜ | ⬜ |
+| C-04 Race System | ✅ | ⬜ | ⬜ | ⬜ |
+| C-05 Trait System | ✅ | ⬜ | ⬜ | ⬜ |
+| C-06 World Danger System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-01 Adventurer Recruitment | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-02 Mission Dispatch | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-03 NPC Decision System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-04 Outcome Resolution | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-05 Commission Flow | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-06 Guild Core | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-07 Guild Building System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-08 Guild Staff System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-09 Faction Story System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-10 Save/Load System | ✅ | ⬜ | ⬜ | ⬜ |
+| P-01 Desktop Transparent Window | ✅ | ⬜ | ⬜ | ⬜ |
+| P-02 Main UI Framework | ✅ | ⬜ | ⬜ | ⬜ |
+| P-03 Notification System | ✅ | ⬜ | ⬜ | ⬜ |
+| D-01 Character Content DB | ✅ | ⬜ | ⬜ | ⬜ |
+| D-02 Mission Content DB | ✅ | ⬜ | ⬜ | ⬜ |

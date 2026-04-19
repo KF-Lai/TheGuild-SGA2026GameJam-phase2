@@ -60,6 +60,10 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Claude Code session state (auto-generated, not for version control)
+production/session-state/
+production/session-logs/
+
 # Packed Addressables
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 

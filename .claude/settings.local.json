@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash(curl -s http://127.0.0.1:8080 --max-time 5)",
+      "Bash(curl -s http://127.0.0.1:8080/sse --max-time 3)",
+      "Bash(curl:*)",
+      "Bash(timeout 10 \"C:/Users/x94d9/.local/bin/uvx.exe\" --from mcpforunityserver mcp-for-unity --transport stdio)",
+      "Bash(grep -v \"^$\")",
+      "Bash(where claude:*)",
+      "Read(//c/Users/x94d9/AppData/Local/Microsoft/WinGet/Links/**)",
+      "Bash(claude mcp:*)",
+      "mcp__UnityMCP__read_console",
+      "mcp__UnityMCP__manage_scene",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "Skill(update-config)",
+      "Read(//c/Users/x94d9/.claude/**)"
+    ]
+  }
+}
