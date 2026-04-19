@@ -140,7 +140,7 @@ IsValidCombination(difficulty, typeID):
     return true
 ```
 
-## 5. 邊界情況（Edge Cases）
+## 5. 邊緣案例（Edge Cases）
 
 ### 5.1 資料載入
 

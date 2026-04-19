@@ -1,4 +1,4 @@
-# DataManager 系統設計文件
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa# DataManager 系統設計文件
 
 _建立時間：2026-04-19_
 _狀態：已完成_
@@ -63,7 +63,7 @@ normalizedWeights[i] = wᵢ / total
 - total = 100
 - 機率：human 50%、elf 30%、orc 20%
 
-### 4.2 無放回抽樣
+### 4.2 無置回抽樣
 
 ```
 pool = 原始列表副本（shallow copy）
@@ -116,16 +116,16 @@ var evt = DataManager.Instance.PickRandomWhere<EventData>(
 var traits = DataManager.Instance.PickRandom<TraitData>("warrior_traits");
 ```
 
-## 5. 邊界情況（Edge Cases）
+## 5. 邊緣案例（Edge Cases）
 
 ### 5.1 載入階段
 
-| 情況 | 處理方式 |
-|------|---------|
+| 情況                                  | 處理方式                                   |
+| ----------------------------------- | -------------------------------------- |
 | CSV 檔案不存在（`Resources.Load` 回傳 null） | `Debug.LogError` 記錄缺失表格名稱，跳過該表，其他表繼續載入 |
-| CSV 格式錯誤（欄位數與 header 不符） | `Debug.LogWarning` 記錄列號，跳過該列，繼續解析 |
-| 主鍵重複（同一表中兩列有相同 ID） | 後者覆蓋前者，`Debug.LogWarning` 提示衝突 ID |
-| CSV 完全空白（只有 header，無資料列） | 建立空字典，不報錯（合法狀態，如尚未填充的表格） |
+| CSV 格式錯誤（欄位數與 header 不符）            | `Debug.LogWarning` 記錄列號，跳過該列，繼續解析      |
+| 主鍵重複（同一表中兩列有相同 ID）                  | 後者覆蓋前者，`Debug.LogWarning` 提示衝突 ID      |
+| CSV 完全空白（只有 header，無資料列）            | 建立空字典，不報錯（合法狀態，如尚未填充的表格）               |
 
 ### 5.2 查詢階段
 
@@ -184,7 +184,7 @@ var traits = DataManager.Instance.PickRandom<TraitData>("warrior_traits");
 | FT-10 Save/Load | `GetAll<T>`（各表）| 反序列化時驗證 ID 合法性 |
 | P-02 Main UI | `GetAll`、`GetWhere` | UI 呈現用資料查詢 |
 
-### 6.3 介面契約
+### 6.3 介面規範
 
 下游系統對 DataManager 的唯一假設：**`Awake` 完成後，所有表格已可查詢**。DataManager 不提供非同步 callback，不發送事件——下游系統直接在自身 `Start` 或之後呼叫 API 即可。
 

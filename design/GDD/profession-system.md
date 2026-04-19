@@ -103,7 +103,7 @@ IsWeakType(4, 1)   → true → -WEAK_TYPE_PENALTY
 
 > 每個任務只套用**一個**修正（擅長或弱點或無），不累加。一個 typeID 不可能同時是擅長與弱點（規則 3.2.3 保證）。
 
-## 5. 邊界情況（Edge Cases）
+## 5. 邊緣案例（Edge Cases）
 
 ### 5.1 資料載入
 
