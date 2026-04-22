@@ -28,26 +28,26 @@ _狀態：草稿_
 | ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
 |----|------|------|----------|-----------|
 | C-01 | **Mission Database** | 任務模板、難度（F~SSS）、類型、報酬、時長；D-02 文字 Facade | ✅ 已設計 | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `RewardTable`, `DurationTable` |
-| C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊 | 待設計 | `AdventurerTemplate`, `RecruitCostTable` |
+| C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊 | ✅ 已設計 | `AdventurerTemplate`, `RecruitCostTable` |
 | C-03 | **Profession System** | 7 種職業定義、擅長/弱點、成功率修正 | ✅ 已設計 | `ProfessionTable` |
-| C-04 | **Race System** | 種族定義、屬性修正（如精靈調查+10%） | 待設計 | `RaceTable`, `ProfessionRacePool` |
-| C-05 | **Trait System** | 個性特質、行為/數值影響、隨機抽取群組 | 待設計 | `TraitTable`, `TraitGroupTable` |
-| C-06 | **World Danger System** | 5 階全局壓力、時間閘+進度閘、任務池偏移 | 待設計 | `WorldDangerTable`, `MissionPoolWeights`, `DebtLimitTable` |
+| C-04 | **Race System** | 種族定義、屬性修正（如精靈調查+10%） | ✅ 已設計 | `RaceTable`, `ProfessionRacePool` |
+| C-05 | **Trait System** | 個性特質、行為/數值影響、隨機抽取群組 | ✅ 已設計 | `TraitTable`, `TraitGroupTable` |
+| C-06 | **World Danger System** | 5 階全局壓力、時間閘+進度閘+陣營閘、任務池偏移 | ✅ 已設計 | `WorldDangerTable`, `MissionPoolWeights`, `DebtLimitTable` |
 
 ### Feature 層（依賴 Core）
 
-| ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
-|----|------|------|----------|-----------|
-| FT-01 | **Adventurer Recruitment** | 新手自薦（自動刷新）、老手邀請（費用+聲望） | 待設計 | `RecruitCostTable` |
-| FT-02 | **Mission Dispatch** | 推薦機制、rankDiff、成功率/死亡率公式 | 待設計 | `SuccessRateTable`, `DeathRateTable` |
-| FT-03 | **NPC Decision System** | willingness 公式、接受/拒絕、閒置自主接單 | 待設計 | `SystemConstants` |
-| FT-04 | **Outcome Resolution** | 4 種結算結果、傭金/賠償、冒險者狀態更新 | 待設計 | `ReputationDeltaTable`, `SystemConstants` |
-| FT-05 | **Commission Flow** | 預收→結算→退還/賠償的金流、債務狀態 | 待設計 | `SystemConstants` |
-| FT-06 | **Guild Core** | 公會等級（Lv1~5）、聲望門檻、容量上限 | 待設計 | `GuildLevelTable` |
-| FT-07 | **Guild Building System** | 建設項目、升級系統、效果解鎖 | 待設計 | `BuildingTable` |
-| FT-08 | **Guild Staff System** | 3 種職員、面試招募、被動/指派加成 | 待設計 | `StaffTable` |
-| FT-09 | **Faction Story System** | styleTag 累積、陣營路線、劇情節點 | 待設計 | `FactionRouteTable`, `StoryNodeTable` |
-| FT-10 | **Save/Load System** | Unity 本地存檔、離線計算 | 待設計 | — |
+| ID    | 系統                         | 說明                          | GDD 狀態 | 對應資料表                                     |
+| ----- | -------------------------- | --------------------------- | ------ | ----------------------------------------- |
+| FT-01 | **Adventurer Recruitment** | 新手自薦（自動刷新）、老手邀請（費用+聲望）      | ✅ 已設計 | `RecruitCostTable`                        |
+| FT-02 | **Mission Dispatch**       | 推薦機制、rankDiff、成功率/死亡率公式     | ✅ 已設計 | `SuccessRateTable`, `DeathRateTable`      |
+| FT-03 | **NPC Decision System**    | willingness 公式、接受/拒絕、閒置自主接單 | 待設計    | `SystemConstants`                         |
+| FT-04 | **Outcome Resolution**     | 4 種結算結果、傭金/賠償、冒險者狀態更新       | 待設計    | `ReputationDeltaTable`, `SystemConstants` |
+| FT-05 | **Commission Flow**        | 預收→結算→退還/賠償的金流、債務狀態         | 待設計    | `SystemConstants`                         |
+| FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、容量上限       | 待設計    | `GuildLevelTable`                         |
+| FT-07 | **Guild Building System**  | 建設項目、升級系統、效果解鎖              | 待設計    | `BuildingTable`                           |
+| FT-08 | **Guild Staff System**     | 3 種職員、面試招募、被動/指派加成          | 待設計    | `StaffTable`                              |
+| FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情節點       | 待設計    | `FactionRouteTable`, `StoryNodeTable`     |
+| FT-10 | **Save/Load System**       | Unity 本地存檔、離線計算             | 待設計    | —                                         |
 
 ### Presentation 層（UI）
 
@@ -151,6 +151,7 @@ Resource Mgmt ────────────────► Commission Flo
 | REPUTATION_MAX | 100 | 聲望上限 |
 | STRONG_TYPE_BONUS | 0.20 | 擅長任務類型成功率加成 |
 | WEAK_TYPE_PENALTY | 0.15 | 弱點任務類型成功率懲罰 |
+| WOUNDED_RECOVERY_HOURS | 6 | Wounded 冒險者的恢復等待時間（小時） |
 
 ### 參數表（Per-System）
 
@@ -175,9 +176,9 @@ Resource Mgmt ────────────────► Commission Flo
 | `GuildLevelTable` | level | title, reputationThreshold, maxMissions, rosterCap, maxDifficulty | — |
 | `BuildingTable` | buildingID | name, effect, levelReq, baseCost, maxUpgradeLevel, upgradeEffects | — |
 | `StaffTable` | staffID (int) | name, passiveEffect, slotEffect, slotBuildingID, recruitCost, guildLevelReq, factionID | buildingID, FactionRouteTable |
-| `WorldDangerTable` | dangerLevel | name, timeThreshold, missionCountReq, minDifficulty | — |
-| `MissionPoolWeights` | dangerLevel | F, E, D, C, B, A, S_SSS (各難度權重) | — |
-| `BankruptcyThresholdTable` | reputationMin | reputationMax, bankruptcyThreshold, warningDurationSec | — |
+| `WorldDangerTable` | dangerLevel | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq | — |
+| `MissionPoolWeights` | dangerLevel | weightF_E, weightD, weightC, weightB, weightA, weightS_SSS | — |
+| `BankruptcyThresholdTable` | reputationMin | reputationMax, warningDurationSec | — |
 | `FactionRouteTable` | factionID (int) | name, description, threshold | — |
 | `StoryNodeTable` | nodeID | factionID, nodeIndex, triggerCondition, missionID, dialogueKey | factionID |
 | `ReputationLabelTable` | labelID | name, minReputation, maxReputation | — |
@@ -278,13 +279,13 @@ Resource Mgmt ────────────────► Commission Flo
 | F-02 Time System | ✅ | ✅ | ⬜ | ⬜ |
 | F-03 Resource Management | ✅ | ✅ | ⬜ | ⬜ |
 | C-01 Mission Database | ✅ | ✅ | ⬜ | ⬜ |
-| C-02 Adventurer Management | ✅ | ⬜ | ⬜ | ⬜ |
-| C-03 Profession System | ✅ | ⬜ | ⬜ | ⬜ |
-| C-04 Race System | ✅ | ⬜ | ⬜ | ⬜ |
-| C-05 Trait System | ✅ | ⬜ | ⬜ | ⬜ |
-| C-06 World Danger System | ✅ | ⬜ | ⬜ | ⬜ |
-| FT-01 Adventurer Recruitment | ✅ | ⬜ | ⬜ | ⬜ |
-| FT-02 Mission Dispatch | ✅ | ⬜ | ⬜ | ⬜ |
+| C-02 Adventurer Management | ✅ | ✅ | ⬜ | ⬜ |
+| C-03 Profession System | ✅ | ✅ | ⬜ | ⬜ |
+| C-04 Race System | ✅ | ✅ | ⬜ | ⬜ |
+| C-05 Trait System | ✅ | ✅ | ⬜ | ⬜ |
+| C-06 World Danger System | ✅ | ✅ | ⬜ | ⬜ |
+| FT-01 Adventurer Recruitment | ✅ | ✅ | ⬜ | ⬜ |
+| FT-02 Mission Dispatch | ✅ | ✅ | ⬜ | ⬜ |
 | FT-03 NPC Decision System | ✅ | ⬜ | ⬜ | ⬜ |
 | FT-04 Outcome Resolution | ✅ | ⬜ | ⬜ | ⬜ |
 | FT-05 Commission Flow | ✅ | ⬜ | ⬜ | ⬜ |

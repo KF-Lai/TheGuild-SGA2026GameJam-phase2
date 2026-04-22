@@ -50,6 +50,7 @@ C-03 Profession System 定義遊戲中所有冒險者職業的靜態資料，以
 2. 值為 `0` 表示無擅長/無弱點（null sentinel），DataManager 解析後過濾掉 `0`，程式層不會看到 `0` 出現在列表中
 3. 同一 typeID **不得同時**出現在 `strongTypeIDs` 與 `weakTypeIDs`；載入時驗證，違規則 `Debug.LogError` 並跳過該職業
 4. 成功率修正由 FT-02 Mission Dispatch 套用，Profession System 僅提供原始資料
+5. 職業擅長/弱點**僅影響成功率**，不影響死亡率；死亡率修正僅由種族（C-04）與特質（C-05）提供
 
 ---
 
