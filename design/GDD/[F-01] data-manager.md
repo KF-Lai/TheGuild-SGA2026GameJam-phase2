@@ -1,4 +1,4 @@
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa# DataManager 系統設計文件
+# DataManager 系統設計文件
 
 _建立時間：2026-04-19_
 _狀態：已完成_
