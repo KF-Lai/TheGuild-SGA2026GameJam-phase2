@@ -20,7 +20,7 @@ _狀態：草稿_
 | ID | 系統 | 說明 | GDD 狀態 | 對應資料表 |
 |----|------|------|----------|-----------|
 | F-01 | **DataManager** | CSV 載入、表格快取、ID 查詢 API、隨機池工具 | ✅ 已設計 | — （基礎設施） |
-| F-02 | **Time System** | 即時計時、離線時間差、每日重置（00:00） | 待設計 | `SystemConstants` |
+| F-02 | **Time System** | 即時計時、離線時間差、每日重置（00:00） | ✅ 已設計 | `SystemConstants` |
 | F-03 | **Resource Management** | 金幣（可負值）、聲望（-100~100）統一管理、破產警告 | ✅ 已設計 | `SystemConstants`, `BankruptcyThresholdTable` |
 
 ### Core 層（依賴 Foundation）
@@ -40,7 +40,7 @@ _狀態：草稿_
 | ----- | -------------------------- | --------------------------- | ------ | ----------------------------------------- |
 | FT-01 | **Adventurer Recruitment** | 新手自薦（自動刷新）、老手邀請（費用+聲望）      | ✅ 已設計 | `RecruitCostTable`                        |
 | FT-02 | **Mission Dispatch**       | 推薦機制、rankDiff、成功率/死亡率公式     | ✅ 已設計 | `SuccessRateTable`, `DeathRateTable`      |
-| FT-03 | **NPC Decision System**    | willingness 公式、接受/拒絕、閒置自主接單 | 待設計    | `SystemConstants`                         |
+| FT-03 | **NPC Decision System**    | willingness 公式、接受/拒絕、閒置自主接單 | ✅ 已設計 | `SystemConstants`                         |
 | FT-04 | **Outcome Resolution**     | 4 種結算結果、傭金/賠償、冒險者狀態更新       | 待設計    | `ReputationDeltaTable`, `SystemConstants` |
 | FT-05 | **Commission Flow**        | 預收→結算→退還/賠償的金流、債務狀態         | 待設計    | `SystemConstants`                         |
 | FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、容量上限       | 待設計    | `GuildLevelTable`                         |
@@ -286,7 +286,7 @@ Resource Mgmt ────────────────► Commission Flo
 | C-06 World Danger System | ✅ | ✅ | ⬜ | ⬜ |
 | FT-01 Adventurer Recruitment | ✅ | ✅ | ⬜ | ⬜ |
 | FT-02 Mission Dispatch | ✅ | ✅ | ⬜ | ⬜ |
-| FT-03 NPC Decision System | ✅ | ⬜ | ⬜ | ⬜ |
+| FT-03 NPC Decision System | ✅ | ✅ | ⬜ | ⬜ |
 | FT-04 Outcome Resolution | ✅ | ⬜ | ⬜ | ⬜ |
 | FT-05 Commission Flow | ✅ | ⬜ | ⬜ | ⬜ |
 | FT-06 Guild Core | ✅ | ⬜ | ⬜ | ⬜ |
