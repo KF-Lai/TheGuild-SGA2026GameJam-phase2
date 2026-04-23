@@ -10,7 +10,7 @@ _系統 ID：FT-01_
 
 FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護兩個平行的候選池：**新手池**（F/E 階）與**老手池**（D~S 階），分開顯示於 UI，但共用相同的刷新機制。
 
-**刷新規則（兩池共用）**：系統依招募板建設等級定時自動刷新（初始 24h，最高等級 6h），每次刷新兩個池子各生成 `RECRUIT_POOL_SIZE`（4）名候選冒險者，未被接納的候選者直接消失。每日 00:00 重置 1 次免費手動刷新機會（兩池共用），使用後額外手動刷新費用為 `REFRESH_COST`（150g/次）。手動刷新時兩個池子同時刷新。
+**刷新規則（兩池共用）**：系統依招募廣告欄建設等級定時自動刷新（L1 24h / L2 16h / L3 8h，數值以 FT-07 `BuildingTable` 為準），每次刷新兩個池子各生成 `RECRUIT_POOL_SIZE`（4）名候選冒險者，未被接納的候選者直接消失。每日 00:00 重置 1 次免費手動刷新機會（兩池共用），使用後額外手動刷新費用為 `REFRESH_COST`（150g/次）。手動刷新時兩個池子同時刷新。
 
 **新手池**（F/E 階）：玩家從候選池中**免費**接納冒險者加入名冊。候選冒險者由 C-02 `CreateFromTemplate` 或隨機生成（職業從 C-03 `GetBaseProfessions` 抽取，種族由 C-04 `RollRace` 決定，特質由 C-05 `RollTraits` 抽取），階級為 F 或 E 隨機。
 
@@ -45,7 +45,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 
 ### 3.2 刷新機制（兩池共用）
 
-1. **自動刷新**：招募板建設等級決定刷新間隔（`refreshIntervalHours`）。計時起點為上次刷新的 UTC timestamp（`_lastRefreshTimestamp`），由 F-02 Time System 驅動。到期時自動觸發刷新，兩個池子同時清空並重新生成
+1. **自動刷新**：招募廣告欄建設等級決定刷新間隔，透過 FT-07 `GetRecruitRefreshInterval(): TimeSpan` 查詢（以秒數為底）。計時起點為上次刷新的 UTC timestamp（`_lastRefreshTimestamp`），由 F-02 Time System 驅動。到期時自動觸發刷新，兩個池子同時清空並重新生成
 2. **手動刷新**：每日 00:00（`DAILY_RESET_HOUR`）重置 `_freeRefreshRemaining = DAILY_FREE_REFRESH`（1 次）。手動刷新時：
    - 若 `_freeRefreshRemaining > 0`：免費，消耗 1 次
    - 若 `_freeRefreshRemaining == 0`：需 `REFRESH_COST`（150g），呼叫 F-03 `CanAfford` → `AddGold(-REFRESH_COST)`
@@ -74,7 +74,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 |------|---|---|---|---|---|
 | 權重 | 40 | 30 | 18 | 9 | 3 |
 
-3. **公會等級限制**：階級超過 FT-06 `maxDifficulty` 對應的最高可招募階級時，該階級權重歸零，剩餘權重重新正規化。例如公會 Lv1（`maxDifficulty = D`）→ 老手池只能出 D 階
+3. **公會等級限制**：階級超過 FT-06 `GetMaxDifficulty()` 回傳值對應的最高可招募階級時，該階級權重歸零，剩餘權重重新正規化。例如公會 Lv1（`maxDifficulty = D`）→ 老手池只能出 D 階
 4. 生成流程與新手池相同（優先使用未出現的具名模板，其餘隨機生成）
 5. 每位老手候選者顯示 `cost` 與 `reputationReq`（來自 `RecruitCostTable`）
 
@@ -113,7 +113,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 ```
 CheckAutoRefresh():
     now = F-02 TimeSystem.NowUTC
-    intervalSec = refreshIntervalHours × 3600    // 招募板建設等級決定
+    intervalSec = (long)FT07.GetRecruitRefreshInterval().TotalSeconds  // 招募廣告欄建設等級決定
     if now >= _lastRefreshTimestamp + intervalSec:
         ExecuteRefresh()
         _lastRefreshTimestamp = now
@@ -272,7 +272,8 @@ GeneratePool(rankPool, poolSize):
 | C-03 Profession System | 取得基礎職業列表作為隨機生成池 | `GetBaseProfessions()` |
 | C-04 Race System | 隨機生成冒險者時抽種族 | `RollRace(professionID)` |
 | C-05 Trait System | 隨機生成冒險者時抽特質 | `GetProfessionGroups(professionID)`、`RollTraits(group)` |
-| FT-06 Guild Core | 名冊容量上限、可招募最高階級 | `GetRosterCap()`、`GetMaxDifficulty()` |
+| FT-06 Guild Core | 可招募最高階級（老手邀請階級上限） | `GetMaxDifficulty()` |
+| FT-07 Guild Building System | 名冊容量上限、招募刷新間隔 | `GetRosterCap()`、`GetRecruitRefreshInterval()` |
 
 ---
 
@@ -288,7 +289,8 @@ GeneratePool(rankPool, poolSize):
 ### 6.3 循環依賴注意事項
 
 - FT-01 依賴 C-02 建立實例與加入名冊，C-02 不依賴 FT-01——**無循環依賴**
-- FT-01 依賴 FT-06 查詢公會等級限制，FT-06 不依賴 FT-01——**無循環依賴**
+- FT-01 依賴 FT-06 查詢老手邀請階級上限，FT-06 不依賴 FT-01——**無循環依賴**
+- FT-01 依賴 FT-07 查詢名冊容量與刷新間隔，FT-07 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 F-03 扣款，F-03 不依賴 FT-01——**無循環依賴**
 
 ## 7. 可調參數（Tuning Knobs）
@@ -329,12 +331,13 @@ GeneratePool(rankPool, poolSize):
 
 ### 7.4 刷新間隔（由 FT-07 Guild Building 控制）
 
-| 招募板等級 | 刷新間隔 | 說明 |
-|-----------|---------|------|
-| 未建造 | 24h | 初始值 |
-| 建造後（等級由 FT-07 定義） | 6h ~ 24h | 具體值待 FT-07 GDD 設計時確定 |
+| 招募廣告欄等級 | 刷新間隔 | 對應秒數 |
+|-----------|---------|---------|
+| L1（初始） | 24h | 86400s |
+| L2 | 16h | 57600s |
+| L3 | 8h | 28800s |
 
-> FT-01 僅讀取 `refreshIntervalHours`，由 FT-07 Guild Building 提供。
+> 數值定義於 FT-07 `BuildingTable`（buildingID=2）。FT-01 透過 `FT07.GetRecruitRefreshInterval(): TimeSpan` 查詢，不快取。招募廣告欄初始已建造（L1），無「未建造」狀態。
 
 ## 8. 驗收標準（Acceptance Criteria）
 

@@ -160,7 +160,7 @@ TickCompletionCheck():
 | 單筆查詢 | `GetActiveMission(int activeMissionID) : ActiveMission` | 找不到回傳 `null` |
 | 依冒險者查詢 | `GetActiveMissionByAdventurer(int instanceID) : ActiveMission` | 找不到回傳 `null` |
 | 移除已結算任務 | `RemoveActiveMission(int activeMissionID) : void` | FT-04 結算後呼叫 |
-| 進行中任務數量 | `GetActiveMissionCount() : int` | 供 FT-06 Guild Core 檢查最大同時任務數 |
+| 進行中任務數量 | `GetActiveMissionCount() : int` | 派遣前檢查用（對照 FT-07 `GetMaxConcurrentMissions()` 上限） |
 
 ## 4. 公式（Formulas）
 
@@ -273,7 +273,7 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | 情況 | 處理方式 |
 |------|---------|
 | 冒險者狀態非 `Idle`（Dispatched / Wounded / Dead） | 回傳 `false`，`Debug.LogWarning` |
-| 進行中任務數已達 FT-06 `maxMissions` 上限 | 回傳 `false`，`Debug.LogWarning` |
+| 進行中任務數已達 FT-07 `GetMaxConcurrentMissions()` 上限 | 回傳 `false`，`Debug.LogWarning` |
 | `missionID` 對應的模板不存在 | 回傳 `false`，`Debug.LogError` |
 | 同一冒險者已有 ActiveMission（理論不可能，因狀態已是 Dispatched） | 回傳 `false`，`Debug.LogError`（防禦性） |
 | `Dispatch` 呼叫時 F-02 timestamp 回傳 0 | `Debug.LogError`，回傳 `false`，不變更任何狀態 |
@@ -308,7 +308,7 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | C-03 Profession System | 查詢職業擅長/弱點 | `IsStrongType(professionID, typeID)`、`IsWeakType(professionID, typeID)` |
 | C-04 Race System | 查詢種族成功率/死亡率修正 | `GetSuccessDelta(raceID, typeID)`、`GetDeathDelta(raceID, typeID)` |
 | C-05 Trait System | 查詢 stat 類特質的修正值 | `GetTrait(traitID)` |
-| FT-06 Guild Core | 查詢最大同時任務數（派遣前檢查） | `GetMaxMissions()` |
+| FT-07 Guild Building System | 查詢最大同時任務數（派遣前檢查；由公會櫃臺等級決定） | `GetMaxConcurrentMissions()` |
 | C-06 World Danger System | 派遣後通知 C-06 計數，驅動危險度升級 | `OnMissionAccepted(difficulty)`（見 §3.5 步驟 9） |
 
 ### 6.2 下游依賴（依賴 FT-02 的系統）
@@ -323,7 +323,7 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 
 ### 6.3 循環依賴注意事項
 
-- FT-02 依賴 FT-06 查詢 `maxMissions`，FT-06 不依賴 FT-02——**無循環依賴**
+- FT-02 依賴 FT-07 查詢 `GetMaxConcurrentMissions()`，FT-07 不依賴 FT-02——**無循環依賴**
 - FT-03 讀取 FT-02 `CalculateRates`，FT-02 不依賴 FT-03——**無循環依賴**
 - FT-04 訂閱 FT-02 事件並呼叫 `RemoveActiveMission`，FT-02 不依賴 FT-04——**無循環依賴**
 - FT-02 呼叫 C-06 `OnMissionAccepted`，C-06 不依賴 FT-02——**無循環依賴**
