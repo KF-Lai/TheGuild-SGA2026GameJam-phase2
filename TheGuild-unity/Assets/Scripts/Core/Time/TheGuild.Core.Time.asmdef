@@ -1,0 +1,17 @@
+{
+  "name": "TheGuild.Core.Time",
+  "rootNamespace": "TheGuild.Core.Time",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Events"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

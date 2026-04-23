@@ -86,13 +86,13 @@ TheGuild-unity/Assets/Scripts/Gameplay/Resources/
 └── Events/
     └── ResourceEvents.cs           # 本層事件：OnGoldChangedEvent / OnReputationChangedEvent / OnBankruptcyWarningStateChangedEvent
 
-TheGuild-unity/Assets/Scripts/Tests/EditMode/Gameplay/Resources/
+TheGuild-unity/Assets/Tests/EditMode/Gameplay/Resources/
 ├── ResourceManagementTests.cs
 └── TestResources/
     ├── SystemConstants.csv         # 擴充版（追加金幣/聲望常數）
     └── BankruptcyThresholdTable.csv
 
-TheGuild-unity/Assets/Scripts/Tests/PlayMode/Gameplay/Resources/
+TheGuild-unity/Assets/Tests/PlayMode/Gameplay/Resources/
 └── ResourceManagementPlayModeTests.cs  # OnSecondTick 驅動的倒數測試
 ```
 
@@ -640,7 +640,7 @@ reputationMin,reputationMax,warningDurationSec
 **階段一（read-only）**：
 
 ```
-cd: C:/gitlab/LKF/TheGuild-SGA2026GameJam-phase2
+cd: D:/AI Repository/02_Project/SGA_2026_gamejam/TheGuild-SGA2026GameJam-phase2/TheGuild-unity
 sandbox: "read-only"
 SESSION_ID: <承接 F-02 session 或開新 session>
 PROMPT:

@@ -1,7 +1,7 @@
 ---
 name: gameplay-programmer
 description: "Implements game mechanics, quest systems, adventurer management, and interactive features as C# code for Unity. Use for translating design documents into working gameplay systems."
-tools: Read, Glob, Grep, Write, Edit, Bash
+tools: Read, Glob, Grep, Write, Edit, Bash, mcp__codex__codex
 model: sonnet
 maxTurns: 20
 ---

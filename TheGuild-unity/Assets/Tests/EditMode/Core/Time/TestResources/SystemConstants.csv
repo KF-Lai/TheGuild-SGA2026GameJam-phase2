@@ -1,0 +1,3 @@
+key,value,description
+DAILY_RESET_HOUR,0,每日重置時間（UTC 0-23）
+OFFLINE_MAX_SECONDS,604800,離線時間上限（秒）

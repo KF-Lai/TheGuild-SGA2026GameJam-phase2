@@ -87,7 +87,7 @@ TheGuild-unity/Assets/Scripts/Core/Data/
 TheGuild-unity/Assets/Resources/Data/Tables/
 └── .gitkeep                    # 保留目錄結構，實際 CSV 由後續工項填充
 
-TheGuild-unity/Assets/Scripts/Tests/EditMode/Core/Data/
+TheGuild-unity/Assets/Tests/EditMode/Core/Data/
 └── DataManagerTests.cs         # EditMode 單元測試
 ```
 
@@ -412,7 +412,7 @@ Codex 回報完成時，交付物須包含：
 **階段一（實作，read-only）**：
 
 ```
-cd: C:/gitlab/LKF/TheGuild-SGA2026GameJam-phase2
+cd: D:/AI Repository/02_Project/SGA_2026_gamejam/TheGuild-SGA2026GameJam-phase2/TheGuild-unity
 sandbox: "read-only"
 PROMPT:
 依據 production/work-items/[F-01] data-manager.md 實作 F-01 DataManager 系統。

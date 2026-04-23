@@ -1,0 +1,7 @@
+﻿key,value,description
+DAILY_RESET_HOUR,0,UTC hour
+OFFLINE_MAX_SECONDS,604800,max offline sec
+GOLD_INITIAL,100,initial gold
+GOLD_MAX,9999999,max gold
+REPUTATION_MIN,-100,min rep
+REPUTATION_MAX,100,max rep

@@ -1,0 +1,22 @@
+{
+  "name": "Tests.EditMode.Core.Data",
+  "rootNamespace": "Tests.EditMode.Core.Data",
+  "references": [
+    "TheGuild.Core.Data",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

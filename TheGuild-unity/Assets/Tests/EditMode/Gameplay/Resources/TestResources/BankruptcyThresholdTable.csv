@@ -1,0 +1,7 @@
+﻿id,reputationMin,reputationMax,warningDurationSec
+1,-100,-1,86400
+2,0,29,43200
+3,30,59,172800
+4,60,79,259200
+5,80,100,604800
+6,101,200,999

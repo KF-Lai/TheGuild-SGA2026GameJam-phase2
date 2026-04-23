@@ -1,0 +1,16 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1386491679 &1
+MonoManager:
+  m_ObjectHideFlags: 0
+  m_EditorClassIdentifier:
+  m_ExecutionOrder:
+  - m_ClassName: DataManager
+    m_Script: {fileID: 11500000, guid: b0fe0c69f3e74e668f1371f1f9252d38, type: 3}
+    m_Order: -1000
+  - m_ClassName: TimeSystem
+    m_Script: {fileID: 11500000, guid: f14bb530bd5f43019f145e6fcd6ab585, type: 3}
+    m_Order: -900
+  - m_ClassName: ResourceManagement
+    m_Script: {fileID: 11500000, guid: acc5b2b170764fa8bae613229200d97a, type: 3}
+    m_Order: -800

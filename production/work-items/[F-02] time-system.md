@@ -90,13 +90,13 @@ TheGuild-unity/Assets/Scripts/Core/Time/
 ├── MissionTimer.cs             # 任務計時器記錄（struct / class）
 └── OfflineSummary.cs           # 離線摘要資料結構（供 UI 顯示用）
 
-TheGuild-unity/Assets/Scripts/Tests/EditMode/Core/Events/
+TheGuild-unity/Assets/Tests/EditMode/Core/Events/
 └── EventBusTests.cs
 
-TheGuild-unity/Assets/Scripts/Tests/EditMode/Core/Time/
+TheGuild-unity/Assets/Tests/EditMode/Core/Time/
 └── TimeSystemTests.cs          # EditMode 部分（離線、每日重置、任務計時推算）
 
-TheGuild-unity/Assets/Scripts/Tests/PlayMode/Core/Time/
+TheGuild-unity/Assets/Tests/PlayMode/Core/Time/
 └── TimeSystemPlayModeTests.cs  # PlayMode 部分（Update 驅動的即時模式、OnSecondTick、PauseTick）
 ```
 
@@ -567,7 +567,7 @@ OFFLINE_MAX_SECONDS,604800,離線時間上限（秒）
 **階段一（read-only）**：
 
 ```
-cd: C:/gitlab/LKF/TheGuild-SGA2026GameJam-phase2
+cd: D:/AI Repository/02_Project/SGA_2026_gamejam/TheGuild-SGA2026GameJam-phase2/TheGuild-unity
 sandbox: "read-only"
 SESSION_ID: <承接 F-01 session 或開新 session>
 PROMPT:
