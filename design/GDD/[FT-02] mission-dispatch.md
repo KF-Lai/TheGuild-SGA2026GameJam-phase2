@@ -101,12 +101,23 @@ CalculateRates(adventurer, mission):
 
 玩家推薦任務給冒險者後，若 FT-03 判定冒險者接受，FT-02 執行派遣：
 
-1. 呼叫 C-02 `UpdateStatus(instanceID, Dispatched)`
-2. 設定 `adventurer.currentMissionID = activeMissionID`（runtime 任務實例 ID）
-3. 記錄派遣時間戳 `dispatchTimestamp = F-02.GetCurrentTimestamp()`
-4. 計算預計完成時間 `completionTimestamp = dispatchTimestamp + duration × 60`
+1. **取任務快照**：`template = C-01.GetTemplate(missionID)`；`difficulty = template.difficulty`
+2. **取基礎獎勵**：`baseReward = C-01.GetBaseReward(difficulty)`（C-01 §3，M3 消除 FT-02 ↔ C-01 簽名落差）
+3. **發布傭金接受事件**：`EventBus.Publish(OnCommissionAccepted, missionID, baseReward, source)`
+   - `source` ∈ `{ PlayerManual, NpcAutoPick }`（Jam 階段；未來擴充 `OfflineAutoPick` 由 FT-11 提供），由呼叫端（P-02 / FT-03）透過 `Dispatch` 參數傳入（見 §3.8）
+   - FT-05 Guild Gold Flow 訂閱此事件執行預收傭金（`AddGoldAllowBankruptcy(-baseReward)`，見 F-03 §3.2 rule 7、FT-05 §3.9.1）
+   - **挑 FT-02 為單一發布點**：FT-03 自主接單也透過 `FT-02.Dispatch` 間接發布，避免雙重發布；FT-04 結算、FT-11 離線回補同理各自專屬事件
+4. 呼叫 C-02 `UpdateStatus(instanceID, Dispatched)`
+5. 設定 `adventurer.currentMissionID = activeMissionID`（runtime 任務實例 ID）
+6. 記錄派遣時間戳 `dispatchTimestamp = F-02.NowUTC`
+7. 計算預計完成時間 `completionTimestamp = dispatchTimestamp + duration × 60`
    - `duration` = `C-01.GetBaseDuration(difficulty)`（一般任務）或 `C-01.GetEscortDuration(difficulty)`（護送任務）
-5. 發布 `EventBus.Publish(OnAdventurerDispatched, instanceID, activeMissionID)`
+8. 發布 `EventBus.Publish(OnAdventurerDispatched, instanceID, activeMissionID)`
+9. 通知 C-06 危險度計數：`C06.OnMissionAccepted(difficulty)`（C-06 §3 `OnMissionAccepted` 規格；若難度達下一階 `minDifficulty` 則 `acceptedMissionCount += 1`、觸發 `CheckLevelUp()`）
+
+> **順序保證**：步驟 3 `OnCommissionAccepted` 在步驟 4 狀態變更前發布——FT-05 預收失敗時（理論上 `AddGoldAllowBankruptcy` 不會 reject，但若未來改語義），Dispatch 可於步驟 3 收到異常即 rollback（Game Jam 階段不實作 rollback，信任 F-03 保證）。
+>
+> **`baseReward` 快照**：步驟 2 取的 `baseReward` 為派遣當下的任務基礎獎勵，FT-02 `ActiveMission` 不額外儲存（結算時 FT-04 依 §3.6「快照不變」規則由 C-01 重新查詢；`baseReward` 不隨時間變動，見 C-01）。
 
 ### 3.6 ActiveMission 資料結構
 
@@ -130,7 +141,7 @@ FT-02 訂閱 F-02 `OnSecondTick`，每 Tick 檢查所有 ActiveMission：
 
 ```
 TickCompletionCheck():
-    now = F-02.GetCurrentTimestamp()
+    now = F-02.NowUTC
     foreach mission in activeMissions:
         if now >= mission.completionTimestamp:
             EventBus.Publish(OnMissionCompleted, mission.activeMissionID)
@@ -144,7 +155,7 @@ TickCompletionCheck():
 | API | 簽名 | 說明 |
 |-----|------|------|
 | 計算成功率/死亡率 | `CalculateRates(int instanceID, int missionID) : (float success, float death)` | UI 預覽用，不執行派遣 |
-| 執行派遣 | `Dispatch(int instanceID, int missionID) : bool` | 冒險者必須 Idle，失敗回傳 `false` |
+| 執行派遣 | `Dispatch(int instanceID, int missionID, DispatchSource source) : bool` | 冒險者必須 Idle，失敗回傳 `false`；`source` 由呼叫端指定（P-02 傳 `PlayerManual`、FT-03 自主接單傳 `NpcAutoPick`），用於 §3.5 step 3 發布 `OnCommissionAccepted` |
 | 取得進行中任務 | `GetActiveMissions() : IReadOnlyList<ActiveMission>` | |
 | 單筆查詢 | `GetActiveMission(int activeMissionID) : ActiveMission` | 找不到回傳 `null` |
 | 依冒險者查詢 | `GetActiveMissionByAdventurer(int instanceID) : ActiveMission` | 找不到回傳 `null` |
@@ -291,28 +302,31 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | 系統 | 依賴內容 | 介面 |
 |------|---------|------|
 | F-01 DataManager | 載入 `SuccessRateTable`、`DeathRateTable` | `DataManager.GetAll<T>()` |
-| F-02 Time System | 取得當前 timestamp（派遣時間、完成檢查）；訂閱 `OnSecondTick` 驅動完成檢查 | `GetCurrentTimestamp()`、Tick 回呼 |
+| F-02 Time System | 取得當前 timestamp（派遣時間、完成檢查）；訂閱 `OnSecondTick` 驅動完成檢查 | `NowUTC`、Tick 回呼 |
 | C-01 Mission Database | 查詢任務模板（difficulty, typeID）、任務時長 | `GetTemplate(missionID)`、`GetBaseDuration(difficulty)`、`GetEscortDuration(difficulty)` |
 | C-02 Adventurer Management | 查詢冒險者資料（rank, professionID, raceID, traitIDs, status）；更新狀態 | `GetAdventurer(instanceID)`、`GetByStatus(Idle)`、`UpdateStatus()` |
 | C-03 Profession System | 查詢職業擅長/弱點 | `IsStrongType(professionID, typeID)`、`IsWeakType(professionID, typeID)` |
 | C-04 Race System | 查詢種族成功率/死亡率修正 | `GetSuccessDelta(raceID, typeID)`、`GetDeathDelta(raceID, typeID)` |
 | C-05 Trait System | 查詢 stat 類特質的修正值 | `GetTrait(traitID)` |
 | FT-06 Guild Core | 查詢最大同時任務數（派遣前檢查） | `GetMaxMissions()` |
+| C-06 World Danger System | 派遣後通知 C-06 計數，驅動危險度升級 | `OnMissionAccepted(difficulty)`（見 §3.5 步驟 9） |
 
 ### 6.2 下游依賴（依賴 FT-02 的系統）
 
 | 系統 | 依賴內容 | 使用介面 |
 |------|---------|---------|
-| FT-03 NPC Decision | 讀取 `CalculateRates` 的成功率/死亡率作為 willingness 計算輸入 | `CalculateRates(instanceID, missionID)` |
+| FT-03 NPC Decision | 讀取 `CalculateRates` 的成功率/死亡率作為 willingness 計算輸入；自主接單呼叫 `Dispatch(..., NpcAutoPick)` 觸發預收 | `CalculateRates(instanceID, missionID)`、`Dispatch(..., source)` |
 | FT-04 Outcome Resolution | 訂閱 `OnMissionCompleted` 事件、讀取 ActiveMission 快照數值進行結算、結算後呼叫移除 | `GetActiveMission(activeMissionID)`、`RemoveActiveMission(activeMissionID)` |
+| FT-05 Guild Gold Flow | 訂閱 `OnCommissionAccepted(missionID, baseReward, source)` 執行預收傭金 | `OnCommissionAccepted` 事件 |
 | FT-10 Save/Load | 序列化/反序列化 `activeMissions` 列表 | `GetActiveMissions()` |
-| P-02 Main UI | 顯示成功率/死亡率預覽、進行中任務列表與倒數計時 | `CalculateRates()`、`GetActiveMissions()`、`GetActiveMissionByAdventurer()` |
+| P-02 Main UI | 顯示成功率/死亡率預覽、進行中任務列表與倒數計時；玩家手動派遣呼叫 `Dispatch(..., PlayerManual)` | `CalculateRates()`、`GetActiveMissions()`、`GetActiveMissionByAdventurer()`、`Dispatch(..., source)` |
 
 ### 6.3 循環依賴注意事項
 
 - FT-02 依賴 FT-06 查詢 `maxMissions`，FT-06 不依賴 FT-02——**無循環依賴**
 - FT-03 讀取 FT-02 `CalculateRates`，FT-02 不依賴 FT-03——**無循環依賴**
 - FT-04 訂閱 FT-02 事件並呼叫 `RemoveActiveMission`，FT-02 不依賴 FT-04——**無循環依賴**
+- FT-02 呼叫 C-06 `OnMissionAccepted`，C-06 不依賴 FT-02——**無循環依賴**
 
 ## 7. 可調參數（Tuning Knobs）
 
@@ -372,3 +386,6 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | AC-MD2-18 | 離線期間多個任務到期，重啟後 `TickCompletionCheck` 一次 Tick 觸發所有到期任務的 `OnMissionCompleted` |
 | AC-MD2-19 | `RemoveActiveMission` 呼叫後，`GetActiveMissions()` 不再包含該任務，`GetActiveMissionCount()` 減 1 |
 | AC-MD2-20 | `GetActiveMissionByAdventurer(instanceID)` 回傳該冒險者的 ActiveMission；無派遣時回傳 `null` |
+| AC-MD2-21 | `OnCommissionAccepted` 發布 — 玩家呼叫 `Dispatch(instanceID, missionID, PlayerManual)` 成功時，發布 `OnCommissionAccepted(missionID, baseReward, PlayerManual)` 恰一次，且在 C-02 `UpdateStatus` 與 `OnAdventurerDispatched` 之前 |
+| AC-MD2-22 | NPC 自主接單發布 — FT-03 呼叫 `Dispatch(instanceID, missionID, NpcAutoPick)` 成功時，發布 `OnCommissionAccepted(missionID, baseReward, NpcAutoPick)` 恰一次；FT-03 本身不另外發布同名事件（單一發布點） |
+| AC-MD2-23 | `baseReward` 取得 — 於 §3.5 step 2 呼叫 `C-01.GetBaseReward(template.difficulty)` 取得 `baseReward`；事件 payload 與此值一致 |

@@ -112,7 +112,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 
 ```
 CheckAutoRefresh():
-    now = F-02 TimeSystem.GetCurrentTimestamp()
+    now = F-02 TimeSystem.NowUTC
     intervalSec = refreshIntervalHours × 3600    // 招募板建設等級決定
     if now >= _lastRefreshTimestamp + intervalSec:
         ExecuteRefresh()
@@ -134,7 +134,7 @@ ManualRefresh():
         F03.AddGold(-REFRESH_COST)
 
     ExecuteRefresh()
-    _lastRefreshTimestamp = F02.GetCurrentTimestamp()   // 重置自動刷新計時器
+    _lastRefreshTimestamp = F02.NowUTC   // 重置自動刷新計時器
     broadcast OnPoolRefreshed()
     return true
 ```
@@ -234,6 +234,7 @@ GeneratePool(rankPool, poolSize):
 | 老手邀請時金幣不足 | 回傳 `false`，UI 顯示「金幣不足」；不扣款、不移除候選者 |
 | 老手邀請時聲望不足 | 回傳 `false`，UI 顯示「聲望不足」；不扣款、不移除候選者 |
 | 老手邀請時 `CanAfford` 通過但 `AddGold` 失敗（重入防護等極端情況） | `Debug.LogError`，回傳 `false`，不加入名冊 |
+| 老手邀請扣款會跨過破產閾值 | 走 F-03 `AddGold(-cost)`（**非** `AddGoldAllowBankruptcy`），F-03 規則 2 會 reject；回傳 `false`，不扣款、不加入名冊。招募系統刻意不允許靠邀請把公會推入破產——與 FT-05 金流（維護費 / 薪水 / 委託結算）的語義區別。 |
 | 候選者的 `templateID` 在接納前已被其他途徑加入名冊（理論上不會，但防禦性） | C-02 `AddAdventurer` 內部的 isUnique 檢查攔截，回傳 `false`；FT-01 從池中移除該候選者，`Debug.LogWarning` |
 | 接納/邀請後池中剩餘候選者不足 | 不自動補充，等待下次刷新 |
 
@@ -265,7 +266,7 @@ GeneratePool(rankPool, poolSize):
 | 系統 | 依賴內容 | 介面 |
 |------|---------|------|
 | F-01 DataManager | 載入 `RecruitCostTable`、`AdventurerTemplate`、SystemConstants 常數 | `DataManager.GetAll<T>()` |
-| F-02 Time System | 取得當前 timestamp 驅動自動刷新、訂閱每日重置事件、訂閱離線結算事件 | `GetCurrentTimestamp()`、`OnDailyReset`、`OnSecondTick` |
+| F-02 Time System | 取得當前 timestamp 驅動自動刷新、訂閱每日重置事件、訂閱離線結算事件 | `NowUTC`、`OnDailyReset`、`OnSecondTick` |
 | F-03 Resource Management | 老手邀請費用扣款、付費手動刷新扣款、聲望門檻查詢 | `CanAfford(amount)`、`AddGold(-amount)`、`GetReputation()` |
 | C-02 Adventurer Management | 建立冒險者實例、加入名冊、名冊容量檢查 | `CreateFromTemplate(templateID)`、`AddAdventurer(instance)`、`IsRosterFull(rosterCap)`、`GetRoster()` |
 | C-03 Profession System | 取得基礎職業列表作為隨機生成池 | `GetBaseProfessions()` |

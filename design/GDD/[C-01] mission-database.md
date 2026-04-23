@@ -182,8 +182,9 @@ IsValidCombination(difficulty, typeID):
 
 | 系統 | 依賴內容 | 介面 |
 |------|---------|------|
-| FT-05 Commission Flow | 生成常規委託、查詢報酬與時長 | `GetRegularTemplates`, `GetBaseReward`, `GetBaseDuration`, `GetEscortDuration`, `GetMissionText`, `IsValidCombination` |
+| FT-05 Guild Gold Flow | 預收時透過 FT-02 傳入的 `baseReward` 執行金流；C-01 不直接被 FT-05 呼叫（委託生成由 FT-02 經 C-01 完成） | — |
 | FT-02 Mission Dispatch | 取得任務難度與類型供成功率計算 | `GetTemplate` |
+| FT-04 Outcome Resolution | 結算時讀取 `missionDifficulty` / `missionTypeID` / `missionFactionID` 快照入 Outcome；讀取 `baseReward` 供 C-05 `on_success_gold_bonus` 計算 | `GetTemplate`, `GetBaseReward` |
 | FT-06 Guild Core | 觸發公會升等考驗任務 | `GetTemplatesByCategory(categoryId=2)` |
 | FT-09 Faction Story | 取得陣營劇情特殊任務、讀取 `factionID` 計分 | `GetTemplatesByCategory(categoryID=3)`, `GetTemplate` |
 | FT-10 Save/Load | 驗證存檔中的 `missionID` 仍合法 | `GetTemplate` |

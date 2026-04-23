@@ -86,7 +86,7 @@ FT-08 委託官職員的被動加成（推薦接受率 +5%）以 `staffWillingne
 
 ```
 AutoPickupTick():
-    now = F02.GetCurrentTimestamp()
+    now = F02.NowUTC
     foreach adventurer in C02.GetByStatus(Idle):
         idleMinutes = (now - adventurer.idleSinceTimestamp) / 60
         if idleMinutes < AUTO_PICKUP_IDLE_MINUTES: continue       // 冷卻中
@@ -219,10 +219,10 @@ CalcEffectiveScore(adventurer, mission, finalSuccessRate, finalDeathRate):
 | 系統 | 依賴內容 | 介面 |
 |------|---------|------|
 | F-01 DataManager | 載入 `SystemConstants`（DEATH_AVERSION、ACCEPTANCE_THRESHOLD、WILLINGNESS_JITTER、AUTO_PICKUP_IDLE_MINUTES、AUTO_PICKUP_INTERVAL_MINUTES） | `DataManager.GetConstant<float>(key)` |
-| F-02 Time System | 取得當前 timestamp；訂閱 `OnMinuteTick` 驅動自主接單檢查 | `GetCurrentTimestamp()`、Tick 回呼 |
+| F-02 Time System | 取得當前 timestamp；訂閱 `OnMinuteTick` 驅動自主接單檢查 | `NowUTC`、Tick 回呼 |
 | C-02 Adventurer Management | 查詢 Idle 冒險者列表；讀取 `idleSinceTimestamp`、`lastAutoPickupTimestamp`；更新這兩個欄位 | `GetByStatus(Idle)`、`GetAdventurer(instanceID)` |
 | C-05 Trait System | 查詢 behavior 類特質 effectTarget / effectValue | `GetTrait(traitID)` |
-| FT-02 Mission Dispatch | 計算成功率/死亡率（推薦判斷與自主接單均使用）；推薦接受後執行派遣 | `CalculateRates(instanceID, missionID)`、`Dispatch(instanceID, missionID)` |
+| FT-02 Mission Dispatch | 計算成功率/死亡率（推薦判斷與自主接單均使用）；推薦接受後執行派遣（自主接單傳 `source = NpcAutoPick`，FT-02 內部發布 `OnCommissionAccepted` 驅動 FT-05 預收，FT-03 本身**不**直接發布該事件） | `CalculateRates(instanceID, missionID)`、`Dispatch(instanceID, missionID, source)` |
 | FT-08 Guild Staff System | 查詢委託官被動加成值 | `GetStaffWillingnessBonus() : float` |
 
 ### 6.2 下游依賴（依賴 FT-03 的系統）
@@ -237,6 +237,7 @@ CalcEffectiveScore(adventurer, mission, finalSuccessRate, finalDeathRate):
 
 - FT-03 依賴 FT-02 執行 `CalculateRates` 與 `Dispatch`，FT-02 不依賴 FT-03——**無循環依賴**
 - FT-03 依賴 FT-08 查詢加成，FT-08 不依賴 FT-03——**無循環依賴**
+- FT-03 與 FT-05 Guild Gold Flow 為**間接關係**：FT-03 自主接單 → `FT-02.Dispatch(..., NpcAutoPick)` → FT-02 發布 `OnCommissionAccepted` → FT-05 執行預收。FT-03 不直接呼叫 FT-05 API、不訂閱 FT-05 事件，故 FT-05 不列入 FT-03 § 6.2 下游（單一發布點原則，見 FT-02 § 3.5）。
 
 ---
 

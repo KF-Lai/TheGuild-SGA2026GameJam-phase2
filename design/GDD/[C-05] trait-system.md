@@ -210,7 +210,8 @@ ApplyBehaviorTraits(baseWillingness, traitIDs, typeID, difficulty):
 ### 4.4 condition 類結算觸發（由 FT-04 執行，此為規格定義）
 
 ```
-ApplyConditionTraits(outcome, traitIDs, missionReward):
+ApplyConditionTraits(outcome, traitIDs):
+    // baseReward 透過 outcome.baseReward 取得（由 FT-04 在 BuildOutcomeSnapshot 時快照自 C01.GetBaseReward(difficulty)）
     foreach traitID in traitIDs:
         trait = GetTrait(traitID)
         if trait.effectType != "condition" → skip
@@ -220,7 +221,7 @@ ApplyConditionTraits(outcome, traitIDs, missionReward):
             "on_success_gold_bonus":
                 if outcome.isSuccess:
                     if Random.value < trait.effectValue:
-                        outcome.goldDelta += missionReward × 0.5
+                        outcome.conditionGoldBonus += outcome.baseReward × 0.5
 
             "on_fail_reputation":
                 if !outcome.isSuccess:
@@ -347,5 +348,5 @@ ApplyConditionTraits(outcome, traitIDs, missionReward):
 | AC-TS-11 | `ApplyBehaviorTraits` 對持有 `willingness_diff_S`（delta=-0.25）的冒險者，派 S 難度任務時 willingness 正確減少 0.25；派 D 難度時不影響 |
 | AC-TS-12 | `ApplyConditionTraits` 對持有 `on_death_survive`（機率=1.0）的冒險者，`outcome.isDead=true` 輸入後，輸出 `isDead=false`、`isWounded=true` |
 | AC-TS-13 | `ApplyConditionTraits` 對持有 `on_fail_survive`（機率=1.0）的冒險者，成功結算（`isSuccess=true`）時，`isDead` 維持不變 |
-| AC-TS-14 | `ApplyConditionTraits` 對持有 `on_success_gold_bonus`（機率=1.0）的冒險者，成功結算後 `goldDelta` 增加 `missionReward × 0.5` |
+| AC-TS-14 | `ApplyConditionTraits` 對持有 `on_success_gold_bonus`（機率=1.0）的冒險者，成功結算後 `conditionGoldBonus` 增加 `outcome.baseReward × 0.5`（金流由 FT-05 消費此欄位執行，C-05 不直接套用 gold） |
 | AC-TS-15 | 新增一個特質至 CSV，`GetAllTraits()` 包含新特質，套用邏輯正確反映 `effectTarget` |
