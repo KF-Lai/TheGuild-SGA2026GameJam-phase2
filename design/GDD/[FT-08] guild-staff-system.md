@@ -420,6 +420,36 @@ CandidateCard {
 - 「保留」UI 按鈕必須 disable（因 `reserveConsumedFlag = true`）—— 由 P-02 根據此 flag 判斷
 - 下次 refresh 時無論是否已 `reserveConsumedFlag`，該 slot 被新 roll 覆蓋，原卡徹底消失
 
+### 3.3 面試刷新流程（Refresh Flow）
+
+> ⚠️ **待補（2026-04-25）**：本章節為 §4.1 / §5.2 / §8.2 之 runtime 描述對應節；公式與 AC 已就位（§4.1.1~§4.1.4、§4.1.7~§4.1.8、AC-4~AC-9），需在此節展開：
+> - 自動 / 手動 / 切池觸發的刷新流程（含 roll 序列、`pityCounter` 累加時機、事件發布順序）
+> - 離線啟動時的 refill 流程（與 §5.1.2 / §5.2.4 對齊）
+> - `TryManualRefresh` / `TrySwitchPool` 的回傳碼（`SUCCESS` / `GOLD_INSUFFICIENT` / `STAFF_SYSTEM_LOCKED`）
+> - `StaffRefreshCostTable` schema（PK=`guildLevel`、`cost`、`interviewSlotCount`）
+>
+> 不影響 §4~§8 公式 / 邊界 / 驗收條件之完整性；屬 Batch B v2 收尾。
+
+### 3.4 保底機制細節（Pity Mechanism Details）
+
+> ⚠️ **待補（2026-04-25）**：§4.1.7 / §4.1.8 已定義 counter 增量公式與觸發條件、§5.3 已寫保底邊界、AC-18~AC-19 已可驗收；本節需展開：
+> - `pityCounter` 在 `StaffPlayerState` 的初始化、序列化、debug-reset API 契約
+> - 保底命中時 slot 內 staff roll 流程細節（仍走 §4.1.6 層內權重，但稀有度跳過 §4.1.5）
+> - 保底未觸發路徑與動態歸一化的互動圖
+> - 跨 session（save/load）後 counter 行為驗證
+>
+> 不影響 §4~§8 公式 / 邊界 / 驗收條件之完整性；屬 Batch B v2 收尾。
+
+### 3.5 垃圾物品（Trash Items）
+
+> ⚠️ **待補（2026-04-25）**：§3.2.3 已定義 CandidateCard `staffID XOR trashItemID` 互斥、§7.1.6 已標 TrashItemTable 安全範圍、AC-22 已驗收 trash 不可入職；本節需展開：
+> - `TrashItemTable.csv` 完整 schema（`trashItemID`、`name`、`flavorText`、可能的視覺資產 ID）
+> - trash item 是否計入 `pityCounter`（暫定：trash 卡的 `rolledRarity` 強制 = 1，仍每張 +1）
+> - flavor item（純風味）vs filler 職員（`isFiller=true`）的差異化處理
+> - DataManager 驗證規則：`trashItemID` 不可 collide with `staffID`、`name` 不可空
+>
+> 不影響 §4~§8 公式 / 邊界 / 驗收條件之完整性；屬 Batch B v2 收尾。
+
 ### 3.6 效果聚合加成計算（Effect Aggregation）
 
 FT-08 對外提供 **5 個查詢 API**，分兩組：
@@ -556,6 +586,22 @@ IsSuccessRatePreviewEnabled() → bool:
 - **OR 語意 vs SUM 語意**：UI flag 是「功能有無」，任一職員符合即啟用；不像 effect 會累加
 - **無疊加上限需求**：bool 無法疊加，所以無 `EFFECT_MAX_*` 類常數
 - **DataManager 驗證**：`uiFlagIDs.Count == uiFlagBuildingIDs.Count`，且每個 `uiFlagBuildingIDs[i]` 必須存在於該職員的 `slotBuildingIDs` 中（否則 UI flag 永遠無法啟用，資料表錯誤）
+
+### 3.7 ~ 3.13 Batch C 章節（待補）
+
+> ⚠️ **Batch C 待補（2026-04-25）**：本系列章節為 §4~§8 已就位的 runtime 細節展開；不影響主結構交付。預計章節：
+>
+> | 章節 | 主題 | 對應 §4~§8 錨點 |
+> |---|---|---|
+> | §3.7 | Slot 指派流程（assign / unassign / 多 slot 候選） | §3.6.1 / AC-43 / AC-27 |
+> | §3.8 | 三態狀態機（Working / Reallocating / OnLeave）+ 切換冷卻 | §6.5 常數 / AC-44 |
+> | §3.9 | 再分配自動轉休假（>12h 規則） | §7.2 `REALLOCATING_AUTO_LEAVE_SECONDS` |
+> | §3.10 | 解雇流程（`severancePay` 扣款、不可逆） | AC-42 |
+> | §3.11 | 薪水管線（`OnStaffSalaryDue` 組裝、離線補發迴圈） | §4.3 / AC-30~AC-33 |
+> | §3.12 | 系統降級行為總表（`IsStaffSystemUnlocked() == false`） | §3.6.5 / §5.4.3 / AC-1, AC-3, AC-29, AC-45 |
+> | §3.13 | 事件契約（`OnStaffHired` / `OnStaffFired` / `OnStaffAssigned` / `OnStaffStateChanged` / `OnStaffSalaryDue`） | §6.3 / AC-41~AC-45 |
+>
+> §4~§8 公式 / 邊界 / 驗收條件已自洽；Batch C 為實作前的 runtime 詳述補完。
 
 ---
 
@@ -828,17 +874,17 @@ perStaffSalary = { s.instanceID → StaffTable[s.staffID].salary
 
 **休假者排除**：`OnLeave` 不計入 `perStaffSalary`（FT-08 §1.C 已定義）。
 
-#### 4.3.2 薪水總額（total salary due）
+#### 4.3.2 薪水總額（total amount）
 
-事件 payload 附帶總額供 FT-05 快速檢查：
+事件 payload 附帶總額供 FT-05 快速檢查；欄位名稱對齊 FT-05 既有契約（§6.3）：
 
 ```
-totalSalaryDue = Σ_{k ∈ perStaffSalary.Keys} perStaffSalary[k]
+totalAmount = Σ_{k ∈ perStaffSalary.Keys} perStaffSalary[k]
 ```
 
 | 變數 | 定義 | 範圍 |
 |---|---|---|
-| `totalSalaryDue` | 本次發薪總扣款 | `≥ 0`；實務 Jam 版 `[0, ~3000]` gold/day |
+| `totalAmount` | 本次發薪總扣款（事件 payload 欄位）| `≥ 0`；實務 Jam 版 `[0, ~3000]` gold/day |
 
 #### 4.3.3 離線補發次數
 
@@ -1010,7 +1056,7 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | **FT-03 NPC Decision** | `GetStaffWillingnessBonus() : float` | Passive 加成；進 willingness 計算前作為 addend |
 | **FT-05 Guild Gold Flow** | `GetAccountantCommissionBonus() : float` | Passive 加成；進 `effectiveCommissionRate` 公式 |
 | FT-05 | `GetAccountantPenaltyBonus() : float` | Slot 加成（需指派保險櫃）；進 `effectivePenaltyRate` |
-| FT-05 | `OnStaffSalaryDue` 事件訂閱 | 收到 payload → `AddGoldAllowBankruptcy(-totalSalaryDue)` |
+| FT-05 | `OnStaffSalaryDue` 事件訂閱 | 收到 payload → `AddGoldAllowBankruptcy(-totalAmount)` |
 | **FT-01 Adventurer Recruitment** | `GetRecruitRefreshReductionSec() : int` | Slot 加成（需指派櫃台）；自招募刷新間隔扣除 |
 | **P-02 Main UI** | `IsSuccessRatePreviewEnabled() : bool` | 委託審核畫面顯示成功率預估數字 |
 | P-02 | 面試 UI 操作 API（`TryRecruit` / `TryRejectCandidate` / `TryReserveCandidate` / `TryReleaseReserve` / `TryManualRefresh` / `TrySwitchPool`）| 玩家面試交互的 UX 行為（簡歷卡、上下滑翻動、蓋印章）|
@@ -1023,7 +1069,7 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 
 | 事件名 | Payload | 訂閱者 | 發布時機 |
 |---|---|---|---|
-| `OnStaffSalaryDue` | `{ perStaffSalary: Dict<int,int>, totalSalaryDue: int, salaryTimestamp: long }` | **FT-05**（硬契約）| 每日 UTC 06:00；離線補發逐次；§4.3 詳述 |
+| `OnStaffSalaryDue` | `(long dueTimestamp, Dict<int,int> perStaffSalary, int totalAmount)` | **FT-05**（硬契約 §3.9.1）| 每日 UTC 06:00；離線補發逐次；§4.3 詳述。Dict key 為 `instanceID`（FT-08 內部語意）；FT-05 僅 iterate 不關心 key 語意 |
 | `OnStaffHired` | `{ instanceID: int, staffID: int, hiredTimestamp: long }` | P-02 / P-03 Notification / 圖鑑 | 錄用流程成功後 |
 | `OnStaffFired` | `{ instanceID: int, staffID: int, firedTimestamp: long, severancePaid: int }` | P-02 / P-03 | 解雇流程成功後 |
 | `OnStaffAssigned` | `{ instanceID: int, oldBuildingID: int, newBuildingID: int }` | FT-05（保險櫃 slot 重算）/ P-02 | slot 指派 / 再分配完成後 |
@@ -1075,13 +1121,233 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 
 ## 7. 可調參數（Tuning Knobs）
 
-[To be designed]
+> 本節列出 FT-08 所有可由設計師於資料表 / 常數調整的參數。每項標註安全範圍、影響面、與 § 公式 / 規則的對應錨點。**不可調參數**（設計決策硬寫）見 §7.4。
+
+### 7.1 資料表參數（CSV）
+
+#### 7.1.1 `StaffRefreshCostTable.csv`
+
+PK = `guildLevel`；對應 §4.1.1 / §4.1.2
+
+| 欄位 | 類型 | Jam 版建議範圍 | 影響 |
+|---|---|---|---|
+| `guildLevel` | int (PK) | `1 ~ 5` | 必含 1~5 五行 |
+| `cost` | int | `100 ~ 1000` gold | 手動刷新費；過低 → 玩家狂刷破壞稀有度體感、過高 → 玩家不刷只等自動 |
+| `interviewSlotCount` | int | `3 ~ 5` | 面試欄張數 N；過低 → 保底速度太慢、過高 → UI 擁擠 + 保底速度太快 |
+
+**Jam 版範例配置**：
+
+| guildLevel | cost | interviewSlotCount |
+|---|---|---|
+| 1 | 100 | 3 |
+| 2 | 150 | 3 |
+| 3 | 250 | 4 |
+| 4 | 400 | 4 |
+| 5 | 600 | 5 |
+
+#### 7.1.2 `StaffRarityProbTable.csv`
+
+PK = `rarity`；對應 §4.1.5
+
+| 欄位 | 類型 | Jam 版鎖定 | 影響 |
+|---|---|---|---|
+| `rarity` | int (PK) | `1 ~ 5` | 必含 5 行 |
+| `baseProb` | float | `Σ = 1.00`（強制驗證）| 稀有度基底機率；改動會劇烈影響 5★ 期望抽數與保底兌現節奏 |
+
+**Jam 版鎖定值**：1★=0.40 / 2★=0.25 / 3★=0.15 / 4★=0.15 / 5★=0.05；DataManager 驗證 `Σ baseProb == 1.00 ± 0.001`，否則拋 `StaffRarityProbTableValidationException`
+
+#### 7.1.3 `StaffGachaPoolTable.csv`
+
+詳 §3.2.2；對應 §4.1.5 / §4.1.6 / §4.1.9
+
+| 欄位 | Jam 版安全範圍 | 影響 |
+|---|---|---|
+| `[min,max]GuildLevel` | `1 ≤ min ≤ max ≤ 5` | 池開放時機；Jam 版 A 池 = `[1,5]`、B 池 = `[3,5]` |
+| `eligibleStaffIDs` | 至少含 1 個 staffID 且至少 1 層 `staffWeights[i] > 0` | 池內職員集合；過少 → 抽到重複頻繁、過多 → 5★ 機率被稀釋 |
+| `staffWeights` | 整數 ≥ 0；Σ > 0 | 層內機率權重；同層用 1~10 區間即可表達相對稀有 |
+| `reserveTimeLimitSec` | `86400 ~ 604800`（1~7 天）| 保留時限；過短 → 玩家剛保留就過期、過長 → 跨池保留變成永久免費櫃位 |
+
+**Jam 版範例**（各池含 1~5★ 全層、約 10 個職員 / 池）：
+
+| poolID | poolName | minGL | maxGL | reserveTimeLimitSec | 設計意圖 |
+|---|---|---|---|---|---|
+| 1 | Common | 1 | 5 | 604800（7 天）| 全程開放、含 1~5★ 全層 |
+| 2 | Advanced | 3 | 5 | 604800（7 天）| 中後期開放、3~5★ 為主、品質較高 |
+
+#### 7.1.4 `StaffTable.csv` 數值欄位
+
+詳 §3.2.1；單職員可調
+
+| 欄位 | Jam 版安全範圍 | 影響 |
+|---|---|---|
+| `salary` | `0 ~ 100` gold/day | 每日扣款；總和影響金幣壓力（FT-05）|
+| `severancePay` | `0 ~ 500` gold | 解雇成本；建議 `≈ salary × 5`（5 日薪）|
+| `effectValues[i]` | 依 effect 類型不同 | 見 §7.2 effect 數值表 |
+| `isFiller` | `true / false` | 標記 trash 類職員（仍可入職、薪水低、effect 弱）|
+
+**Jam 版總薪水壓力建議**：完整 roster 5~10 位常駐 + 0~10 位偶發 → 每日總薪水 `≤ 500 gold/day`，與 FT-05 委託利潤對齊（不超過單日預期收入 30%）
+
+#### 7.1.5 effect 數值欄位（`StaffTable.effectValues`）
+
+每個 effect 的單一數值範圍：
+
+| effectID | 類型 | Jam 版單值範圍 | 設計意圖 |
+|---|---|---|---|
+| `Willingness` | float | `+0.01 ~ +0.05` | 委託官加成；3 位疊加 ≈ +0.15 接近 cap |
+| `AccountantCommission` | float | `+0.01 ~ +0.03` | 會計傭金；2 位疊加 ≈ +0.06 接近 cap |
+| `AccountantPenaltyOnVault` | float | `−0.05 ~ −0.01` | 會計賠償減免（負值）；slot capacity = 1 自然封頂 |
+| `RecruitRefreshOnCounter` | int (秒) | `1800 ~ 7200`（30min ~ 2h）| 招募刷新減量；2 位疊加 ≈ 4h 接近 cap |
+
+**單職員 effect 數量受 rarity 限制**（§3.2.1）：1★=1 / 2★=1 / 3★=2 / 4★=2 / 5★=3
+
+#### 7.1.6 `TrashItemTable.csv`
+
+詳 §3.5（待寫）；Jam 版安全範圍：
+
+| 欄位 | 安全範圍 | 影響 |
+|---|---|---|
+| `trashItemID` | int ≥ 1 | PK |
+| `name` / `flavorText` | string | 風味文字（writer agent 提供）|
+| 數量 | `5 ~ 15` 個 | 過少重複頻繁、過多稀釋有意義抽卡 |
+
+### 7.2 系統常數（`StaffTuning.csv` / `SystemConstants.csv`）
+
+> 建議獨立一張 `StaffTuning.csv` 集中放 FT-08 系統常數；通用常數（離線上限 / 發薪時點）放 `SystemConstants.csv`
+
+| 常數名 | Jam 版值 | 安全範圍 | 影響 |
+|---|---|---|---|
+| `EFFECT_MAX_WILLINGNESS_BONUS` | `+0.20` | `+0.10 ~ +0.40` | Willingness 總加成 cap；建議 ≤ FT-03 willingness 公式分母的合理上界 |
+| `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` | `+0.10` | `+0.05 ~ +0.20` | 傭金總 cap；建議與 FT-05 委託基礎利潤對齊 |
+| `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` | `−0.10` | `−0.20 ~ −0.05` | 賠償減免下限；負值，絕對值越大玩家受益越多 |
+| `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC` | `14400`（4h）| `3600 ~ 28800`（1h~8h）| 招募刷新減量上限；建議不超過 FT-01 基礎刷新間隔 50% |
+| `PITY_THRESHOLD` | `10` | `5 ~ 20` | 保底觸發閾值（單位：累積張數）；過低 → 保底太頻繁失去隨機性、過高 → 玩家挫折 |
+| `SALARY_UTC_HOUR` | `6` | `0 ~ 23` | 每日發薪時點；UTC 06:00 ≈ 大多數時區的非 prime time |
+| `OFFLINE_MAX_SECONDS` | `604800`（7 天）| `86400 ~ 2592000`（1~30 天）| 離線最大補發；F-02 通用常數 |
+| `REALLOCATING_AUTO_LEAVE_SECONDS` | `43200`（12h）| `21600 ~ 86400`（6~24h）| 再分配自動轉休假閾值 |
+| `BUILDING_SWITCH_COOLDOWN_SECONDS` | `7200`（2h）| `3600 ~ 14400`（1~4h）| 切換建築冷卻 |
+| `ROSTER_CAP` | `99` | `20 ~ 200` | 名冊上限；UI 與序列化效能限制 |
+
+### 7.3 FT-07 擁有的 FT-08 相關參數
+
+> 雖屬 FT-07 `BuildingTable.csv`，但語意由 FT-08 決定，調整時兩 GDD 同步
+
+| 行（buildingID=6）| 欄位 | Jam 版值 | 安全範圍 | 影響 |
+|---|---|---|---|---|
+| L1 | `effectValue`（自動刷新間隔秒）| `86400`（24h）| `≥ 21600`（6h）| 起手節奏 |
+| L2 | 同上 | `64800`（18h）| L1 > L2 | 階梯遞減 |
+| L3 | 同上 | `43200`（12h）| L2 > L3 | |
+| L4 | 同上 | `28800`（8h）| L3 > L4 | |
+| L5 | 同上 | `21600`（6h）| L4 > L5；建議 ≥ 3600（1h）| 滿級節奏；過低破壞「等待感」設計 |
+| L1~L5 | `upgradeCost` | `500 / 1500 / 4500 / 13500 / 40000` | ×3 遞增；總 ≤ FT-05 同期累積收入 50% | 升級成本壓力 |
+| L2~L5 | `guildLevelReq` | `2 / 3 / 4 / 5` | 對齊公會等級開放 | 升級門檻 |
+
+### 7.4 不可調參數（設計決策硬寫）
+
+下列參數**不應透過資料表暴露**，改動需 GDD 變更：
+
+| 參數 / 規則 | 值 | 理由 |
+|---|---|---|
+| 三態互斥 `{Working, Reallocating, OnLeave}` | enum | 狀態機完整性；改動需重設計 §3.8 |
+| `staffID` / `trashItemID` 互斥（XOR）| 規則 | CandidateCard schema 保證；違反 = 資料異常 |
+| 保底計數單位（每張 +1） | 規則 | 與 N 解耦的均勻體感；改為「每次 refresh +1」會使 N=5 與 N=3 保底速度差太大 |
+| 保底反 reset（5★ 空池不 reset）| 規則 | 公平性；玩家不應因池暫時 5★ 空而失保底 |
+| `maxReserve = max(1, N-1)` 公式 | 規則 | 保留容量恆 < 面試欄；防玩家全保留繞過決策壓力 |
+| `reserveConsumedFlag` 永久化 | 規則 | 防「保留→取消→保留」零成本繞刷 |
+| 切池副作用（前池未保留候選丟失）| 規則 | 保留區是跨池保留的唯一途徑；維持池切換的 stake |
+| 動態歸一化公式（`baseProb / (1 − Σ 空層)`） | 公式 | 機率質量守恆；保證 Σ effectiveProb = 1 |
+| `lastAutoRefreshTimestamp` 全域單一 | 結構 | 防玩家切池偷跑刷新節奏；§3.2.3 設計約束 |
+| 離線補刷 `clamp 0~1` | 規則 | 防離線爆量候選；§4.1.4 |
+| `IsStaffSystemUnlocked() == false` 行為 | 降級契約 | 加成回 0、薪水不發、面試回 LOCKED；§3.6.5 / §5.4.3 |
+
+### 7.5 平衡建議（Designer Notes）
+
+- **5★ 期望抽數**：基底 5%、保底 10 抽 → 期望命中 ≈ 第 10 抽；1 次手動刷新（N=4）≈ 4 張 → 約 2.5 次手動刷新觸發保底；若以 cost=400/refresh、`guildLevel=4`計，玩家累積 1000 gold 即可保底 1 次 5★
+- **薪水 vs 委託利潤**：完整名冊（10 位職員 × 平均 50 gold = 500 gold/day）應 ≤ 同期委託每日預期淨利的 30%；超過會讓玩家陷入「養不起職員」的負迴圈
+- **加成 cap 兌現門檻**：每個 cap 的設計目標是「3~5 位職員疊滿」，避免 1 位 5★ 就頂滿（壓低 5★ 價值）也避免 10+ 位才頂滿（玩家感受不到增量）
+- **保留時限 7 天**：覆蓋週末玩家斷線情境；過短會讓「保留」變成「短期暫存」失去策略意義
 
 ---
 
 ## 8. 驗收標準（Acceptance Criteria）
 
-[To be designed]
+> 每條 AC 應可由 QA 直接驗證 pass / fail；測試流程不依賴 UI（直接呼叫 API）。AC 編號跨章節連續（AC-1 ~ AC-N）以利 Codex 工項追蹤。
+
+### 8.1 系統初始化與閘控（System Init / Gate）
+
+- **AC-1**：新遊戲啟動且 `FT07.GetBuildingLevel(6) == 0` → `IsStaffSystemUnlocked() == false` → 所有面試 API（`TryRecruit` / `TryManualRefresh` / `TryReserveCandidate` / `TrySwitchPool`）回 `STAFF_SYSTEM_LOCKED`；所有加成 API 回 `0`；`IsSuccessRatePreviewEnabled() == false`；`OnStaffSalaryDue` 不發布
+- **AC-2**：升級職員休息室至 L1 → `IsStaffSystemUnlocked() == true` → 首次解鎖時 FT-08 啟動流程設 `lastAutoRefreshTimestamp ← now`、`pityCounter` 初始 `0`、`nextInstanceID` 初始 `1`、`currentPoolID` 初始 `1`（A 池）
+- **AC-3**：拆除職員休息室回 L0（debug）→ 系統降級：`StaffPlayerState` 與 `StaffInstance[]` 資料保留、加成 API 回 `0`、薪水不發；重新升回 L1 → 資料恢復可用、`pityCounter` 不 reset
+
+### 8.2 面試刷新（Refresh Flow）
+
+- **AC-4**：手動刷新 `guildLevel = 2` 且 `GetGold() ≥ 150` → `TryManualRefresh()` 回 `SUCCESS`；扣款 150；`currentCandidates` 填滿 N=3 張；`pityCounter += 3`；`lastAutoRefreshTimestamp` **不變**
+- **AC-5**：手動刷新 `GetGold() < cost` → 回 `GOLD_INSUFFICIENT`；金幣不變、候選不變、`pityCounter` 不變
+- **AC-6**：自動刷新間隔到（`now − lastAutoRefreshTimestamp ≥ autoRefreshIntervalSec(L)`）→ 觸發 1 次刷新、覆蓋 `currentCandidates`、`pityCounter += N`、`lastAutoRefreshTimestamp ← now`
+- **AC-7**：離線跨多個自動刷新觸發點（例：L1 = 24h、離線 72h）→ 登入時補刷次數 `clamp(missedIntervals, 0, 1) = 1`；`pityCounter` 僅 +N 一次；`lastAutoRefreshTimestamp ← now`
+- **AC-8**：`now < lastAutoRefreshTimestamp`（時鐘倒退）→ 不觸發補刷、`lastAutoRefreshTimestamp` 不變
+- **AC-9**：升級職員休息室從 L1 至 L3 且 `now − last ≥ intervalSec(L3)` → 立即補刷一次（Case 5.6.1）
+
+### 8.3 池切換與保留（Pool Switch & Reserve）
+
+- **AC-10**：玩家從 A 池切到 B 池 → `currentPoolID ← 2`、A 池 `currentCandidates` **整個被覆蓋為 B 池新 roll 結果**、`reservedCandidates`（兩池共用）內容不變、`pityCounter += N`、不扣金幣
+- **AC-11**：保留候選 `TryReserveCandidate(slotIndex)` → 該候選 `isReserved = true`、`reservedTimestamp = now`、加入 `reservedCandidates`；`currentCandidates[slotIndex]` 為空（鎖定）；下次 refresh 不覆蓋該 slot
+- **AC-12**：`reservedCandidates.Count == maxReserve` 時嘗試保留第 `maxReserve + 1` 張 → `TryReserveCandidate()` 回 `RESERVE_FULL`；該候選 `isReserved` 不變
+- **AC-13**：保留候選 `TryReleaseReserve(reserveIndex)`（手動取消）→ 卡回到 `currentCandidates[原 slotIndex]`、`isReserved = false`、`reservedTimestamp = 0`、`reserveConsumedFlag = true`；嘗試再次保留同卡 → 回 `RESERVE_CONSUMED`
+- **AC-14**：保留時限到（`now − reservedTimestamp ≥ reserveTimeLimitSec(poolID)`）→ 自動解除保留（同 AC-13 行為）；若離線期間自動補刷已覆蓋原 slot → 卡丟失（不回 `currentCandidates`、不回 `reservedCandidates`，Case 5.2.4）
+
+### 8.4 稀有度 / 保底（Rarity / Pity）
+
+- **AC-15**：池中所有稀有度層皆有可抽（`emptyTiers == ∅`）→ `effectiveProb` 即 `baseProb`；統計 10000 次 roll → 5★ 比例 ≈ 5% ± 1%
+- **AC-16**：池中 1★ / 2★ 層空（`staffWeights` 全 0）→ `emptyTiers = {1, 2}`、`normalizationDen = 0.35`；`effectiveProb[3] ≈ 0.4286`、`effectiveProb[5] ≈ 0.1429`；`Σ effectiveProb == 1.000 ± 0.001`
+- **AC-17**：池內全層空（`eligibleStaffIDs` 空 / `staffWeights` 全 0）→ DataManager 載入時拋 `StaffGachaPoolTableValidationException`；遊戲不啟動
+- **AC-18**：`pityCounter ≥ 10` 且 `poolEligibleByRarity(currentPoolID, 5) ≠ ∅` 時下次 refresh → 第一張 `rolledRarity == 5`、後續張數走正常 roll、`pityCounter ← 0`
+- **AC-19**：`pityCounter ≥ 10` 但池中 5★ 空 → 不強制 5★；`pityCounter` 繼續累積（不 reset）；玩家切到含 5★ 的池後下次 refresh 兌現
+- **AC-20**：tier 內 `staffWeights = [10, 5, 0]` → 統計 10000 次該層 roll → 第一個 staffID 比例 ≈ 0.667、第二個 ≈ 0.333、第三個 = 0
+
+### 8.5 錄用 / 不錄用（Hire / Reject）
+
+- **AC-21**：`TryRecruit(slotIndex)` 對 `staffID > 0` 候選 → 建立 `StaffInstance`（`instanceID = nextInstanceID`、`++nextInstanceID`）、加入 roster、發 `OnStaffHired`；`currentCandidates[slotIndex]` 空置至下次 refresh
+- **AC-22**：`TryRecruit(slotIndex)` 對 `trashItemID > 0` 候選 → 回 `CANDIDATE_NOT_HIREABLE`（trash item 不可入職）；候選 / 名冊 / 事件不變
+- **AC-23**：`TryRejectCandidate(slotIndex)` → `currentCandidates[slotIndex]` 空置至下次 refresh、不入名冊、不發事件
+- **AC-24**：`TryRecruit` 時名冊已達 `ROSTER_CAP` → 回 `ROSTER_FULL`；候選不變
+
+### 8.6 效果聚合（Effect Aggregation）
+
+- **AC-25**：3 位委託官（每位 `Willingness +0.05`、狀態 = Working）→ `GetStaffWillingnessBonus() == 0.15`；增至 5 位（Σ = 0.25）→ 回 `0.20`（cap 截斷）
+- **AC-26**：1 位委託官切態為 OnLeave → 該位不計入 SUM；Reallocating 仍計入（Passive 規則）
+- **AC-27**：1 位會計帶 `AccountantPenaltyOnVault = -0.02`、未指派保險櫃 → `GetAccountantPenaltyBonus() == 0`；指派保險櫃（`assignedBuildingID = 5`、狀態 = Working）→ 回 `-0.02`
+- **AC-28**：2 位職員都帶 `SuccessRatePreview` UI flag、僅 1 位指派委託板 → `IsSuccessRatePreviewEnabled() == true`（OR 聚合）
+- **AC-29**：`IsStaffSystemUnlocked() == false` → 5 個 API 全部直接回 `0` / `false`，**不遍歷 roster**（早退驗證；可用 mock log 觀察）
+
+### 8.7 薪水（Salary）
+
+- **AC-30**：UTC 06:00 觸發發薪 → `OnStaffSalaryDue` 發布、payload `perStaffSalary` 含所有 `currentState ≠ OnLeave` 職員（key = `instanceID`、value = `StaffTable[s.staffID].salary`）；`totalAmount == Σ values`
+- **AC-31**：1 位職員 `currentState == OnLeave` → 該 `instanceID` **不在** `perStaffSalary` 中、`totalAmount` 不含其薪水
+- **AC-32**：離線跨 3 天登入 → `OnStaffSalaryDue` 連續發布 3 次（各以對應 `dueTimestamp` 組裝）；`lastSalaryTimestamp` 更新至最新一次（`lastSalaryTimestamp` 為 FT-08 內部狀態，不在事件 payload 中）
+- **AC-33**：離線 30 天登入、`OFFLINE_MAX_SECONDS = 604800` → `OnStaffSalaryDue` 發布次數 = `clamp(30, 0, 7) = 7` 次
+- **AC-34**：發薪時 `now < lastSalaryTimestamp`（時鐘倒退）→ 跳過本次發薪、`lastSalaryTimestamp` 不更新、不發事件、不扣金幣
+
+### 8.8 資料驗證（DataManager）
+
+- **AC-35**：`StaffTable` 中某行 `effectIDs.Count != effectValues.Count` → 載入時拋 `StaffTableValidationException`、遊戲不啟動
+- **AC-36**：`StaffTable` 中某 5★ 職員 `effectIDs.Count > 3`（超過 rarity 上限）→ 拋 `StaffTableValidationException`
+- **AC-37**：`StaffGachaPoolTable` 中 `eligibleStaffIDs.Count != staffWeights.Count` → 拋 `StaffGachaPoolTableValidationException`
+- **AC-38**：`StaffRarityProbTable.baseProb` 加總 ≠ 1.00 ± 0.001 → 拋 `StaffRarityProbTableValidationException`
+- **AC-39**：CandidateCard 載入時 `staffID > 0 AND trashItemID > 0`（XOR 違反）→ 拋 `CandidateCardValidationException`
+- **AC-40**：CandidateCard 載入時 `staffID > 0 AND rolledRarity != StaffTable[staffID].rarity` → 拋 `CandidateCardValidationException`
+
+### 8.9 事件契約（Event Contracts）
+
+- **AC-41**：錄用成功 → `OnStaffHired` 發布且 payload 含 `{ instanceID, staffID, hiredTimestamp == now }`
+- **AC-42**：解雇成功 → `OnStaffFired` 發布、`severancePay` 從金幣扣除（透過 FT-05 `AddGoldAllowBankruptcy`）；`StaffInstance` 從 roster 移除
+- **AC-43**：slot 指派 / 切換完成 → `OnStaffAssigned` 發布、payload 含 `{ instanceID, oldBuildingID, newBuildingID }`
+- **AC-44**：狀態機切換 → `OnStaffStateChanged` 發布、payload 含 `{ instanceID, oldState, newState }`
+- **AC-45**：所有事件於系統降級期間（`IsStaffSystemUnlocked() == false`）**不發布**
+
+### 8.10 效能與規模（Performance / Scale）
+
+- **AC-46**：roster `Count == ROSTER_CAP`（99）時，5 個加成 API 回應時間 < 1 ms（內部 O(N) 遍歷）
+- **AC-47**：`currentCandidates.Count == N` + `reservedCandidates.Count == maxReserve` 同時持久化、FT-10 序列化 / 反序列化 round-trip 後資料完整一致
 
 ---
 
@@ -1104,6 +1370,10 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | **Batch B v2 宏觀對齊** | ✅ | M1 池架構 / M2 閘機制 / M3 刷新模型 / M4 保留機制 / M5 保底範圍（詳 A.2.1）|
 | **Pre-§4 阻斷項對齊** | ✅ | C1 FT-07 職員休息室 maxLevel=5 擴張 / C2 `StaffPlayerState` schema / C3 `CandidateCard` schema（詳 A.2.1b） |
 | §4 公式（Formulas） | ✅ | §4.1 面試系統（9 公式）/ §4.2 效果聚合上限 / §4.3 薪水公式（每日 Dict + 總額 + 離線補發）|
+| §5 邊緣案例（Edge Cases） | ✅ | 6 大類：時間異常 / 面試流程 / 保底邊界 / 薪水邊界 / 資料驗證 / 系統閘 |
+| §6 依賴關係（Dependencies） | ✅ | 6.1~6.6：上游 / 下游 / 事件 / 資料表 / 共享常數 / 雙向聲明同步表 |
+| §7 可調參數（Tuning Knobs） | ✅ | 7.1~7.5：CSV 表 / 系統常數 / FT-07 同步參數 / 不可調 / 平衡建議 |
+| §8 驗收標準（Acceptance Criteria） | ✅ | AC-1 ~ AC-47 跨 10 子節（系統閘 / 刷新 / 池切換 / 保底 / 錄用 / 聚合 / 薪水 / 驗證 / 事件 / 效能） |
 | 跨系統副作用 | 📋 待整批處理 | game-concept.md 已補 Post-Jam 人事系統構想；FT-01 §6.1 / P-02 §6.1 反向依賴延後 |
 
 ### A.2 Batch B v2 — 重啟對齊計畫
@@ -1360,19 +1630,28 @@ Batch C 涵蓋 §3.7 ~ §3.13：
 
 > FT-08 整體通過（§1~§8 全部完成）後一次處理，避免中途重工。
 
-- [ ] **FT-01 §6.1**：補上游「FT-08 `GetRecruitRefreshReductionSec()`」；刷新間隔公式改寫 `actualInterval = FT07.GetRecruitRefreshInterval() - FT08.GetRecruitRefreshReductionSec()`
-- [ ] **FT-03 §5 / §6**：若 §3.6 聚合上限影響現有 AC-ND3-04 行為，補反向一致性檢查
-- [ ] **FT-05 §6 / §7**：補登記 FT-08 為 `OnStaffSalaryDue` 發布者（現已預留契約但 §6 未列）；確認 `GetAccountantPenaltyBonus` 的 slot 條件（保險櫃）與 FT-08 §3.6.2 實作對齊
-- [ ] **FT-07 §3.7 / §7**：`BuildingTable.slotCount` 欄位（DevLog 決定「全 6 棟加 slotCount」）目前尚未加入 FT-07 §7 schema，需補
+**已完成（2026-04-25 本 session 寫入）：**
+
+- [x] ✅ **FT-01 §6.1 / §4.1 / §5.3 / §8**：補上游 FT-08 `GetRecruitRefreshReductionSec()`；§4.1 `CheckAutoRefresh` 改寫納入減量；§5.3 補 2 條 edge case（FT-08 解鎖 / 極端減量 clamp 至 MIN）；§8 補 AC-AR-18 / AC-AR-19（2026-04-25 本 session）
+- [x] ✅ **FT-03 §5 / §6**：FT-03 §6 已存在 `GetStaffWillingnessBonus` 並於 §3 / §6.1 / §6.5 / §6.6 多處引用 FT-08；§3.6 聚合上限不影響現有 AC-ND3-04 行為（2026-04-25 grep 驗證）
+- [x] ✅ **FT-05 §6.6 反向依賴**：`[ ] FT-08 Guild Staff` 改 `[x]`，註明 FT-08 §6.3 / §3.6 / §4.2 對應條目；§3.1.3 / §3.9.1 `perStaffSalary` key 由 `staffID` 改寫為 `instanceID`，與 FT-08 §4.3.1 對齊（2026-04-25 本 session）
 - [x] ✅ **FT-07 §3.2 / §5.7 / §7.1 / §7.3**：職員休息室 `BuildingTable[6]` `maxLevel` 由 `1` 擴張為 `5`，補 L2~L5 `upgradeData`（`effectValue` = 自動刷新間隔秒數、L1=86400 → L5=21600）（2026-04-25 本 session 寫入）
 - [x] ~~**FT-07 §3.x / §7**：新增 `GetBuildingLevel(int buildingID) : int` API~~ —— 更正：此 API 已於 FT-07 §3.4 / §6.1 存在（line 104），無需新增，僅需確認 `buildingID=6` 的查詢契約；已於 C1 擴張中確認覆蓋
-- [ ] **P-02 §6.1 / §面試 UI 章節（若已建）**：登記面試欄 UX 意圖——簡歷卡大頭照呈現、上下滑翻動特效（上滑 = 錄用 + 蓋紅印章、下滑 = 不錄用 + 蓋印章）、保留按鈕 disable 條件（`reserveConsumedFlag == true`）；此為 FT-08 資料語意的視覺表現層需求，P-02 設計階段展開
-- [ ] **P-02 §6.1**（若已建）：補「FT-08 `IsStaffSystemUnlocked()` + `IsSuccessRatePreviewEnabled()`」
-- [ ] **FT-10 §6.1**（若已建）：補 `StaffInstance` + `StaffPlayerState` + `CandidateCard`（含 `reserveConsumedFlag`）序列化
-- [ ] **systems-index.md `SystemConstants` 欄位**：補 `EFFECT_MAX_*` 系列常數
-- [ ] **systems-index.md 資料表清單**：補 `uiFlagIDs` / `uiFlagBuildingIDs` 欄位於 `StaffTable` 描述
-- [ ] **systems-index.md 資料表清單**：補 `StaffGachaPoolTable` 完整 schema（`poolID` PK + `[min,max]GuildLevel` + `staffWeights` + `reserveTimeLimitSec` + 5 預留閘欄位）+ `maxReserve` 公式 + `reserveConsumedFlag`
-- [ ] **`/design-review` FT-08**：Batch C 完成後執行
+- [x] ✅ **systems-index.md FT-08 條目升級**：FT-08 列表狀態 `待設計` → `🟡 主結構完成`；依賴圖節點補完整 5 個對外 API + 上下游箭頭；資料表清單補 `StaffGachaPoolTable` / `StaffRefreshCostTable` / `StaffRarityProbTable` / `TrashItemTable` / `StaffTuning`；進度表 GDD 欄改 🟡（2026-04-25 本 session）
+
+**待處理：**
+
+- [ ] **FT-07 §3.7 / §7**：`BuildingTable.slotCount` 欄位（DevLog 決定「全 6 棟加 slotCount」）目前尚未加入 FT-07 §7 schema，需補
+- [ ] **systems-index.md `SystemConstants` 欄位**：補 `EFFECT_MAX_*` 系列常數說明（FT-08 §7.2 已定義為 `StaffTuning` 表內，但 SystemConstants 表頭目前無對應註記）
+- [ ] **`/design-review` FT-08**：§3.3~§3.5 + Batch C 完成後執行
+
+**延後至對方 GDD 創建時補（FT-10 / P-02 GDD 截至 2026-04-25 尚未建立）：**
+
+- [ ] **FT-10 §6.1（GDD 創建時）**：補 `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` 序列化契約（schema 詳見 FT-08 §3.1 / §3.2.3 / §3.2.3 內 `CandidateCard`）；含 `reserveConsumedFlag` 永久化、`pityCounter` 跨會話累積、`lastAutoRefreshTimestamp` 全域單一計時器；驗證規則：`staffID > 0 → rolledRarity == StaffTable[staffID].rarity` / `staffID XOR trashItemID`，違規拋 `CandidateCardValidationException`
+- [ ] **P-02 §6.1（GDD 創建時）面試 UI UX**：登記面試欄 UX 意圖——簡歷卡大頭照呈現、上下滑翻動特效（上滑 = 錄用 + 蓋紅印章、下滑 = 不錄用 + 蓋印章）、保留按鈕 disable 條件（`reserveConsumedFlag == true`）、手動刷新按鈕 0.5s disable 防呆；6 個面試 action API 對應（`TryRecruit` / `TryRejectCandidate` / `TryReserveCandidate` / `TryReleaseReserve` / `TryManualRefresh` / `TrySwitchPool`）
+- [ ] **P-02 §6.1（GDD 創建時）委託板 UI**：補「FT-08 `IsStaffSystemUnlocked()` 閘控 + `IsSuccessRatePreviewEnabled()` 顯示成功率預估數字」；委託板顯示成功率時呼叫此 API
+- [ ] **P-02 §6.1（GDD 創建時）名冊 UI**：訂閱 `OnStaffHired` / `OnStaffFired` / `OnStaffAssigned` / `OnStaffStateChanged` 更新名冊顯示
+- [ ] **P-03 §6.1（GDD 創建時）**：訂閱 `OnStaffHired` / `OnStaffFired` / `OnStaffSalaryDue` 等事件，依模板渲染通知 toast
 
 ### A.5 Session 恢復 checklist
 

@@ -120,7 +120,7 @@ FT-05 發布三類金流事件，各自攜帶獨立的 Breakdown 結構。皆為
 
 | 欄位 | 型別 | 說明 |
 |------|------|------|
-| `items` | `Dictionary<int, int>` | 各職員薪水細項：`staffID → salary`（由 FT-08 傳入） |
+| `items` | `Dictionary<int, int>` | 各職員薪水細項：`instanceID → salary`（由 FT-08 傳入；key 為 FT-08 內部 `instanceID`，FT-05 僅 iterate sum 不關心 key 語意） |
 | `totalAmount` | `int` | 合計扣款 |
 | `netDelta` | `int` | = `-totalAmount` |
 | `goldBefore` | `int` | 扣款前金幣快照 |
@@ -377,7 +377,7 @@ ExecuteGoldFlow(breakdown):                              // breakdown 為 Commis
 | 欄位 | 型別 | 說明 |
 |------|------|------|
 | `dueTimestamp` | `long` | 應扣款時刻的 UTC Unix seconds |
-| `perStaffSalary` | `Dict<int, int>` | `staffID → salary`，由 FT-08 查 `StaffTable` 計算 |
+| `perStaffSalary` | `Dict<int, int>` | `instanceID → salary`，由 FT-08 對 roster 內每個 `StaffInstance` 查 `StaffTable[s.staffID].salary` 組裝；key 為 FT-08 內部 `instanceID`，FT-05 僅 iterate sum 不關心 key 語意 |
 | `totalAmount` | `int` | 合計 |
 
 **發布者**：FT-08 Guild Staff（協同 F-02 Time System 定期 tick）。
@@ -797,7 +797,7 @@ FT-05 通過後，以下 GDD 需補雙向依賴聲明：
 
 **待設計系統（對應 GDD 開工時再補）：**
 - [ ] **FT-07 Guild Building** — 登記為 `OnGuildMaintenanceDue` 發布者 + `GetBuildingPenaltyBonus()` API
-- [ ] **FT-08 Guild Staff** — 登記為 `OnStaffSalaryDue` 發布者 + `GetAccountantCommissionBonus()` / `GetAccountantPenaltyBonus()` API；內部處理「會計已招募 AND 已指派預備金保險櫃」判斷
+- [x] **FT-08 Guild Staff** — 已於 FT-08 §6.3 登記為 `OnStaffSalaryDue(long dueTimestamp, Dictionary<int,int> perStaffSalary, int totalAmount)` 發布者；§3.6 / §6.2 提供 `GetAccountantCommissionBonus()` / `GetAccountantPenaltyBonus()` API（系統未解鎖回 0）；內部「會計已招募 AND 指派 slot=5 保險櫃」判斷見 FT-08 §3.6（Effect Aggregation）+ §4.2（cap 公式）
 - [ ] **P-02 Main UI** — 訂閱 FT-05 四事件，渲染金幣動畫與明細視窗
 - [ ] **P-03 Notification** — 訂閱 FT-05 四事件，依 `bankruptcyStateBefore/After` 對照表選模板
 - [ ] **未來 FT-11 Offline Resolver** — 登記為 `OnCommissionAccepted(source = OfflineAutoPick)` 發布者

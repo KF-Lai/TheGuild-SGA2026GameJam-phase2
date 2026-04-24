@@ -55,7 +55,15 @@
 
 ## 設計文檔
 
-完整的系統設計文檔在 `design/gdd/`：
+完整的系統設計文檔在 `design/GDD/`，CSV 表格規格書在 `design/data-specs/`。
+
+## 使用 Claude Code 開發
+
+本專案的 `CLAUDE.md` 刻意不重述通用規範，依賴使用者全域設定：
+
+- 需先在 `~/.claude/CLAUDE.md`（使用者層級 global config）放入「程式碼行為準則」與「Codex MCP 協作規範」
+- 若 clone 本專案後 Claude Code 行為與預期不符（例如不走 Codex 分級流程、沒有 surgical changes 等原則），請檢查 global config 是否存在並包含上述規範
+- Project 層的 `CLAUDE.md` 只定義**本專案專屬**的事（目錄結構、語言規範、MCP 綁定），其他一律繼承 global
 
 ## 未來規劃
 

@@ -113,13 +113,17 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 ```
 CheckAutoRefresh():
     now = F-02 TimeSystem.NowUTC
-    intervalSec = (long)FT07.GetRecruitRefreshInterval().TotalSeconds  // 招募廣告欄建設等級決定
+    baseSec = (long)FT07.GetRecruitRefreshInterval().TotalSeconds  // 招募廣告欄建設等級決定
+    reductionSec = FT08.GetRecruitRefreshReductionSec()             // 公會櫃臺職員 slot effect；FT-08 缺席時為 0
+    intervalSec = max(baseSec - reductionSec, MIN_RECRUIT_REFRESH_INTERVAL_SEC)  // 強制下限避免刷新近乎即時
     if now >= _lastRefreshTimestamp + intervalSec:
         ExecuteRefresh()
         _lastRefreshTimestamp = now
 ```
 
 > 離線回補：重啟時呼叫一次 `CheckAutoRefresh()`，若已到期則刷新一次。不補算中間錯過的多次刷新。
+>
+> **FT-08 加成**：`FT08.GetRecruitRefreshReductionSec()` 為公會櫃臺指派職員的 `RecruitRefreshOnCounter` slot effect 加總（已套用 §3.6.3 cap，預設上限 14400 秒 / 4h）。FT-08 系統未解鎖（`IsStaffSystemUnlocked() == false`）時固定回 0，公式照常運作。`MIN_RECRUIT_REFRESH_INTERVAL_SEC` 建議 `3600`（1h），避免極端配置使刷新近乎即時失去等待感。
 
 ---
 
@@ -248,6 +252,8 @@ GeneratePool(rankPool, poolSize):
 | 離線超過多個刷新週期（如離線 72h，刷新間隔 24h） | 僅執行一次刷新，不補算中間錯過的週期 |
 | 離線跨越每日重置時間（00:00） | 重啟時由 F-02 觸發每日重置事件，`_freeRefreshRemaining` 重置為 1 |
 | 手動刷新與自動刷新幾乎同時觸發 | 手動刷新重置 `_lastRefreshTimestamp`，自動刷新的 `CheckAutoRefresh` 判定未到期，不會重複刷新 |
+| FT-08 未解鎖（職員系統未啟用）| `FT08.GetRecruitRefreshReductionSec()` 回 0；公式 `intervalSec = baseSec - 0 = baseSec`，與 FT-08 缺席時行為一致 |
+| FT-08 加成超過 `baseSec - MIN_RECRUIT_REFRESH_INTERVAL_SEC`（極端配置）| `intervalSec` 截斷為 `MIN_RECRUIT_REFRESH_INTERVAL_SEC`（1h 下限），不會出現負值或 0 間隔 |
 
 ---
 
@@ -274,6 +280,7 @@ GeneratePool(rankPool, poolSize):
 | C-05 Trait System | 隨機生成冒險者時抽特質 | `GetProfessionGroups(professionID)`、`RollTraits(group)` |
 | FT-06 Guild Core | 可招募最高階級（老手邀請階級上限） | `GetMaxDifficulty()` |
 | FT-07 Guild Building System | 名冊容量上限、招募刷新間隔 | `GetRosterCap()`、`GetRecruitRefreshInterval()` |
+| FT-08 Guild Staff System | 公會櫃臺職員 slot effect：減少招募刷新秒數 | `GetRecruitRefreshReductionSec() : int`（系統未解鎖時回 0）|
 
 ---
 
@@ -291,6 +298,7 @@ GeneratePool(rankPool, poolSize):
 - FT-01 依賴 C-02 建立實例與加入名冊，C-02 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 FT-06 查詢老手邀請階級上限，FT-06 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 FT-07 查詢名冊容量與刷新間隔，FT-07 不依賴 FT-01——**無循環依賴**
+- FT-01 依賴 FT-08 查詢櫃臺職員的招募刷新減量，FT-08 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 F-03 扣款，F-03 不依賴 FT-01——**無循環依賴**
 
 ## 7. 可調參數（Tuning Knobs）
@@ -360,3 +368,5 @@ GeneratePool(rankPool, poolSize):
 | AC-AR-15 | `isUnique=1` 的模板已在名冊中（含 Dead），刷新時該模板不出現在候選池中 |
 | AC-AR-16 | 同一批次候選池內不出現重複的 `templateID` |
 | AC-AR-17 | `RollVeteranRank` 呼叫 1000 次（公會 Lv5，全階級開放），D 出現率約 40%、S 出現率約 3%（允許 ±5% 誤差） |
+| AC-AR-18 | FT-08 未解鎖（`FT07.GetBuildingLevel(6) == 0`）時，`FT08.GetRecruitRefreshReductionSec()` 回 0，`intervalSec == FT07.GetRecruitRefreshInterval().TotalSeconds`（無減量套用） |
+| AC-AR-19 | FT-08 解鎖且 1 位櫃臺職員帶 `RecruitRefreshOnCounter = 7200`（2h）並指派至公會櫃臺，`baseSec = 86400` 時 `intervalSec = 86400 − 7200 = 79200`；移除指派或職員轉 OnLeave 後 `intervalSec` 回到 `86400` |

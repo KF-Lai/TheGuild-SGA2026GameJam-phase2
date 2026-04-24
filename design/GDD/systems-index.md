@@ -45,7 +45,7 @@ _狀態：草稿_
 | FT-05 | **Guild Gold Flow**        | 公會全金流統一執行：預收、結算、維護費、薪水；破產狀態轉移快照 | ✅ 已設計 | `SystemConstants`                         |
 | FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、可接難度上限、Game Over 流程、公會基礎狀態 | ✅ 已設計 | `GuildLevelTable`                         |
 | FT-07 | **Guild Building System**  | 6 棟可升級建築、雙軌閘門（金幣+聲望）、效果值 API（名冊/並行任務/刷新間隔/破產倒數） | ✅ 已設計 | `BuildingTable`                           |
-| FT-08 | **Guild Staff System**     | 3 種職員、面試招募、被動/指派加成                              | 待設計    | `StaffTable`                              |
+| FT-08 | **Guild Staff System**     | 多池抽卡面試（A/B 池）、保底、保留、3 種職員效果聚合、每日薪水管線 | ✅ 已設計（Jam 版主結構：§1~§2 / §3.1~§3.2 / §3.6 / §4~§8 完成；§3.3~§3.5 + §3.7~§3.13 待補） | `StaffTable`, `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffTuning`, `StaffPlayerState` |
 | FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情節點                              | 待設計    | `FactionRouteTable`, `StoryNodeTable`     |
 | FT-10 | **Save/Load System**       | Unity 本地存檔、離線計算                                       | 待設計    | —                                         |
 | FT-11 | **Offline Resolver**       | 離線期間 NPC 自主接單追認、結算回補、金流批次補算              | 待設計（Jam 範疇外，佔位） | `SystemConstants`（`OFFLINE_MAX_SECONDS`） |
@@ -96,7 +96,12 @@ Feature 層
 │                            (預收 + 結算 + 維護費 + 薪水，走 AddGoldAllowBankruptcy)   │
 │  FT-06 Guild Core ──────► F-03 (聲望門檻判定)                                       │
 │  FT-07 Guild Building ──► FT-06 (聲望閘), F-03 (金幣扣款)；提供容量 API 給 FT-01/FT-02 │
-│  FT-08 Guild Staff ─────► FT-06, FT-07 (等級需求 + 指派欄位需建築)                  │
+│  FT-08 Guild Staff ─────► FT-06 (主閘 minGuildLevel), FT-07 (職員休息室 maxLevel=5  │
+│                            驅動自動刷新間隔)；發布 OnStaffSalaryDue → FT-05 扣款；   │
+│                            提供 GetRecruitRefreshReductionSec → FT-01 招募刷新       │
+│                            提供 GetStaffWillingnessBonus → FT-03                     │
+│                            提供 GetAccountantCommissionBonus / Penalty → FT-05       │
+│                            提供 GetSuccessRatePreviewFlag → P-02 委託板              │
 │  FT-09 Faction Story ───► FT-04, C-01 (結算觸發 + styleTag)                        │
 │  FT-10 Save/Load ───────► ALL (序列化所有系統狀態)                                   │
 │  FT-11 Offline Resolver ► F-02, FT-02, FT-03, FT-04, FT-05（未來 / Jam 範疇外）       │
@@ -179,7 +184,12 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | `ReputationDeltaTable`     | difficulty       | successDelta, failDelta                                                                | —                                                         |
 | `GuildLevelTable`          | level            | title, reputationThreshold, maxDifficulty                                              | —                                                         |
 | `BuildingTable`            | (buildingID, level) | name, maxLevel, effectValue, upgradeCost, guildLevelReq                             | —                                                         |
-| `StaffTable`               | staffID (int)    | name, passiveEffect, slotEffect, slotBuildingID, recruitCost, guildLevelReq, factionID | buildingID, FactionRouteTable                             |
+| `StaffTable`               | staffID (int)    | name, rarity, salary, severancePay, isFiller, factionID, effectIDs, effectValues, slotBuildingIDs, uiFlagIDs, uiFlagBuildingIDs（見 FT-08 §3.2.1） | buildingID, FactionRouteTable                             |
+| `StaffGachaPoolTable`      | poolID (int)     | poolName, eligibleStaffIDs (CSV list), minGuildLevel, maxGuildLevel, reserveTimeLimitSec, 5 個預留閘欄位（見 FT-08 §3.2.2） | staffID, FT-06 guildLevel                                  |
+| `StaffRefreshCostTable`    | refreshCount     | manualRefreshCost（見 FT-08 §4.1.2） | —                                                         |
+| `StaffRarityProbTable`     | rarity (1~5)     | baseProbability（見 FT-08 §4.1.5） | —                                                         |
+| `TrashItemTable`           | trashItemID (int) | name, description, drawWeightTier1~5（見 FT-08 §3.5） | —                                                         |
+| `StaffTuning`              | key              | value（FT-08 專屬常數：EFFECT_MAX_*, PITY_THRESHOLD, REALLOCATING_AUTO_LEAVE_SECONDS, BUILDING_SWITCH_COOLDOWN_SECONDS, ROSTER_CAP；見 FT-08 §7.2） | —                                                         |
 | `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq                   | —                                                         |
 | `MissionPoolWeights`       | dangerLevel      | weightF_E, weightD, weightC, weightB, weightA, weightS_SSS                             | —                                                         |
 | `BankruptcyThresholdTable` | reputationMin    | reputationMax, warningDurationSec                                                      | —                                                         |
@@ -295,7 +305,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-05 Guild Gold Flow           | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
 | FT-06 Guild Core                | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
 | FT-07 Guild Building System     | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-08 Guild Staff System        | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
+| FT-08 Guild Staff System        | ✅   | 🟡 主結構完成（§3.3~§3.5 + §3.7~§3.13 待補）  | ⬜         | ⬜   | ⬜   |
 | FT-09 Faction Story System      | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
 | FT-10 Save/Load System          | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
 | FT-11 Offline Resolver          | ⬜   | ⬜  | ⬜         | ⬜   | ⬜   |
