@@ -481,6 +481,20 @@ if effectiveScore < ACCEPTANCE_THRESHOLD(0.25) → 拒絕
 - 指派欄位需要對應公會建設已解鎖（櫃台小姐→公會櫃臺、委託官→委託板、會計→預備金保險櫃）
 
 > 詳細設計待 `/design-system guild-staff` 補完。
+>
+> **實作更新（2026-04-24）**：本節 3 種具名職員的設計已於 FT-08 GDD 改為 **gacha + tag 聚合**架構——職員面試系統採隨機招募池，職能以 `StaffTable.tags`（CSV list）表達，對外仍暴露同名加成 API（`GetStaffWillingnessBonus` / `GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus`）。本節表格保留為**設計意圖參考**；最新規格以 `[FT-08] guild-staff-system.md` 為準。
+
+**Post-Jam 擴充構想：人事系統（Human Resources System）**
+
+> 2026-04-24 於 FT-08 GDD Section 2 討論時確認。Jam 版 FT-08 聚焦「面試驚喜」+「加成可見」（E1 Sensation + E4 Mastery），以下三項情緒面向延後至 Post-Jam，整合為「人事系統」玩法：
+
+- **收集欲 / 圖鑑完成感（E2 Expression + Discovery）**：職員有陣營、tag、rarity 的組合，玩家可透過圖鑑追蹤蒐集進度；稀有 tag 組合（如「會計 + 委託官雙職能」）成為收集目標，重複面試動機由此而生
+- **班表感 / 排班經營（E5 Mastery + Fantasy）**：職員三態（工作中 / 再分配 / 休假）的細部管理升級為主動排班——玩家可設定輪班時間表、預排休假、指定何時切換 slot；職員疲勞值 / 好感度可能影響產出
+- **薪水壓力 / 破產倒數（E7 Challenge + Submission）**：職員薪水與戰力、滿意度連動——高階職員薪水高但加成多；低薪職員可能因不滿而離職、罷工；破產前的「薪水是否發得出來」成為核心張力
+
+**三角平衡玩法核心**：排班 ↔ 薪水預算 ↔ 職員隊伍組成——三者任一失衡都會引發連鎖後果（排班過密 → 疲勞 → 加成失效；薪水過低 → 離職潮 → 人力斷層；隊伍組成單一 → 加成不均 → 結算體感單調）。
+
+> Jam 版僅保留此系統的最小骨幹：`StaffTable.salary` 欄位、休假態不支薪、每日 UTC 06:00 發薪管線。進階玩法（主動排班、疲勞 / 好感度、離職 / 罷工、圖鑑）全數延後。
 
 ### 陣營劇情系統（Faction Story System）— Phase 2 新增
 
