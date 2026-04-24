@@ -30,9 +30,11 @@ namespace Tests.EditMode.Core.Time
 
             GameObject dmGo = new GameObject("DataManager_Test");
             _dataManager = dmGo.AddComponent<DataManager>();
+            _dataManager.InitializeForTests();
 
             GameObject tsGo = new GameObject("TimeSystem_Test");
             _timeSystem = tsGo.AddComponent<TimeSystem>();
+            _timeSystem.InitializeForTests();
         }
 
         [TearDown]
@@ -193,6 +195,7 @@ namespace Tests.EditMode.Core.Time
             EventBus.Subscribe<OnOfflineResolvedEvent>(e => got = e.OfflineSeconds);
 
             _timeSystem.Initialize(_now - (8L * 24L * 3600L));
+            _timeSystem.ConfirmOfflineResolution();
 
             Assert.AreEqual(604800L, got);
         }

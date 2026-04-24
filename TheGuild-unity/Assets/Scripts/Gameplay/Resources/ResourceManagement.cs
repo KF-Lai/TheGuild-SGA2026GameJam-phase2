@@ -305,6 +305,7 @@ namespace TheGuild.Gameplay.Resources
         {
             if (Instance != null)
             {
+                Instance.UnsubscribeEvents();
 #if UNITY_EDITOR
                 DestroyImmediate(Instance.gameObject);
 #else
@@ -314,7 +315,18 @@ namespace TheGuild.Gameplay.Resources
             }
         }
 
+        internal void InitializeForTests()
+        {
+            InitializeInstance();
+            SubscribeEvents();
+        }
+
         private void Awake()
+        {
+            InitializeInstance();
+        }
+
+        private void InitializeInstance()
         {
             if (Instance != null && Instance != this)
             {
@@ -323,7 +335,10 @@ namespace TheGuild.Gameplay.Resources
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             LoadConfig();
             _currentGold = _goldInitial;
@@ -340,11 +355,21 @@ namespace TheGuild.Gameplay.Resources
 
         private void OnEnable()
         {
+            SubscribeEvents();
+        }
+
+        private void SubscribeEvents()
+        {
             EventBus.Subscribe<OnSecondTickEvent>(HandleSecondTick);
             EventBus.Subscribe<OnOfflineResolvedEvent>(HandleOfflineResolved);
         }
 
         private void OnDisable()
+        {
+            UnsubscribeEvents();
+        }
+
+        private void UnsubscribeEvents()
         {
             EventBus.Unsubscribe<OnSecondTickEvent>(HandleSecondTick);
             EventBus.Unsubscribe<OnOfflineResolvedEvent>(HandleOfflineResolved);
@@ -452,6 +477,10 @@ namespace TheGuild.Gameplay.Resources
             if (_warningState != BankruptcyWarningState.Warning)
             {
                 EnterWarning();
+            }
+            else
+            {
+                _warningDurationSec = LookupWarningDuration(_currentReputation);
             }
         }
 

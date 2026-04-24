@@ -230,10 +230,12 @@ namespace Tests.EditMode.Core.Data
             DataManager.SetTableTextProviderForTests(_ => null);
 
             GameObject go1 = new GameObject("DataManager_1");
-            go1.AddComponent<DataManager>();
+            DataManager manager1 = go1.AddComponent<DataManager>();
+            manager1.InitializeForTests();
 
             GameObject go2 = new GameObject("DataManager_2");
-            go2.AddComponent<DataManager>();
+            DataManager manager2 = go2.AddComponent<DataManager>();
+            manager2.InitializeForTests();
 
             yield return null;
 
@@ -301,6 +303,7 @@ namespace Tests.EditMode.Core.Data
 
             GameObject go = new GameObject("DataManager_DuplicateRegister");
             DataManager manager = go.AddComponent<DataManager>();
+            manager.InitializeForTests();
 
             ReplacementTableData row = manager.Get<ReplacementTableData>("row1");
             Assert.IsNotNull(row);
@@ -341,7 +344,9 @@ namespace Tests.EditMode.Core.Data
             registerAction?.Invoke();
 
             GameObject go = new GameObject("DataManager_Test");
-            return go.AddComponent<DataManager>();
+            DataManager manager = go.AddComponent<DataManager>();
+            manager.InitializeForTests();
+            return manager;
         }
 
         [Serializable]

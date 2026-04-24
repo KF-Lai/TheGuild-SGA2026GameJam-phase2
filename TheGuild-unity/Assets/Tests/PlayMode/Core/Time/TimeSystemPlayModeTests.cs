@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
+using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.Time;
 using UnityEngine;
@@ -9,6 +12,8 @@ namespace Tests.PlayMode.Core.Time
 {
     public sealed class TimeSystemPlayModeTests
     {
+        private DataManager _dm;
+        private GameObject _dmGo;
         private TimeSystem _timeSystem;
 
         [SetUp]
@@ -16,6 +21,20 @@ namespace Tests.PlayMode.Core.Time
         {
             EventBus.ClearAll();
             TimeSystem.ResetTestHooks();
+
+            typeof(DataManager).GetMethod("ResetForTests", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+            typeof(DataManager).GetMethod("SetTableTextProviderForTests", BindingFlags.Static | BindingFlags.NonPublic).Invoke(
+                null,
+                new object[]
+                {
+                    (Func<string, string>)(name =>
+                        name == "SystemConstants"
+                            ? "key,value,description\nDAILY_RESET_HOUR,0,h\nOFFLINE_MAX_SECONDS,604800,c\n"
+                            : null)
+                });
+            DataManager.RegisterSystemConstantsTable("SystemConstants");
+            _dmGo = new GameObject("DM_TS_Play");
+            _dm = _dmGo.AddComponent<DataManager>();
         }
 
         [TearDown]
@@ -26,8 +45,17 @@ namespace Tests.PlayMode.Core.Time
 
             if (_timeSystem != null)
             {
-                Object.DestroyImmediate(_timeSystem.gameObject);
+                UnityEngine.Object.DestroyImmediate(_timeSystem.gameObject);
             }
+
+            if (_dmGo != null)
+            {
+                UnityEngine.Object.DestroyImmediate(_dmGo);
+            }
+
+            _dm = null;
+            _dmGo = null;
+            typeof(DataManager).GetMethod("ResetForTests", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
         }
 
         [UnityTest]

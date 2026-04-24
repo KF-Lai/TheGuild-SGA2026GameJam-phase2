@@ -1,10 +1,10 @@
 # Guild Staff System 系統設計文件
 
 _建立時間：2026-04-24_
-_狀態：草稿（逐節設計中 — §1 / §2 / §3.1 / §3.2 / §3.6 完成；§3.3 ~ §3.13 / §4 ~ §8 待設計）_
+_狀態：草稿（逐節設計中 — §1 / §2 / §3.1 / §3.2（含 §3.2.3）/ §3.6 完成；§3.3 ~ §3.13 / §4 ~ §8 待設計）_
 _系統 ID：FT-08_
 
-**🔖 下次接續入口**：§3 Batch B（§3.3 面試 / gacha、§3.4 保底、§3.5 垃圾物品）。請看檔末「附錄 A — WIP 進度與下次待解問題」。
+**🔖 下次接續入口**：**§4 公式（Formulas）**。Pre-§4 阻斷項 C1/C2/C3 已解決（FT-07 職員休息室 L2~L5 擴張 + FT-08 §3.2.3 `StaffPlayerState` / `CandidateCard`）；§3.3 ~ §3.5（面試流程 / 保底 / trash item）延後至 §4 後再寫。
 
 ---
 
@@ -31,15 +31,56 @@ _系統 ID：FT-08_
 
 ### A. 職員面試系統（Staff Interview System）
 
-玩家於職員休息室啟用後可透過職員面試錄取新職員入職：
+玩家於職員休息室 L1 啟用後可透過職員面試系統錄取新職員。系統採**多池並存 + 依公會等級逐階開放**的架構：
 
-- **單一常駐池**（Jam 版）：只有一個池（`poolID = 1`），不區分陣營、不切檔期
-- **池成員依公會等級切換**：`StaffGachaPoolTable` 以 `(poolID, guildLevel)` 為複合主鍵，每個公會等級對應一份 `eligibleStaffIDs: CSV list`——同一池在不同等級抽得到的職員名單不同（Lv1 名單較小、Lv5 名單最完整）
-- **依公會等級動態刷新費**：FT-06 `GetCurrentLevel()` 查 `StaffRefreshCostTable` 決定本次面試費用（Lv1→50g / Lv2→100g / Lv3+→300g，實際值見 §7）
-- **每次面試刷新多張候選**：張數隨公會等級遞增（§7 調參）
-- **稀有度權重**：1★40% / 2★25% / 3★15% / 4★15% / 5★5%，每 10 抽保底 5★（跨卡池保底不跨公會等級；Jam 版單池無此問題）
-- **垃圾物品（Trash Items）填充稀有度下層**：兩類—— flavor item（純 flavor、無加成）與平庸職員（低 tag 權重、僅壓稀有度分母）
-- **名冊上限**：Jam 版固定 99（無人資辦公桌建築）
+**池架構（Jam 版 2 池）**
+
+- **A 池（常駐通用，Lv1~Lv5）**：公會基礎人才庫，全程開放
+- **B 池（中高等，Lv3~Lv5）**：中期疊加開放，提供更高品質職員
+- 每池為 **category-agnostic 容器**——schema 不含 `poolType` / `factionTag` / `professionTag` 等分類欄位；池的定性由 `eligibleStaffIDs` 實際成員隱式決定（「中高等池」為設計意圖，非資料標籤）
+- **主閘**：`[minGuildLevel, maxGuildLevel]`（連續；DataManager 驗證 `min ≤ max`）
+- **預留閘**（FT-09 劇情解鎖 / 陣營 ID / 最低聲望 / 活動起止共 5 欄位）：Schema 前向相容，Jam 版**強制空值**；DataManager 若偵測到任一非預設值即拋 `StaffGachaPoolTableValidationException`
+
+**刷新模型（自動 + 手動並存獨立）**
+
+- **自動刷新**：免費、間隔依**職員休息室（`buildingID=6`）等級**決定（L1=86400s → L5=21600s 階梯，FT-07 §7）；計時器**全域單一**（`StaffPlayerState.lastAutoRefreshTimestamp`），切池**不重置**、延續倒數；離線跨多個觸發點**僅補刷 1 次**；計入保底 counter
+- **手動刷新**：付費（`StaffRefreshCostTable[guildLevel]`）、玩家任意觸發、**無 cooldown**（防呆由 P-02 UI disable 按鈕 0.5s 避免誤觸）；計入保底 counter
+- 兩者獨立並存，互不重置對方計時器
+- **切池副作用**：玩家切至另一池 → 前池未保留的候選**全部被新池 roll 結果覆蓋**（`currentCandidates` 不保留前池狀態）；已保留候選（`reservedCandidates`）跨池存活不受影響——保留區是跨池保留的**唯一**途徑
+
+**面試欄 UX（每張獨立三擇一）**
+
+- 每次刷新展示 N 張候選（N 依公會等級遞增，§7 調參）
+- 玩家對每張獨立三擇一：**錄用 / 不錄用 / 保留**
+  - **錄用** → 建立 `StaffInstance` 入名冊、支薪、提供 effect；該 slot **空置至下次刷新**
+  - **不錄用** → 該 slot **空置至下次刷新**（不立即補位，由玩家決定節奏）
+  - **保留** → 候選移入 `reservedCandidates`、不入名冊、不支薪、不提供 effect，下次刷新跳過該 slot
+- UX 呈現（簡歷大頭照、上下滑翻動特效、蓋印章 affordance）由 P-02 Main UI 負責；FT-08 僅定義三個 action 的資料語意
+- 保底 counter **每張候選 +1**（一次 refresh 使 counter += N，N = 當前面試欄張數）
+
+**保留機制**
+
+- 每池獨立保留時限（`StaffGachaPoolTable.reserveTimeLimitSec`）
+- 保留上限公式：`maxReserve = max(1, interviewSlotCount - 1)`（面試欄 = 1 時特例 = 1）
+- 時限到自動解除保留 → 下次刷新該候選被新候選取代
+- **`reserveConsumedFlag` 防刷機制**：候選一旦解除保留（手動取消 / 時限到）即永久失去再次保留資格，防止「保留 → 取消 → 保留」零成本循環繞過刷新費
+
+**稀有度 roll 與職員權重**
+
+- 稀有度基底權重：1★40% / 2★25% / 3★15% / 4★15% / 5★5%
+- **稀有度層空 → 動態歸一化**：`effectiveProb[r] = baseProb[r] / (1 − Σ baseProb[空層])`
+- 稀有度確定後 → 該層 `eligibleStaffIDs` 中依 `StaffGachaPoolTable.staffWeights`（平行 CSV、整數、允許 0）按權重 roll 具體職員
+
+**保底機制（10 抽保底 5★）**
+
+- Counter **跨池累積**（切池不失進度）
+- 公會升級**不 reset**（跨等級累積）
+- 保底觸發時若池中 5★ 空 → counter **不 reset**，本次仍走動態歸一化於一般層 roll，counter 繼續累積到下次池內 5★ 開放觸發
+- Counter 存放於 `StaffPlayerState`（§3.4）
+
+**垃圾物品填充**：flavor item（純風味、無加成）+ 平庸職員（`isFiller=true`、effect 低）；具體 roll 演算法與 `TrashItemTable` schema 見 §3.3 / §3.5
+
+**名冊上限**：Jam 版固定 99（無人資辦公桌建築）
 
 ### B. 職員運營（Staff Operations — Tag Aggregation & Assignment）
 
@@ -88,7 +129,7 @@ _系統 ID：FT-08_
 |---|---|
 | `StaffTable` | 職員模板（`staffID`, `name`, `rarity`, `salary`, `severancePay`, `isFiller`, `factionID`, `effectIDs`, `effectValues`, `slotBuildingIDs`, `uiFlagIDs`, `uiFlagBuildingIDs`；見 §3.2） |
 | `StaffRefreshCostTable` | 依公會等級的面試刷新費用 + 張數（PK = `guildLevel`） |
-| `StaffGachaPoolTable` | gacha 池配置（PK = `(poolID, guildLevel)`；欄位 `eligibleStaffIDs: CSV list` 依公會等級切換池成員） |
+| `StaffGachaPoolTable` | gacha 池配置（PK = `poolID`）；含 `[min,max]GuildLevel` 開放區間、`eligibleStaffIDs` + `staffWeights` 平行 CSV、`reserveTimeLimitSec`、5 個預留閘欄位（詳 §3.2.2） |
 | `StaffRarityProbTable` | 稀有度 1★~5★ 權重表 |
 | `TrashItemTable` | 垃圾物品（flavor item + 平庸職員）定義 |
 
@@ -173,7 +214,11 @@ StaffInstance {                                      // ↓ 持久化欄位（FT
   - 工作中即代表**目前佔用**的 slot
 - **保底 counter** 不放 `StaffInstance`（屬於 player-level 狀態），位置與細節見 §3.4。
 
-### 3.2 StaffTable Schema
+### 3.2 資料表 Schema
+
+本節涵蓋 FT-08 兩大主要資料表：`StaffTable`（§3.2.1，職員模板）與 `StaffGachaPoolTable`（§3.2.2，gacha 池配置）。其餘輔助表（`StaffRefreshCostTable` / `StaffRarityProbTable` / `TrashItemTable`）於 §3.3 ~ §3.5 各自章節定義。
+
+#### 3.2.1 StaffTable Schema
 
 **檔案位置**：`Assets/Resources/Data/StaffTable.csv`
 
@@ -249,6 +294,131 @@ StaffInstance {                                      // ↓ 持久化欄位（FT
 | 103 | 蘿絲·櫃台小姐 | 2 | 30 | 80 | false | 0 | `RecruitRefreshOnCounter` | `7200` | `4` | *(empty)* | *(empty)* |
 | 104 | 無名小職員 | 1 | 10 | 10 | true | 0 | `Willingness` | `0.01` | `0` | *(empty)* | *(empty)* |
 | 105 | 咖啡杯 | 1 | 0 | 0 | true | 0 | *(empty)* | *(empty)* | `0` | *(empty)* | *(empty)* |
+
+#### 3.2.2 StaffGachaPoolTable Schema
+
+**檔案位置**：`Assets/Resources/Data/StaffGachaPoolTable.csv`
+
+**Schema**：
+
+| 欄位 | 型別 | Jam 預設 | 說明 |
+|---|---|---|---|
+| `poolID` | int (PK) | — | 唯一池識別碼（Jam 版 1 = 常駐通用、2 = 中高等） |
+| `poolName` | string | — | 開發辨識名稱（不直接顯示於 UI） |
+| `minGuildLevel` | int | — | 該池開放的最低公會等級 |
+| `maxGuildLevel` | int | — | 該池開放的最高公會等級（DataManager 驗證 `≥ minGuildLevel`） |
+| `eligibleStaffIDs` | CSV list of int | — | 該池可 roll 的職員 `staffID` 清單 |
+| `staffWeights` | CSV list of int | — | 平行於 `eligibleStaffIDs`，每位職員在其稀有度層內的 roll 權重（整數 ≥ 0；0 = 保留不抽出） |
+| `reserveTimeLimitSec` | int | — | 本池候選的保留時限（秒；必須 > 0） |
+| `storyFlagRequired` | string | `""` | 🔒 FT-09 劇情 flag ID 預留欄；Jam 版強制空值 |
+| `factionIDRequired` | int | `0` | 🔒 FT-09 陣營 ID 預留欄；Jam 版強制 `0` |
+| `minReputation` | int | `0` | 🔒 聲望門檻預留欄；Jam 版強制 `0` |
+| `eventStartTimestamp` | long | `0` | 🔒 限時活動起始 UTC 時間戳預留欄；Jam 版強制 `0` |
+| `eventEndTimestamp` | long | `0` | 🔒 限時活動結束 UTC 時間戳預留欄；Jam 版強制 `0` |
+
+**DataManager 驗證規則**：
+
+1. `minGuildLevel ≤ maxGuildLevel` —— 否則拋 `StaffGachaPoolTableValidationException("poolID={id}: minGuildLevel 不得大於 maxGuildLevel")`
+2. `eligibleStaffIDs.Count == staffWeights.Count` —— 平行 CSV 長度必須一致
+3. 每個 `staffWeights[i] ≥ 0`；若 `sum(staffWeights) == 0` —— 拋錯（池無可抽項）
+4. `reserveTimeLimitSec > 0`
+5. 五個預留閘欄位（`storyFlagRequired` / `factionIDRequired` / `minReputation` / `eventStartTimestamp` / `eventEndTimestamp`）若任一 ≠ 預設值 —— 拋 `StaffGachaPoolTableValidationException("poolID={id}: Jam 版不支援此閘參數，請保持預設值")`
+
+**設計註記**
+
+- **Category-agnostic 容器**：Schema 刻意不含 `poolType` / `factionTag` / `professionTag` 欄位；池的定性（例如「中高等池」）由 `eligibleStaffIDs` 的實際成員隱式決定，為設計意圖而非資料分類
+- **職員與池解耦**：池開放/關閉僅影響未來面試結果；既有已錄取職員的 `StaffInstance` 與池無關、不受池狀態變動影響
+- **預留閘的前向相容動機**：Post-Jam 擴充 FT-09 劇情 / 活動系統時，只需改 DataManager 驗證邏輯與 runtime 閘判斷，無需改動 schema
+- **`staffWeights` 為稀有度層內權重**：稀有度由 `StaffRarityProbTable`（§3.3）先 roll 確定後，再於該層 `eligibleStaffIDs` 中按 `staffWeights` 比例 roll 具體職員
+
+**Jam 版資料範例**（具體數值 §7 調參）：
+
+| poolID | poolName | minGuildLevel | maxGuildLevel | eligibleStaffIDs | staffWeights | reserveTimeLimitSec |
+|---|---|---|---|---|---|---|
+| 1 | Common Pool | 1 | 5 | `101,102,103,104,105,...` | `10,10,10,5,1,...` | `604800`（7 天） |
+| 2 | Advanced Pool | 3 | 5 | `201,202,203,...` | `10,10,5,...` | `604800`（7 天） |
+
+（上表省略 5 個預留閘欄位；一律保持預設空 / 0）
+
+#### 3.2.3 Player State & Candidate Card Schemas
+
+本節定義 FT-08 的 player-level 狀態容器 `StaffPlayerState` 與面試候選卡資料結構 `CandidateCard`，用於保底 counter / nextInstanceID / 刷新計時器 / 候選保留等跨 `StaffInstance` 狀態。
+
+**`StaffPlayerState`**（全部持久化，FT-10 序列化）：
+
+```
+StaffPlayerState {
+    // 招募 counter
+    nextInstanceID               : int                   // StaffInstance 分配用；初始 1，遞增永不回收
+
+    // 保底 counter（跨池累積、公會升級不 reset，見 §3.4）
+    pityCounter                  : int                   // 初始 0；每張候選 +1
+
+    // 刷新計時器（全域單一；切池不重置；刷當前選中池）
+    lastAutoRefreshTimestamp     : long                  // 最近一次自動刷新的 UTC 時間戳
+
+    // 當前面試畫面
+    currentPoolID                : int                   // 玩家當前切到哪個池（需存檔記憶）
+    currentCandidates            : List<CandidateCard>   // 當前池的面試欄內容（N 張，N 依 guildLevel）
+
+    // 跨池保留區（空間獨立於 currentCandidates）
+    reservedCandidates           : List<CandidateCard>   // 被保留的候選（含 poolID 區分）
+}
+```
+
+**設計註記**
+
+- **單一全域 `lastAutoRefreshTimestamp`**：自動刷新計時器不區分池，到點時刷新 `currentPoolID` 指向的池；切池時計時器延續、不重置（玩家無法靠切池偷跑刷新節奏）
+- **`currentCandidates` 僅存當前池**：切池時被覆蓋為新池 roll 結果；前池未保留的候選一律丟失（設計規則：保留區是跨池保留的唯一途徑）
+- **無 `lastManualRefreshTimestamp`**：手動刷新無 cooldown、不需計時器
+- **離線補刷不追蹤**：離線回來時由 `lastAutoRefreshTimestamp` 反推已過幾個間隔，clamp 補 1 次（§3.3 計算時處理）
+
+---
+
+**`CandidateCard`**（全部持久化，FT-10 序列化）：
+
+```
+CandidateCard {
+    // 卡片識別
+    poolID                       : int                   // 所屬池（跨池保留區分用）
+    slotIndex                    : int                   // 面試欄位置 0..N-1（N 依 guildLevel）
+
+    // 內容（staffID 與 trashItemID 互斥，恰好一個為 0）
+    staffID                      : int                   // 職員 ID；0 = 此卡為 trash item
+    trashItemID                  : int                   // trash item ID；0 = 此卡為職員
+    rolledRarity                 : int                   // 1~5；trash item 固定 1
+    rolledTimestamp              : long                  // 被 roll 出的 UTC 時間戳
+
+    // 保留狀態
+    isReserved                   : bool                  // 是否處於保留狀態
+    reservedTimestamp            : long                  // 進入保留的 UTC 時間戳（0 = 未保留）
+    reserveConsumedFlag          : bool                  // 一旦解除保留即永久 true（防刷機制）
+}
+```
+
+**DataManager / runtime 驗證規則**
+
+- `(staffID > 0) XOR (trashItemID > 0)` —— 兩者必須恰好一個為 0（互斥）
+- `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` —— 職員卡稀有度必須對應模板
+- `0 ≤ slotIndex < N` —— N = 當前公會等級對應的面試欄張數（見 §3.3 刷新流程）
+- `isReserved == true → reservedTimestamp > 0`
+- `reserveConsumedFlag == true → isReserved == false` —— 永久化後不可再次保留
+
+**生命週期時點範例**（以 `staffID=101` 克勞德·會計師為例）：
+
+| 時點 | `isReserved` | `reservedTimestamp` | `reserveConsumedFlag` | 所在 list |
+|---|---|---|---|---|
+| 剛 roll 出 | `false` | `0` | `false` | `currentCandidates[2]` |
+| 玩家點「保留」 | `true` | `1714064400` | `false` | `reservedCandidates` |
+| 保留時限到 / 手動取消 | `false` | `0` | `true` | 回到 `currentCandidates[2]` |
+| 下次 refresh 刷掉 | — | — | — | 整張卡消失（含 `reserveConsumedFlag`） |
+
+**時點 3（保留解除後）的行為保證**（§5 Edge Cases 會引用）：
+
+- 解除保留後卡回到 `currentCandidates[slotIndex]` 佔回原 slot 位置
+- 玩家仍可對此卡選「錄用 / 不錄用」
+- 「保留」UI 按鈕必須 disable（因 `reserveConsumedFlag = true`）—— 由 P-02 根據此 flag 判斷
+- 下次 refresh 時無論是否已 `reserveConsumedFlag`，該 slot 被新 roll 覆蓋，原卡徹底消失
 
 ### 3.6 效果聚合加成計算（Effect Aggregation）
 
@@ -391,19 +561,515 @@ IsSuccessRatePreviewEnabled() → bool:
 
 ## 4. 公式（Formulas）
 
-[To be designed]
+> 本節將 §1 / §3 已口述之設計規則正式化為公式；所有公式之 runtime 引用見 §3 詳述（面試流程 §3.3 待寫、效果聚合 §3.6、薪水 §3.11 待寫）。符號慣例：`floor(·)` = 向下取整；`clamp(x, lo, hi) = min(max(x, lo), hi)`；`Σ` = 對 roster 或 effect list 求和；`[guildLevel]` 下標 = 以公會等級作 key 的 table 查詢。
+>
+> **降級前提**：以下所有公式於 `FT07.IsStaffSystemUnlocked() == false` 時不執行——面試 API 回 `STAFF_SYSTEM_LOCKED`、加成 API 回 `0` / `false`、薪水不發布（見 §3.6.5 / §3.12）。
+
+### 4.1 面試系統公式（Interview System Formulas）
+
+#### 4.1.1 面試欄張數 N（interview slot count）
+
+```
+N(guildLevel) = StaffRefreshCostTable[guildLevel].interviewSlotCount
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `guildLevel` | 玩家當前公會等級 | `1 ≤ guildLevel ≤ 5`（Jam 版）|
+| `N` | 本次 refresh 呈現的候選張數 | `1 ≤ N ≤ 5`（Jam 版建議上限 5，避免 UI 擁擠）|
+
+**範例**：`guildLevel = 3`、`StaffRefreshCostTable[3].interviewSlotCount = 4` → `N = 4`。該次 refresh 填滿 `currentCandidates[0..3]`。
+
+---
+
+#### 4.1.2 手動刷新費（manual refresh cost）
+
+```
+refreshCost(guildLevel) = StaffRefreshCostTable[guildLevel].cost
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `refreshCost` | 玩家主動付費刷新一次的金幣成本 | `refreshCost ≥ 0`（Jam 版建議 100 ~ 500 gold）|
+
+- 表查詢，不依賴 pool（刷新費與當前選中池無關）
+- 付款流程：扣款在 `TryManualRefresh()` 內部依序檢查 `GetGold() ≥ refreshCost` → 扣款 → 觸發 roll；不足回 `GOLD_INSUFFICIENT`
+
+**範例**：`guildLevel = 2`、`StaffRefreshCostTable[2].cost = 150` → 玩家點「刷新」時扣 150 gold，roll 出新的 N 張候選。
+
+---
+
+#### 4.1.3 自動刷新間隔（auto-refresh interval）
+
+```
+autoRefreshIntervalSec(L) = BuildingTable[6].upgradeData[L].effectValue
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `L` | 當前職員休息室等級；`L = FT07.GetBuildingLevel(6)` | `1 ≤ L ≤ 5`（`L = 0` 時系統鎖，不走此公式）|
+| `autoRefreshIntervalSec` | 自動刷新的秒數間隔 | `21600 ≤ interval ≤ 86400`（FT-07 §7.1 鎖定階梯）|
+
+**FT-07 階梯**（引用自 FT-07 §7.1）：L1=86400（24h）/ L2=64800（18h）/ L3=43200（12h）/ L4=28800（8h）/ L5=21600（6h）。
+
+**範例**：玩家升職員休息室至 L3 → `autoRefreshIntervalSec = 43200`（12 小時自動刷新一次）。
+
+---
+
+#### 4.1.4 離線補刷次數（offline refresh refill count）
+
+```
+missedIntervals  = floor((now - lastAutoRefreshTimestamp) / autoRefreshIntervalSec(L))
+refillCount      = clamp(missedIntervals, 0, 1)
+```
+
+補刷後更新：
+
+```
+IF refillCount == 1:
+    lastAutoRefreshTimestamp ← now     // 重置為 now，下個 interval 從 now 起算
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `now` | 登入時的 UTC 時間戳 | 大於 `lastAutoRefreshTimestamp`（時鐘異常見 §5）|
+| `lastAutoRefreshTimestamp` | `StaffPlayerState.lastAutoRefreshTimestamp` | 全域單一計時器（§3.2.3）|
+| `missedIntervals` | 離線期間理論應觸發的次數 | `≥ 0`；可能很大（例：離線 7 天 L1 = 7）|
+| `refillCount` | 實際補刷次數 | `clamp → {0, 1}` |
+
+**設計決策**：clamp 上限 1 而非累積補刷——防止長期離線回來看到爆炸性歷史候選堆積、UI 展示混亂；同時保底 counter 也只 +N 一次（不被離線放大）。補刷後 `lastAutoRefreshTimestamp ← now`（非 `+= intervalSec`）以讓玩家重置 cadence。
+
+**範例**：
+- `now = 1714000000`、`lastAutoRefreshTimestamp = 1713900000`、`L = 2`（`intervalSec = 64800`） → `missedIntervals = floor(100000 / 64800) = 1` → `refillCount = 1` → 補 1 次 refresh、更新 `lastAutoRefreshTimestamp = 1714000000`。
+- 離線 7 天後登入（`now - last = 604800`）、`L = 5`（`intervalSec = 21600`） → `missedIntervals = 28` → `refillCount = 1`（clamp）→ 玩家僅見一次新 refresh。
+
+---
+
+#### 4.1.5 稀有度動態歸一化（rarity dynamic normalization）
+
+**基底機率**（來自 `StaffRarityProbTable`）：
+
+```
+baseProb[1] = 0.40, baseProb[2] = 0.25, baseProb[3] = 0.15, baseProb[4] = 0.15, baseProb[5] = 0.05
+Σ baseProb = 1.00
+```
+
+**動態歸一化**（池中該層無職員時重新分配）：
+
+```
+emptyTiers       = { r | poolEligibleByRarity(poolID, r) == ∅ }
+normalizationDen = 1 − Σ_{r ∈ emptyTiers} baseProb[r]
+effectiveProb[r] = baseProb[r] / normalizationDen     (r ∉ emptyTiers)
+effectiveProb[r] = 0                                  (r ∈ emptyTiers)
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `poolEligibleByRarity(poolID, r)` | 池內稀有度 `r` 且 `staffWeights[i] > 0` 的職員子集 | 子集 |
+| `emptyTiers` | 該池空的稀有度集合 | `⊆ {1, 2, 3, 4, 5}` |
+| `normalizationDen` | 歸一化分母 | `(0, 1]`（至少一層非空時 > 0）|
+| `effectiveProb[r]` | 實際 roll 機率 | `[0, 1]`；`Σ effectiveProb = 1` |
+
+**設計約束**：`|emptyTiers| < 5`——池中**至少一層非空**（DataManager 驗證；全空池拋 `StaffGachaPoolTableValidationException`）。
+
+**範例**（池 B 中高等，假設 1★ / 2★ 層空、含 3★~5★）：
+- `emptyTiers = {1, 2}`
+- `normalizationDen = 1 − (0.40 + 0.25) = 0.35`
+- `effectiveProb[3] = 0.15 / 0.35 ≈ 0.4286`
+- `effectiveProb[4] = 0.15 / 0.35 ≈ 0.4286`
+- `effectiveProb[5] = 0.05 / 0.35 ≈ 0.1429`
+- 和 = 1.000 ✓
+
+---
+
+#### 4.1.6 稀有度層內職員權重（per-staff weight within rarity tier）
+
+稀有度 roll 確定 `rolledRarity = r*` 後，於該層內依權重 roll 具體 `staffID`：
+
+```
+tierStaff[r*]    = { (sID, w) | sID ∈ eligibleStaffIDs, StaffTable[sID].rarity == r*, w = staffWeights[indexOf(sID)] }
+tierWeightSum[r*] = Σ_{(sID, w) ∈ tierStaff[r*]} w
+
+P(staffID = sID | rolledRarity = r*) = w / tierWeightSum[r*]       (for (sID, w) ∈ tierStaff[r*])
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `r*` | 上一步 roll 出的稀有度 | `{1, 2, 3, 4, 5} \ emptyTiers` |
+| `w` | `StaffGachaPoolTable.staffWeights` 對應值 | 整數 `≥ 0`；`0 = 保留不抽出` |
+| `tierWeightSum[r*]` | 該層總權重 | `> 0`（動態歸一化已保證層非空）|
+
+**範例**（池 A 的 3★ 層：`eligibleStaffIDs = [101, 201, 301]`、`staffWeights = [10, 5, 0]`）：
+- `tierStaff[3] = { (101, 10), (201, 5), (301, 0) }`；301 權重 0 → 不抽出
+- `tierWeightSum[3] = 15`
+- `P(101 | rolledRarity = 3) = 10 / 15 ≈ 0.667`
+- `P(201 | rolledRarity = 3) = 5 / 15 ≈ 0.333`
+- `P(301 | rolledRarity = 3) = 0`
+
+---
+
+#### 4.1.7 保底 counter 增量（pity counter increment）
+
+每次 refresh（自動 / 手動 / 離線補刷）：
+
+```
+pityCounter ← pityCounter + N       // N = 該次展示張數（§4.1.1）
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `pityCounter` | `StaffPlayerState.pityCounter` 跨池累積 | `≥ 0`；觸發時 reset 為 `0`（§4.1.8）|
+| `N` | 該次 refresh 張數 | 見 §4.1.1 |
+
+**設計註記**：切池不 reset、公會升級不 reset、解除保留 / 解雇不影響。每張候選 +1（非每次 refresh +1）——避免 N=5 時保底速度與 N=3 時差太多導致體感不一致。
+
+**範例**：玩家在 `guildLevel = 2`（N = 3）連刷 3 次 → `pityCounter: 0 → 3 → 6 → 9`；第 4 次刷新使 `pityCounter = 12`，觸發保底（§4.1.8）。
+
+---
+
+#### 4.1.8 保底觸發條件（pity trigger condition）
+
+```
+shouldForce5Star = (pityCounter ≥ 10) AND (poolEligibleByRarity(currentPoolID, 5) ≠ ∅)
+```
+
+**觸發後行為**（僅影響該次 refresh 內**第一張**命中保底的 slot）：
+
+```
+IF shouldForce5Star:
+    該 slot 的 rolledRarity ← 5（跳過 §4.1.5 動態歸一化）
+    後續依 §4.1.6 在 5★ 層內 roll 具體 staffID
+    pityCounter ← 0                                     // reset
+ELIF (pityCounter ≥ 10) AND (poolEligibleByRarity(currentPoolID, 5) == ∅):
+    // 池中 5★ 空：本次不強制觸發，counter 繼續累積、走動態歸一化
+    pityCounter 不變
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `pityCounter` | 累積計數器 | 通常 `[0, ~15]`；5★ 空池情境可更高 |
+| `currentPoolID` | 玩家當前池 | `StaffPlayerState.currentPoolID` |
+
+**設計註記**：保底**不保證連抽到**——僅該次 refresh 的第一張保證 5★，其他 slot 仍走正常 roll（可能再出 5★、也可能出 1★）。池中 5★ 空時 counter 不 reset 也不觸發，等玩家切到含 5★ 的池（或升公會等級開放 5★）才兌現——避免「5★ 空池刷新也算保底消耗」對玩家不公平。
+
+**範例**：
+- `pityCounter = 10`、`currentPoolID = 1`（A 池含 5★） → 下次 refresh 第一張強制 5★、`pityCounter ← 0`
+- `pityCounter = 10`、`currentPoolID = 2`（B 池本 case 5★ 空） → 不觸發、`pityCounter` 下次 refresh 繼續 `+= N`
+
+---
+
+#### 4.1.9 保留上限（max reserve）
+
+```
+maxReserve = max(1, interviewSlotCount - 1)
+           = max(1, N - 1)
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `N` | 當前面試欄張數（§4.1.1） | `1 ≤ N ≤ 5` |
+| `maxReserve` | 跨池保留區 `reservedCandidates` 的容量上限 | `1 ≤ maxReserve ≤ 4` |
+
+**設計約束**：特例 `N = 1 → maxReserve = 1`（避免玩家無法保留任何東西）；`N ≥ 2 → maxReserve = N - 1`（強制至少留一張「現在決定」的壓力）。
+
+**溢出處理**：嘗試保留第 `maxReserve + 1` 張時，`TryReserveCandidate()` 回 `RESERVE_FULL`；玩家必須先從保留區移除一張（錄用 / 解雇對應 `StaffInstance` / 手動取消）。
+
+**範例**：`guildLevel = 3`、`N = 4` → `maxReserve = 3`；玩家可同時保留 3 張候選（跨 A / B 池），第 4 張嘗試保留時失敗。
+
+---
+
+### 4.2 效果聚合上限（Effect Aggregation Caps）
+
+§3.6.2 演算法的最後一步皆為 cap 截斷；以下是 §3.6.3 表格的公式形式化。
+
+```
+GetStaffWillingnessBonus()          = min(Σ_i WillingnessEffectValues[i],          EFFECT_MAX_WILLINGNESS_BONUS)
+GetAccountantCommissionBonus()      = min(Σ_i AccountantCommissionEffectValues[i], EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS)
+GetAccountantPenaltyBonus()         = max(Σ_i AccountantPenaltyEffectValues[i],    EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS)     // 負值、max 為「下限截斷」
+GetRecruitRefreshReductionSec()     = min(Σ_i RecruitRefreshEffectValues[i],       EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC)
+```
+
+| 常數 | 值 | 型別 | 意義 |
+|---|---|---|---|
+| `EFFECT_MAX_WILLINGNESS_BONUS` | `+0.20` | float | Willingness 總加成上限（進 FT-03 公式前的 cap）|
+| `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` | `+0.10` | float | 會計傭金加總上限（進 FT-05 公式前的 cap）|
+| `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` | `-0.10` | float | 會計賠償加總**下限**（絕對值 ≤ 0.10；負值的 `max` = 向零方向截斷）|
+| `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC` | `14400`（4h）| int | 招募刷新減量上限（避免刷新近乎即時失去等待感）|
+
+**變數範圍**：
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `Σ_i WillingnessEffectValues[i]` | 全 roster（含 Reallocating，排除 OnLeave）帶 `Willingness` effect 的 `effectValues[i]` 加總 | `[0, +∞)`；實務 Jam 版 roster ≤ 99 且每職員 ≤ 0.05 → 實際上界遠低於 cap |
+| `Σ_i AccountantCommissionEffectValues[i]` | 同上、`AccountantCommission` | 同上 |
+| `Σ_i AccountantPenaltyEffectValues[i]` | **僅** `currentState == Working AND assignedBuildingID == 5` 的職員 | `(−∞, 0]`；slot capacity = 1 → 實務 `{−0.02} or {0}` |
+| `Σ_i RecruitRefreshEffectValues[i]` | **僅** `currentState == Working AND assignedBuildingID == 4` 的職員 | `[0, +∞)`；slot capacity 受 FT-07 §7.1 `buildingID=4` slotCount 限制 |
+
+**範例**：3 位委託官職員在職（Willingness `+0.05` 各 → Σ = 0.15）→ `GetStaffWillingnessBonus() = min(0.15, 0.20) = 0.15`。第 4 位加入（Σ = 0.20）仍為 `0.20`；第 5 位加入（Σ = 0.25）被 cap 為 `0.20`。
+
+---
+
+### 4.3 薪水公式（Salary Formulas）
+
+#### 4.3.1 每日薪水（per-staff salary dictionary）
+
+每日 UTC 06:00 結算時，組裝 `perStaffSalary: Dict<int, int>`（key = `instanceID`、value = 薪水）：
+
+```
+perStaffSalary = { s.instanceID → StaffTable[s.staffID].salary
+                   | s ∈ activeRoster, s.currentState ≠ OnLeave }
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `activeRoster` | FT-08 名冊中所有 `StaffInstance` | `≤ 99`（Jam 版名冊上限）|
+| `s.currentState` | 三態 | `{ Working, Reallocating, OnLeave }` |
+| `StaffTable[s.staffID].salary` | 模板每日薪水 | `≥ 0`（Jam 版建議 0 ~ 100 gold/day）|
+
+**休假者排除**：`OnLeave` 不計入 `perStaffSalary`（FT-08 §1.C 已定義）。
+
+#### 4.3.2 薪水總額（total salary due）
+
+事件 payload 附帶總額供 FT-05 快速檢查：
+
+```
+totalSalaryDue = Σ_{k ∈ perStaffSalary.Keys} perStaffSalary[k]
+```
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `totalSalaryDue` | 本次發薪總扣款 | `≥ 0`；實務 Jam 版 `[0, ~3000]` gold/day |
+
+#### 4.3.3 離線補發次數
+
+```
+missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
+                     clamped by SystemConstants.OFFLINE_MAX_SECONDS / 86400
+```
+
+每一個補發週期獨立組裝 `perStaffSalary` 一次、發布事件一次（逐次觸發 FT-05 扣款；具體離線迴圈邏輯於 §3.11 定義）。
+
+| 變數 | 定義 | 範圍 |
+|---|---|---|
+| `lastSalaryTimestamp` | 最近一次成功發薪的 UTC 時間戳 | `≤ now` |
+| `missedSalaryCycles` | 離線期間應補發的發薪週期數 | `0 ≤ n ≤ OFFLINE_MAX_SECONDS/86400` |
+| `86400` | 1 天 = 86400 秒 | 常數 |
+
+**範例**（假設 `OFFLINE_MAX_SECONDS = 604800`，即 7 天）：
+- 離線 3 天登入 → `missedSalaryCycles = 3` → 發布 `OnStaffSalaryDue` 三次，每次 payload 以當時 roster 狀態組裝
+- 離線 30 天登入 → `missedSalaryCycles = clamp(30, 0, 7) = 7` → 僅補 7 次（FT-05 `OFFLINE_MAX_SECONDS` 既有契約）
+
+**時區異常**：若 `now < lastSalaryTimestamp`（系統時鐘被調回），本次啟動**跳過發薪**（不扣款、不發事件），見 §5 邊緣案例。
 
 ---
 
 ## 5. 邊緣案例（Edge Cases）
 
-[To be designed]
+> 本節覆蓋 §4 公式未直接處理的異常 / 邊界情境。每個 case 明確指出「系統做什麼」而非「妥善處理」。
+
+### 5.1 時間異常（Time Anomalies）
+
+**Case 5.1.1 — 系統時鐘倒退（`now < lastAutoRefreshTimestamp`）**
+- **觸發**：玩家手動調整電腦時鐘、時區切換、跨日光節約時間邊界導致 `now` 回退
+- **自動刷新行為**：`missedIntervals = floor(負數 / interval)` → 負值 → `clamp(…, 0, 1) = 0` → 不補刷、`lastAutoRefreshTimestamp` 不變動
+- **薪水行為**：本次啟動**跳過發薪**（§4.3.3 契約），`lastSalaryTimestamp` 不更新、不發 `OnStaffSalaryDue`
+- **效果聚合**：不受影響（不依賴時間戳）
+- **玩家可見**：UI 顯示「等待下次自動刷新」直到 `now` 重新超過 `last`
+
+**Case 5.1.2 — 離線超過 `OFFLINE_MAX_SECONDS`**
+- **觸發**：玩家離線 > 7 天（假設 `OFFLINE_MAX_SECONDS = 604800`）
+- **自動刷新**：`refillCount = clamp(floor(…), 0, 1) = 1`，僅補一次（§4.1.4），不累積 7 次
+- **薪水補發**：`missedSalaryCycles = clamp(floor((now - last) / 86400), 0, 7)`，最多補 7 次發薪（§4.3.3）
+- **保底**：僅累積一次 `+N`（跟隨 refresh 次數）；不因「理論應該觸發 7 次」被放大
+
+**Case 5.1.3 — 新遊戲初始化（`lastAutoRefreshTimestamp == 0`）**
+- **觸發**：新存檔首次解鎖職員系統（FT-07 職員休息室剛建到 L1）
+- **初始化規則**：`IsStaffSystemUnlocked()` **首次**回 `true` 時，由 FT-08 啟動流程設 `lastAutoRefreshTimestamp ← now`；避免 `floor((now - 0) / interval)` 被巨大差值觸發虛假補刷
+- **等價情境**：存檔載入時若 `lastAutoRefreshTimestamp == 0`（舊存檔遷移 / 異常）→ 同樣 reset 為 `now`
+
+---
+
+### 5.2 面試流程（Interview Flow）
+
+**Case 5.2.1 — 手動刷新金幣不足**
+- **觸發**：`GetGold() < refreshCost(guildLevel)`
+- **行為**：`TryManualRefresh()` 回 `GOLD_INSUFFICIENT`；`currentCandidates` / `pityCounter` / `lastAutoRefreshTimestamp` **皆不變動**；不扣款、不發任何事件
+
+**Case 5.2.2 — 保留區已滿**
+- **觸發**：`reservedCandidates.Count == maxReserve`，玩家嘗試保留第 `maxReserve + 1` 張
+- **行為**：`TryReserveCandidate()` 回 `RESERVE_FULL`；該候選 `isReserved` 不變（仍在 `currentCandidates`）；玩家需先錄用 / 不錄用 / 手動取消保留區某一張以騰出空間
+
+**Case 5.2.3 — 候選已被 `reserveConsumedFlag = true`，玩家點保留**
+- **觸發**：候選曾被保留後解除（時點 3），玩家看到卡回原 slot 再點保留
+- **行為**：P-02 Main UI 依 `reserveConsumedFlag` disable 按鈕；若 UI 層遺漏，FT-08 `TryReserveCandidate()` 拒絕回 `RESERVE_CONSUMED`——**雙層防護**
+
+**Case 5.2.4 — 保留時限到、玩家離線期間**
+- **觸發**：玩家保留候選 A、離線超過 `reserveTimeLimitSec`、未再登入
+- **行為**：下次登入時，FT-08 啟動流程掃描 `reservedCandidates`，凡 `now − reservedTimestamp ≥ reserveTimeLimitSec(poolID)` 的卡一律解除：`isReserved = false`、`reservedTimestamp = 0`、`reserveConsumedFlag = true`、從 `reservedCandidates` 移除
+- **卡的去向**：嘗試放回 `currentCandidates[slotIndex]`（該 slot 在保留期間被鎖定為空，§1 line 57「下次刷新跳過該 slot」）；若玩家離線期間原池又刷了新 batch（離線自動補刷 1 次），則原 slot 已被新 roll 覆蓋——此時保留卡**丟失**（不再回到任何 list，`reservedCandidates` 中直接移除）
+- **實作註記**：解除保留的順序 = 先掃保留區、後跑離線補刷；避免「卡剛解除就被新 roll 覆蓋」的競態
+
+**Case 5.2.5 — 切池導致未保留候選丟失**
+- **觸發**：玩家從 A 池切到 B 池
+- **行為**：`currentCandidates`（A 池殘留）**整個覆蓋為 B 池新 roll 結果**；`reservedCandidates` 跨池存活不受影響（依 `poolID` 識別歸屬）；已錄用職員（`StaffInstance`）與池無關、不受影響
+- **觸發時機**：切池動作本身 = 立即觸發一次 B 池 refresh（以填滿 `currentCandidates`）；計入保底 counter（`pityCounter += N`）、不扣刷新費（切池免費）
+- **設計副作用**：保留區是跨池保留的**唯一**途徑；玩家若不想丟 A 池的 3★ 好卡，切池前必須先保留
+
+---
+
+### 5.3 保底（Pity）邊界
+
+**Case 5.3.1 — 保底達成但池中 5★ 空**
+- **觸發**：`pityCounter ≥ 10`、玩家當前 `currentPoolID` 對應池 `poolEligibleByRarity(poolID, 5) == ∅`
+- **行為**：**不觸發強制 5★**；本次 refresh 走正常動態歸一化（§4.1.5，5★ ∈ `emptyTiers`）；`pityCounter` **不 reset、繼續累積**（每張 +N）；下次 refresh 若池中 5★ 仍空同樣不觸發
+- **兌現時機**：玩家切到含 5★ 的池、或升公會等級開放新 5★、或 DataManager 更新 `staffWeights` 使 5★ 層非空 → 下次 refresh 第一張強制 5★、counter reset
+
+**Case 5.3.2 — 保底觸發當次多張同時命中**
+- **觸發**：`pityCounter = 10`、`N = 5`
+- **行為**：僅該次 refresh 的**第一張（slotIndex = 0）**強制 5★；其餘 4 張走正常 roll（可能再出 5★、也可能全 1★）；`pityCounter ← 0`（不分張數；下次 refresh 從 `+N` 重新起算）
+
+**Case 5.3.3 — 保底 counter 累積期間職員休息室降級至 L0**
+- **觸發**：玩家拆除職員休息室（`buildingID=6` → `L0`）導致 `IsStaffSystemUnlocked() == false`
+- **行為**：`pityCounter` 持久化、不 reset；系統降級期間無 refresh 發生；重新升回 L1 時，counter 原值恢復有效——玩家不會因為臨時降級而失去保底進度
+
+---
+
+### 5.4 薪水（Salary）邊界
+
+**Case 5.4.1 — OnLeave 職員在發薪時點**
+- **觸發**：職員 A 處於 `OnLeave`、發薪 tick 觸發
+- **行為**：A 不入 `perStaffSalary` dict、不扣款（§4.3.1）；事件 payload 不含 A；若 A 在發薪**後**立即切為 `Working`，下次發薪週期才計薪
+
+**Case 5.4.2 — 發薪當 frame 解雇 / 切態**
+- **觸發**：發薪流程正在組裝 `perStaffSalary`、同 frame 另一條路徑嘗試解雇某職員
+- **行為**：FT-08 以**原子 roster snapshot** 為準——組裝 `perStaffSalary` 時對 roster 拷貝一份快照；發布事件後再處理解雇；避免 dict 內含已解雇 `instanceID`、或漏發在職職員薪水
+
+**Case 5.4.3 — 系統降級（`IsStaffSystemUnlocked() == false`）時 roster 非空**
+- **觸發**：特殊存檔（例：debug 操作、FT-10 遷移）或玩家升休息室 → 錄取職員 → 後續拆除休息室
+- **行為**：
+  - 加成 API 全部回 `0` / `false`（§3.6.5）
+  - `OnStaffSalaryDue` **不發布**、`lastSalaryTimestamp` 不更新（不扣薪、不補發）
+  - `StaffInstance` 資料仍保留在名冊（解雇仍可用）
+  - 重新建回休息室 → 系統恢復時**不補發降級期間的薪水**（設計簡化：降級 = 暫停薪水管線）
+
+---
+
+### 5.5 資料驗證邊界（DataManager）
+
+**Case 5.5.1 — 池全稀有度空（`|emptyTiers| == 5`）**
+- **觸發**：`StaffGachaPoolTable.eligibleStaffIDs` 空 / 所有 `staffWeights[i] == 0`
+- **行為**：DataManager 載入時拋 `StaffGachaPoolTableValidationException("poolID={id}: 池無可抽項（所有層為空）")`；遊戲不啟動（fail-fast）
+
+**Case 5.5.2 — `poolEligibleByRarity(poolID, r)` 因單層 `staffWeights` 全 0**
+- **觸發**：層內有職員但 `staffWeights[i]` 全為 0（例如暫時禁用整層）
+- **行為**：該層加入 `emptyTiers`（§4.1.5 定義已 filter `w > 0`）；歸一化分母自動重算；不觸發 validation 異常（屬於**合法降級配置**，與「全池空」區別）
+
+**Case 5.5.3 — `StaffTable[staffID].rarity` 與 CandidateCard `rolledRarity` 不一致**
+- **觸發**：載入舊存檔、`StaffTable` 中該 `staffID` 的 rarity 欄位被調整
+- **行為**：FT-10 存檔載入時驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity`（§3.2.3 驗證規則）；不一致拋 `CandidateCardValidationException`；FT-10 決定 fail-fast 或遷移策略（FT-08 僅提供驗證契約）
+
+**Case 5.5.4 — `staffID > 0 AND trashItemID > 0`（互斥違反）**
+- **觸發**：資料表編輯錯誤、存檔損毀
+- **行為**：DataManager / FT-10 載入時拋 `CandidateCardValidationException("XOR violation")`（§3.2.3 驗證規則）
+
+---
+
+### 5.6 系統邊界（System Gate）
+
+**Case 5.6.1 — 職員休息室升降級途中 refresh 計時器行為**
+- **觸發**：自動刷新倒數中（例：L1 = 24h，已過 20h）、玩家升級至 L3（`interval` 改為 12h）
+- **行為**：`lastAutoRefreshTimestamp` 不因升級重置；立即以**新 interval** 計算 `now − last`：若 `now − last ≥ intervalSec(新等級)` → 立刻觸發補刷一次、`lastAutoRefreshTimestamp ← now`；否則照舊倒數（用新 interval）
+- **極端例**：L1 已過 20h、升 L3（12h）→ 已超過新 interval → 立即補刷（玩家可感知「升級後立刻多一次面試」）
+
+**Case 5.6.2 — 職員休息室從 L1+ 降至 L0**
+- **觸發**：（Jam 版無此流程，但定義契約以防未來新增）設計上不允許降級至 L0；若發生（debug）：`IsStaffSystemUnlocked() == false` → 系統全面降級（§3.6.5 / §5.4.3）；`pityCounter` / roster / `lastAutoRefreshTimestamp` 資料保留、重新升回 L1 時恢復使用
+- **`currentCandidates` 處理**：降級瞬間清空 `currentCandidates`（不可面試）；`reservedCandidates` 保留（資料不丟，視為「保留時限暫停倒數」——但 Jam 版時限倒數仍照走，解除後清為丟失視同 Case 5.2.4）
 
 ---
 
 ## 6. 依賴關係（Dependencies）
 
-[To be designed]
+> 本節採「上游 / 下游 / 事件 / 資料 / 常數」五類列示 FT-08 的所有依賴介面。**雙向對齊清單**（需寫回對方 GDD 的依賴聲明）見 A.4 跨系統副作用清單。
+
+### 6.1 上游依賴（FT-08 消費）
+
+| 依賴系統 | API / 契約 | 消費時機 | 降級行為（對方缺席時）|
+|---|---|---|---|
+| **FT-07 Guild Building System** | `IsStaffSystemUnlocked() : bool` | 所有公開 API 入口檢查 | FT-08 全面降級（§3.6.5 / §3.12 / §5.4.3）|
+| FT-07 | `GetBuildingLevel(6) : int` | §4.1.3 自動刷新間隔 | 回 0 視為 L0，系統閘關閉 |
+| FT-07 | `GetBuildingLevel(1/4/5) : int` | §3.6 slot 指派驗證（委託板 / 櫃台 / 保險櫃）| slot capacity = 0，對應 effect 回 0 |
+| FT-07 | `BuildingTable[6].upgradeData[L].effectValue` | §4.1.3 間隔查表（經 FT-07 讀 CSV）| 同上 |
+| **F-02 TimeSystem** | `GetUtcNow() : long` | 所有時間戳運算（`now`）| FT-08 拋異常（時間系統為硬依賴）|
+| **F-03 DataManager** | CSV 載入 + schema 驗證 API | 啟動期載入 5 張 FT-08 表 | 驗證失敗 → fail-fast，不啟動遊戲 |
+| **F-01 ResourceManagement** | `GetGold() : long` / `TryDeductGold(amount) : bool` | §4.1.2 手動刷新扣款 | FT-08 手動刷新回 `GOLD_INSUFFICIENT` |
+
+### 6.2 下游消費者（FT-08 被消費）
+
+| 消費者 | 消費介面 | 語意 |
+|---|---|---|
+| **FT-03 NPC Decision** | `GetStaffWillingnessBonus() : float` | Passive 加成；進 willingness 計算前作為 addend |
+| **FT-05 Guild Gold Flow** | `GetAccountantCommissionBonus() : float` | Passive 加成；進 `effectiveCommissionRate` 公式 |
+| FT-05 | `GetAccountantPenaltyBonus() : float` | Slot 加成（需指派保險櫃）；進 `effectivePenaltyRate` |
+| FT-05 | `OnStaffSalaryDue` 事件訂閱 | 收到 payload → `AddGoldAllowBankruptcy(-totalSalaryDue)` |
+| **FT-01 Adventurer Recruitment** | `GetRecruitRefreshReductionSec() : int` | Slot 加成（需指派櫃台）；自招募刷新間隔扣除 |
+| **P-02 Main UI** | `IsSuccessRatePreviewEnabled() : bool` | 委託審核畫面顯示成功率預估數字 |
+| P-02 | 面試 UI 操作 API（`TryRecruit` / `TryRejectCandidate` / `TryReserveCandidate` / `TryReleaseReserve` / `TryManualRefresh` / `TrySwitchPool`）| 玩家面試交互的 UX 行為（簡歷卡、上下滑翻動、蓋印章）|
+| **FT-10 Save/Load** | `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` 序列化 / 反序列化 | 跨會話持久化；§3.2.3 schema 契約 |
+| **FT-09 Faction Story** *(Post-Jam)* | `StaffTable.factionID` 欄位、`StaffGachaPoolTable` 5 個預留閘欄位 | Jam 版保留 schema 不消費 |
+
+### 6.3 事件契約
+
+**FT-08 發布**：
+
+| 事件名 | Payload | 訂閱者 | 發布時機 |
+|---|---|---|---|
+| `OnStaffSalaryDue` | `{ perStaffSalary: Dict<int,int>, totalSalaryDue: int, salaryTimestamp: long }` | **FT-05**（硬契約）| 每日 UTC 06:00；離線補發逐次；§4.3 詳述 |
+| `OnStaffHired` | `{ instanceID: int, staffID: int, hiredTimestamp: long }` | P-02 / P-03 Notification / 圖鑑 | 錄用流程成功後 |
+| `OnStaffFired` | `{ instanceID: int, staffID: int, firedTimestamp: long, severancePaid: int }` | P-02 / P-03 | 解雇流程成功後 |
+| `OnStaffAssigned` | `{ instanceID: int, oldBuildingID: int, newBuildingID: int }` | FT-05（保險櫃 slot 重算）/ P-02 | slot 指派 / 再分配完成後 |
+| `OnStaffStateChanged` | `{ instanceID: int, oldState: enum, newState: enum }` | P-02（名冊 UI 更新）| 狀態機切換時 |
+
+**FT-08 訂閱**：無硬依賴的訂閱——所有上游狀態皆**拉取式**（按需查詢 `GetBuildingLevel` / `GetUtcNow` / `GetGold`）。可選優化：訂閱 `OnBuildingUpgraded(buildingID=6)` 主動觸發 Case 5.6.1 間隔重算（Jam 版不做，於刷新觸發時即時 query 即可）。
+
+### 6.4 資料表依賴
+
+| 表名 | 擁有者 | FT-08 用途 |
+|---|---|---|
+| `StaffTable.csv` | FT-08 | 職員模板（`rarity` / `salary` / `effectIDs` / `effectValues` / `slotBuildingIDs` …）|
+| `StaffGachaPoolTable.csv` | FT-08 | 池配置（`eligibleStaffIDs` / `staffWeights` / `reserveTimeLimitSec`）|
+| `StaffRefreshCostTable.csv` | FT-08 | 手動刷新費 + 面試欄張數（PK = `guildLevel`）|
+| `StaffRarityProbTable.csv` | FT-08 | 1★~5★ 基底權重（§4.1.5）|
+| `TrashItemTable.csv` | FT-08 | flavor item 定義（`trashItemID` → name / flavor text）|
+| `BuildingTable.csv` | **FT-07** | `buildingID=6` 的 `upgradeData[L].effectValue` = 自動刷新間隔（§4.1.3）|
+| `SystemConstants.csv` | **F-03** | `OFFLINE_MAX_SECONDS` / `SALARY_UTC_HOUR`（=6）|
+
+### 6.5 共享常數
+
+| 常數 | 來源 | FT-08 用途 |
+|---|---|---|
+| `OFFLINE_MAX_SECONDS` | `SystemConstants.csv` | §4.3.3 薪水補發上限 |
+| `SALARY_UTC_HOUR` | `SystemConstants.csv` | 每日發薪時點（固定 UTC 06:00）|
+| `EFFECT_MAX_WILLINGNESS_BONUS` | FT-08 `StaffTuning.csv`（§7）| §4.2 cap |
+| `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` | 同上 | §4.2 cap |
+| `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` | 同上 | §4.2 cap |
+| `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC` | 同上 | §4.2 cap |
+| `REALLOCATING_AUTO_LEAVE_SECONDS` | 同上 | 再分配自動轉休假閾值（43200s；§3.8 詳述）|
+| `BUILDING_SWITCH_COOLDOWN_SECONDS` | 同上 | 切換建築冷卻（7200s；§3.8 詳述）|
+| `ROSTER_CAP` | 同上 | Jam 版名冊上限（99）|
+
+### 6.6 雙向聲明同步表
+
+下列為 FT-08 Jam 版 GDD 通過後需於對方 GDD 補登記的雙向依賴（詳 A.4）：
+
+| 對方 GDD | 需補登記內容 | 狀態 |
+|---|---|---|
+| FT-07 §3.2 / §5.7 / §7.1 / §7.3 | 職員休息室 `maxLevel = 5` + 自動刷新間隔階梯 | ✅ 已寫入（2026-04-25 C1 對齊）|
+| FT-01 §6 | `GetRecruitRefreshReductionSec()` 消費、slot effect 來源為 FT-08 | ⬜ 待處理 |
+| FT-03 §6 | `GetStaffWillingnessBonus()` 消費已登記、Jam 版無需新增 | ✅ 已存在 |
+| FT-05 §6 / §7 | `OnStaffSalaryDue` 發布者為 FT-08；`GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus` 來源 | ⬜ 待處理 |
+| FT-10 §3 | 序列化契約：`StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` | ⬜ 待處理 |
+| P-02 §6 | 面試 UI UX 責任：簡歷卡 / 上下滑翻動 / 蓋印章 / 保留按鈕 disable 依 `reserveConsumedFlag` | ⬜ 待處理 |
+| `systems-index.md` | FT-08 升級為「Designed（Jam 版完成）」 | ⬜ 待處理 |
 
 ---
 
@@ -425,19 +1091,130 @@ IsSuccessRatePreviewEnabled() → bool:
 
 ### A.1 已完成章節
 
-| 章節 | 狀態 | 關鍵決策來源 |
+| 章節 | 狀態 | 備註 |
 |------|------|-------------|
-| §1 Overview | ✅ | Q1-1(B) / Q1-2(C) / Q1-3(A) / Q1-4(A) / Q1-5(A) |
+| §1 Overview | ✅ | Batch B v2 M1~M5 宏觀對齊完成後回填（2 池、自動+手動刷新、保留機制、跨池保底） |
 | §2 Player Fantasy | ✅ | Q2-1（E1 + E4 Jam 聚焦，E2/E5/E7 延後至 Post-Jam 人事系統）/ Q2-2(A) / Q2-3(A+C) / Q2-4(A) |
 | §3.1 StaffInstance | ✅ | Q3A-1(A) / Q3A-2(A 備註 Jam 暫代) / Q3A-3(A) |
-| §3.2 StaffTable Schema | ✅ | Q3A-4(A) / Q3A-5(B) / Q3A-6(B 效果 id+數值 欄位) / Q3A-7(A) / Q3A-8(C 僅用 isFiller) |
+| §3.2.1 StaffTable Schema | ✅ | Schema 主體不動（Batch A 結論）+ `uiFlagIDs` / `uiFlagBuildingIDs` 欄位 |
+| §3.2.2 StaffGachaPoolTable Schema | ✅ | Batch B v2 新增：`poolID` PK + `[min,max]GuildLevel` + `staffWeights` + `reserveTimeLimitSec` + 5 個預留閘欄位 |
+| §3.2.3 StaffPlayerState + CandidateCard Schema | ✅ | C1/C2/C3 對齊後新增：player-level 狀態容器 + 面試候選卡資料結構（Round 2 M2-1~3 / Round 3 M3-1~3） |
 | §3.6 Effect Aggregation | ✅ | Q3A-9(A) / Q3A-10(B 並細分 Passive vs Slot) / Q3A-11(B) / Q3A-12(A) |
-| **Batch A 附加決策** | ✅ | 新增 `RecruitRefreshOnCounter` effect + `SuccessRatePreview` UI flag（Q 組後確認，候選 1 + 候選 2Q）|
+| **Batch A 附加決策** | ✅ | 新增 `RecruitRefreshOnCounter` effect + `SuccessRatePreview` UI flag |
+| **Batch B v2 宏觀對齊** | ✅ | M1 池架構 / M2 閘機制 / M3 刷新模型 / M4 保留機制 / M5 保底範圍（詳 A.2.1）|
+| **Pre-§4 阻斷項對齊** | ✅ | C1 FT-07 職員休息室 maxLevel=5 擴張 / C2 `StaffPlayerState` schema / C3 `CandidateCard` schema（詳 A.2.1b） |
+| §4 公式（Formulas） | ✅ | §4.1 面試系統（9 公式）/ §4.2 效果聚合上限 / §4.3 薪水公式（每日 Dict + 總額 + 離線補發）|
 | 跨系統副作用 | 📋 待整批處理 | game-concept.md 已補 Post-Jam 人事系統構想；FT-01 §6.1 / P-02 §6.1 反向依賴延後 |
 
-### A.2 下次接續點：§3 Batch B — 面試 / Gacha / 保底 / 垃圾物品
+### A.2 Batch B v2 — 重啟對齊計畫
 
-#### A.2.1 §3.3 面試流程（gacha 演算法）
+**重啟原因**（2026-04-24 第二次 session 重建）：
+- 第一輪 Batch B 一次提問 10+ 題、混合宏觀與細節，導致決策疲勞
+- DevLog 摘要本身有誤（「單一常駐池」被使用者糾正為多池）
+- §1 / §3.2 因「單池」假設失效需回填修正
+- 為避免第一輪對話成果遺失，已對齊事實與新暴露事實保留於 A.2.0
+
+#### A.2.0 第一輪已對齊與新暴露事實
+
+**✅ 已對齊（Batch B v2 不需重問）**：
+
+- **面試 UX 模型 = 逐張操作**：刷新 → 展示 N 張 → 玩家對每張獨立決定「錄取 / 保留 / 丟棄」（原 Q3B-1 = A）
+- **稀有度層為空 = 動態歸一化**：當前池某稀有度 R 無可抽職員時，該 R 的權重按比例分配到其他非空稀有度層，不走純降級；公式 `effectiveProb[r] = baseProb[r] / (1 − sum(baseProb[空層]))`（原 Q3B-5 = A）
+
+**❗ 第一輪暴露的新事實 / 推翻的假設**（待 Batch B v2 對齊）：
+
+- **多池並存 + 依等級逐階開放**：DevLog「單一常駐池」是誤記；實際每個池由 `[minGuildLevel, maxGuildLevel]` 控制開放區間，可多池並存（使用者舉例：A 池 Lv1~3 / B 池 Lv3~5 / C 池 Lv1~5 全開）
+- **自動刷新機制存在**：先前 §1 只考慮付費手動刷新；使用者提到「不論自動刷新或手動刷新都可以保留」——自動刷新的頻率、費用、與等級的關係全待設計
+- **候選保留機制**：玩家可跨刷新保留候選；推測「保留」= 候選暫停區（未入冊、未支薪、未生效），上限待定
+- **個別職員權重**：稀有度 → 具體職員的 roll 不採均勻隨機，而是**每職員一個整數權重**（`StaffGachaPoolTable.staffWeights: CSV list` 平行於 `eligibleStaffIDs`；使用者口述為「第二段權重」）；整數、允許 0 待確認
+- **歸一化 edge cases 未對齊**：多層同時空時的處理、保底觸發但池中該稀有度為空時的行為
+
+#### A.2.1 宏觀對齊問題（Macro Alignment — Round 1）
+
+> **原則**：每題只問大方向、不問細節數值；對齊完 M1~M5 才回填 §1 / §3.2，再進入細節 Q&A 寫入 §3.3 ~ §3.5。每輪最多 3 題，避免再次失焦。
+
+**M1：池架構與分類（Pool Architecture）**
+- Jam 版預計幾個池？（1 / 2 / 3+？）
+- 多池如何分類？（按職能 tag / 按陣營 factionID / 按劇情階段 / 通用 vs 專業）
+- 是否需要「常駐通用池」+「特定條件池」的混合？
+
+**M2：池的開放/關閉機制（Pool Gating）**
+- 純依公會等級 `[minGuildLevel, maxGuildLevel]` 區間（連續）？
+- 是否需要其他閘（聲望門檻、FT-09 劇情解鎖、限時活動）？
+- 是否允許不連續開放（例如 Lv1 + Lv3 + Lv5 開放，Lv2 / Lv4 關閉）？
+
+**M3：刷新模型（Refresh Model）**
+- 付費手動刷新（已確定）+ 自動刷新（新發現）並存？還是二擇一？
+- 自動刷新的觸發（每日 UTC 06:00 / 等級決定間隔 / 其他）
+- 自動刷新是否免費？是否依等級縮短間隔？
+- 自動刷新是否覆蓋「未保留」候選、保留「已保留」候選？
+- 自動刷新是否消耗保底 counter？
+
+**M4：候選保留機制（Candidate Reserve）**
+- 「保留」= 候選暫停區（未入冊、未支薪、不生效）這個語意正確嗎？
+- 保留上限？（無上限 / 固定槽位 N / 與名冊上限共用）
+- 保留動作是否需要付費？是否有時限？
+- 「錄取」與「保留」是否互斥動作（一張只能其一），還是可同時選「保留 + 錄取」？
+
+**M5：保底範圍與計算（Pity Scope）**
+- 保底 counter 是「跨池累積」（原 DevLog）還是「per-pool 獨立」？
+- 公會升級時是否 reset counter？
+- 保底觸發但池中該稀有度為空時，counter 是否累積到下次有 5★？還是視為兌現後 reset？
+
+#### A.2.1b Pre-§4 阻斷項（C1/C2/C3）對齊結果
+
+2026-04-25 `/design-review` 標出 3 項 §4 公式阻斷項，Round 1~3 對齊後已全部解決：
+
+**C1 — FT-07 職員休息室 maxLevel 擴張**（Round 1 M1-1/M1-2/M1-3）
+- M1-1 = B：近等比遞減階梯 L1=86400s / L2=64800s / L3=43200s / L4=28800s / L5=21600s
+- M1-2 = A：升級費保守 ×3 遞增 L2=1500 / L3=4500 / L4=13500 / L5=40000
+- M1-3 = A：guildLevelReq 對齊等級 L2→Lv2 / L3→Lv3 / L4→Lv4 / L5→Lv5
+- 寫入：FT-07 §3.2 / §5.7 / §7.1 `BuildingTable[6]` / §7.3
+
+**C2 — `StaffPlayerState` schema**（Round 2 M2-1/M2-2/M2-3）
+- M2-1 = A：自動刷新計時器全域單一（`lastAutoRefreshTimestamp`），到點刷當前選中池、切池不重置
+- M2-2 = A：手動刷新無 cooldown（防呆 by UI）
+- M2-3 = approve：6 欄位 schema（`nextInstanceID` / `pityCounter` / `lastAutoRefreshTimestamp` / `currentPoolID` / `currentCandidates` / `reservedCandidates`）
+- 寫入：FT-08 §3.2.3 + §1 刷新模型補註
+
+**C3 — `CandidateCard` schema**（Round 3 M3-1/M3-2/M3-3）
+- M3-1 = A：Staff vs Trash 用互斥雙 ref 欄位（`staffID` / `trashItemID`，恰好一個 > 0）
+- M3-2 = B：錄用 / 不錄用後 slot 空置至下次刷新；UX（簡歷卡、上下滑翻動、蓋印章）由 P-02 Main UI 負責
+- M3-3 = approve：9 欄位 schema + 時點 3（保留解除後回到 slot、仍可錄用 / 不錄用、`reserveConsumedFlag=true` 禁用保留按鈕）
+- 寫入：FT-08 §3.2.3 + §1 面試欄 UX 補註；P-02 UX 意圖登記於 A.4
+
+**連帶解決的 A.2.2 細節題**：保留候選資料結構 ✅ / 保底計數單位（每張 +1）✅ / 保底 counter 存放位置（`StaffPlayerState.pityCounter`）✅
+
+#### A.2.2 宏觀對齊後再展開的細節題（Detail Round — 先不展開）
+
+M1~M5 + C1~C3 對齊後仍待展開：
+
+- 池內職員清單具體組成（Jam 版各池的 eligibleStaffIDs）
+- 刷新費與候選張數的 per-pool 配置（`StaffRefreshCostTable` schema）
+- 自動刷新 tick 與離線補刷邏輯（接 FT-02 Time System）
+- ~~保留候選的資料結構~~ ✅ 已於 §3.2.3 定義 `CandidateCard`
+- ~~DataManager 驗證規則（`staffWeights.Count == eligibleStaffIDs.Count`、空層識別、全 0 權重處理）~~ ✅ 已於 §3.2.2 定義
+- flavor item 與 `isFiller` 平庸職員的最終切分（原 Q3B-11 ~ Q3B-14）
+- 面試費資金不足行為（原 Q3B-15，預設 A = UI 擋）
+- ~~保底計數單位（每張 +1 vs 每次刷新 +1，原 Q3B-7）~~ ✅ 每張 +1（§1 M3-2=B 推論）
+- ~~保底 counter 存放位置（`StaffPlayerState`，原 Q3B-10）~~ ✅ `StaffPlayerState.pityCounter`（§3.2.3）
+
+#### A.2.3 Batch B v2 寫入順序
+
+1. **M1~M5 宏觀對齊完成** → 回填 §1（A 段面試系統 + 末尾資料表）+ §3.2（若需新增 `StaffGachaPoolTable` schema 段落於本節）
+2. 進入 A.2.2 細節題 → 逐題對齊後寫入 §3.3 面試流程
+3. §3.3 寫入後 → §3.4 保底機制
+4. §3.4 寫入後 → §3.5 垃圾物品填充
+5. Batch B v2 結案（§1 / §3.2 / §3.3~§3.5 全部完成） → 進 Batch C（§3.7 ~ §3.13）
+
+<!-- ARCHIVED: 以下舊 Batch B 第一輪問題清單保留於此僅供追溯，Batch B v2 不再參考 -->
+
+#### A.2.OLD 舊 Batch B 問題清單（ARCHIVED — 僅追溯用，不再參考）
+
+<details>
+<summary>展開查看 Q3B-1 ~ Q3B-15 歷史問題</summary>
+
+##### §3.3 面試流程（gacha 演算法）
 
 **Q3B-1：面試 UX 模型**
 
@@ -485,7 +1262,7 @@ IsSuccessRatePreviewEnabled() → bool:
 - **B.** DataManager 載入時驗證禁止空層，一出錯直接拋
 - **C.** 補 filler（給 flavor item 或平庸職員頂上）
 
-#### A.2.2 §3.4 保底機制
+##### §3.4 保底機制
 
 **Q3B-6：保底觸發的精細語意**
 
@@ -518,7 +1295,7 @@ DevLog 「每 10 抽保底 5★」的具體規則：
 - 存在哪裡？（FT-08 的 player-level state，不屬於 `StaffInstance`）
 - 是否需要專門的 `StaffPlayerState` 物件（含 counter + `nextInstanceID` + 其他 player 層欄位）？
 
-#### A.2.3 §3.5 垃圾物品填充
+##### §3.5 垃圾物品填充
 
 **Q3B-11：`TrashItemTable` schema 與 `StaffTable.isFiller` 的切分**
 
@@ -549,7 +1326,7 @@ DevLog 「每 10 抽保底 5★」的具體規則：
 - 建議值：1★ 層內 flavor 占 30%（即全體約 12% 抽到 flavor item）
 - 是否採用？
 
-#### A.2.4 通用
+##### 通用
 
 **Q3B-15：面試費資金不足時的行為**
 
@@ -558,6 +1335,8 @@ DevLog 「每 10 抽保底 5★」的具體規則：
   - **B.** 允許玩家進入負債（類似 FT-05 `AddGoldAllowBankruptcy`）
   - **C.** 允許但觸發破產警告
 - 依 FT-07 建築升級的先例（§5.2）：**主動消費不允許負債** → 預設 A
+
+</details>
 
 ---
 
@@ -585,18 +1364,26 @@ Batch C 涵蓋 §3.7 ~ §3.13：
 - [ ] **FT-03 §5 / §6**：若 §3.6 聚合上限影響現有 AC-ND3-04 行為，補反向一致性檢查
 - [ ] **FT-05 §6 / §7**：補登記 FT-08 為 `OnStaffSalaryDue` 發布者（現已預留契約但 §6 未列）；確認 `GetAccountantPenaltyBonus` 的 slot 條件（保險櫃）與 FT-08 §3.6.2 實作對齊
 - [ ] **FT-07 §3.7 / §7**：`BuildingTable.slotCount` 欄位（DevLog 決定「全 6 棟加 slotCount」）目前尚未加入 FT-07 §7 schema，需補
+- [x] ✅ **FT-07 §3.2 / §5.7 / §7.1 / §7.3**：職員休息室 `BuildingTable[6]` `maxLevel` 由 `1` 擴張為 `5`，補 L2~L5 `upgradeData`（`effectValue` = 自動刷新間隔秒數、L1=86400 → L5=21600）（2026-04-25 本 session 寫入）
+- [x] ~~**FT-07 §3.x / §7**：新增 `GetBuildingLevel(int buildingID) : int` API~~ —— 更正：此 API 已於 FT-07 §3.4 / §6.1 存在（line 104），無需新增，僅需確認 `buildingID=6` 的查詢契約；已於 C1 擴張中確認覆蓋
+- [ ] **P-02 §6.1 / §面試 UI 章節（若已建）**：登記面試欄 UX 意圖——簡歷卡大頭照呈現、上下滑翻動特效（上滑 = 錄用 + 蓋紅印章、下滑 = 不錄用 + 蓋印章）、保留按鈕 disable 條件（`reserveConsumedFlag == true`）；此為 FT-08 資料語意的視覺表現層需求，P-02 設計階段展開
 - [ ] **P-02 §6.1**（若已建）：補「FT-08 `IsStaffSystemUnlocked()` + `IsSuccessRatePreviewEnabled()`」
-- [ ] **FT-10 §6.1**（若已建）：補 `StaffInstance` + `StaffPlayerState` 序列化
+- [ ] **FT-10 §6.1**（若已建）：補 `StaffInstance` + `StaffPlayerState` + `CandidateCard`（含 `reserveConsumedFlag`）序列化
 - [ ] **systems-index.md `SystemConstants` 欄位**：補 `EFFECT_MAX_*` 系列常數
 - [ ] **systems-index.md 資料表清單**：補 `uiFlagIDs` / `uiFlagBuildingIDs` 欄位於 `StaffTable` 描述
+- [ ] **systems-index.md 資料表清單**：補 `StaffGachaPoolTable` 完整 schema（`poolID` PK + `[min,max]GuildLevel` + `staffWeights` + `reserveTimeLimitSec` + 5 預留閘欄位）+ `maxReserve` 公式 + `reserveConsumedFlag`
 - [ ] **`/design-review` FT-08**：Batch C 完成後執行
 
 ### A.5 Session 恢復 checklist
 
-下次開啟 `/design-system 繼續FT-08` 時：
+下次開啟 `/design-system 繼續FT-08` 時（Batch B v2 流程）：
 
-1. 讀本檔 §1 ~ §3.6 以恢復上下文
-2. 讀本附錄 A 了解進度與待解問題
-3. 從 A.2.1 Q3B-1 開始逐題推進
-4. 完成 Batch B 後寫入 §3.3 / §3.4 / §3.5、更新 A.1 表、清理 A.2 已答題
-5. 進入 Batch C 前先重新檢視 A.3 範圍
+1. 讀本檔 §1（含頂部 ⚠️ 待回填提示）~ §3.6 以恢復上下文
+2. 讀本附錄 A.1（進度表）+ A.2.0（已對齊事實 + 新暴露事實）+ A.2.1（M1~M5 宏觀對齊問題）
+3. 從 **M1** 開始逐題對齊（每輪最多 3 題，避免決策疲勞）
+4. M1~M5 全部對齊後：
+   - 回填 §1 A 段（面試系統）與末尾資料表（`StaffGachaPoolTable` schema）
+   - 修正 §3.2（若新增 `StaffGachaPoolTable` schema 欄位表）
+   - 更新 A.1 進度表（移除 §1 / §3.2 的 ⚠️ 標記）
+5. 進入 A.2.2 細節題 → 逐段對齊後寫入 §3.3 → §3.4 → §3.5
+6. Batch B v2 結案後清理 A.2.OLD 折疊區塊，進入 Batch C（見 A.3）

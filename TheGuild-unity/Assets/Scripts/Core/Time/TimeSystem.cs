@@ -211,8 +211,18 @@ namespace TheGuild.Core.Time
             _deltaProviderForTests = null;
         }
 
+        internal void InitializeForTests()
+        {
+            InitializeInstance();
+        }
+
         internal void TickForTests(float deltaSeconds)
         {
+            if (_tickPaused)
+            {
+                return;
+            }
+
             ProcessRealtime(deltaSeconds);
         }
 
@@ -223,6 +233,11 @@ namespace TheGuild.Core.Time
 
         private void Awake()
         {
+            InitializeInstance();
+        }
+
+        private void InitializeInstance()
+        {
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -230,7 +245,10 @@ namespace TheGuild.Core.Time
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             LoadSystemConstants();
             long now = NowUTC;
@@ -247,7 +265,7 @@ namespace TheGuild.Core.Time
 
             float delta = _deltaProviderForTests != null
                 ? _deltaProviderForTests()
-                : Time.unscaledDeltaTime;
+                : UnityEngine.Time.unscaledDeltaTime;
 
             ProcessRealtime(delta);
         }

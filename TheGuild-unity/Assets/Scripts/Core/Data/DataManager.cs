@@ -269,6 +269,11 @@ namespace TheGuild.Core.Data
             }
         }
 
+        internal void InitializeForTests()
+        {
+            InitializeInstance();
+        }
+
         internal static void ResetForTests()
         {
             _pendingRegistrations.Clear();
@@ -289,14 +294,31 @@ namespace TheGuild.Core.Data
 
         private void Awake()
         {
+            InitializeInstance();
+        }
+
+        private void InitializeInstance()
+        {
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
+                if (Application.isPlaying)
+                {
+                    Destroy(gameObject);
+                }
+                else
+                {
+#if UNITY_EDITOR
+                    DestroyImmediate(gameObject);
+#endif
+                }
                 return;
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
             LoadAllTables();
             _loaded = true;
         }

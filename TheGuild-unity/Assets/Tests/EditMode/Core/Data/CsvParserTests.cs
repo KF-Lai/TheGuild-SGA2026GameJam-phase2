@@ -2,6 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using TheGuild.Core.Data;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Tests.EditMode.Core.Data

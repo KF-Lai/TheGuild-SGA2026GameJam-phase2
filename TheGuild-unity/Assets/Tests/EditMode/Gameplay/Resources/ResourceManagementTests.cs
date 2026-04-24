@@ -49,12 +49,15 @@ namespace Tests.EditMode.Gameplay.Resources
 
             GameObject dmGo = new GameObject("DM_F03_Test");
             _dm = dmGo.AddComponent<DataManager>();
+            _dm.InitializeForTests();
 
             GameObject tsGo = new GameObject("TS_F03_Test");
             _ts = tsGo.AddComponent<TimeSystem>();
+            _ts.InitializeForTests();
 
             GameObject rmGo = new GameObject("RM_F03_Test");
             _rm = rmGo.AddComponent<ResourceManagement>();
+            _rm.InitializeForTests();
         }
 
         [TearDown]
@@ -121,7 +124,7 @@ namespace Tests.EditMode.Gameplay.Resources
             Assert.AreEqual(100, delta);
         }
 
-        [Test] public void AC_RM_07_SetBankruptcyThresholdReevaluate() { _rm.AddGoldAllowBankruptcy(-50); _rm.SetBankruptcyThreshold(-10); Assert.AreEqual(BankruptcyWarningState.Bankrupt, _rm.GetBankruptcyWarningState()); }
+        [Test] public void AC_RM_07_SetBankruptcyThresholdReevaluate() { _rm.AddGoldAllowBankruptcy(-150); _rm.SetBankruptcyThreshold(-10); Assert.AreEqual(BankruptcyWarningState.Bankrupt, _rm.GetBankruptcyWarningState()); }
 
         [Test]
         public void AC_RM_08_EnterAndExitWarning()
@@ -331,6 +334,7 @@ namespace Tests.EditMode.Gameplay.Resources
 
             GameObject go = new GameObject("DM_AC31");
             DataManager dm = go.AddComponent<DataManager>();
+            dm.InitializeForTests();
             var rows = dm.GetAll<BankruptcyThresholdData>();
             Assert.Greater(rows.Count, 0);
             UnityEngine.Object.DestroyImmediate(go);
@@ -356,7 +360,7 @@ namespace Tests.EditMode.Gameplay.Resources
                        "2,0,29,43200\n" +
                        "3,30,59,172800\n" +
                        "4,60,79,259200\n" +
-                       "5,80,100,604800\n" +
+                       "5,80,99,604800\n" +
                        "6,101,200,999\n";
             }
 

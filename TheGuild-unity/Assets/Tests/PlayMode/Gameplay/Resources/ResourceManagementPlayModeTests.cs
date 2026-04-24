@@ -73,11 +73,11 @@ namespace Tests.PlayMode.Gameplay.Resources
         [UnityTest]
         public IEnumerator AC_RM_09_WarningCountdownExpires_TriggersBankrupt()
         {
-            _rm.AddReputation(101);
+            // 不加 reputation：rep=0 -> band 2 (0~29) -> duration=43200
             _rm.AddGold(-150);
             Assert.AreEqual(BankruptcyWarningState.Warning, _rm.GetBankruptcyWarningState());
 
-            _now += 1000;
+            _now += 43201;
             TestReflectionHelpers.InvokeInstance(_ts, "TickForTests", new[] { typeof(float) }, 1f);
 
             yield return null;
