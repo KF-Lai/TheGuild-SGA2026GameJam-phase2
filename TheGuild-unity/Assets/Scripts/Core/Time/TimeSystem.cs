@@ -18,7 +18,7 @@ namespace TheGuild.Core.Time
         private static Func<float> _deltaProviderForTests;
 
         private readonly List<MissionTimer> _missionTimers = new List<MissionTimer>(32);
-        private readonly HashSet<string> _publishedExpirations = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _publishedExpirations = new HashSet<string>(8, StringComparer.Ordinal);
 
         private float _accumulator;
         private int _minuteAccumulator;
@@ -62,33 +62,16 @@ namespace TheGuild.Core.Time
         /// </summary>
         public void Initialize(long lastActiveTimestamp)
         {
-            long now = NowUTC;
+            long nowUtc = NowUTC;
             _lastActiveTimestamp = lastActiveTimestamp;
 
-            long rawOffline = now - lastActiveTimestamp;
-            if (rawOffline <= 0)
+            if (!TryBuildOfflineSummary(lastActiveTimestamp, nowUtc, out OfflineSummary pendingSummary))
             {
                 _offlineState = OfflineState.Resolved;
                 return;
             }
 
-            long offlineSeconds = rawOffline > _offlineMaxSeconds ? _offlineMaxSeconds : rawOffline;
-            List<string> completedIds = CollectCompletedMissionIds(now);
-            bool crossesDailyReset = ComputeDailyResetCrossing(lastActiveTimestamp, now);
-
-            if (completedIds.Count == 0 && !crossesDailyReset)
-            {
-                _offlineState = OfflineState.Resolved;
-                EventBus.Publish(new OnOfflineResolvedEvent(offlineSeconds, 0));
-                return;
-            }
-
-            _pendingSummary = new OfflineSummary(
-                offlineSeconds,
-                completedIds.Count,
-                completedIds,
-                crossesDailyReset);
-
+            _pendingSummary = pendingSummary;
             _offlineState = OfflineState.Pending;
             EventBus.Publish(new OnOfflinePendingEvent(_pendingSummary));
         }
@@ -136,14 +119,12 @@ namespace TheGuild.Core.Time
 
             MissionTimer timer = new MissionTimer(missionInstanceId, dispatchTimestamp, durationSeconds);
 
-            for (int i = 0; i < _missionTimers.Count; i++)
+            int existingIndex = IndexOfMission(missionInstanceId);
+            if (existingIndex >= 0)
             {
-                if (_missionTimers[i].MissionInstanceId == missionInstanceId)
-                {
-                    _missionTimers[i] = timer;
-                    _publishedExpirations.Remove(missionInstanceId);
-                    return;
-                }
+                _missionTimers[existingIndex] = timer;
+                _publishedExpirations.Remove(missionInstanceId);
+                return;
             }
 
             _missionTimers.Add(timer);
@@ -286,20 +267,31 @@ namespace TheGuild.Core.Time
             {
                 _accumulator -= 1f;
 
-                long now = NowUTC;
-                _lastActiveTimestamp = now;
-
-                EventBus.Publish(new OnSecondTickEvent(now));
-                CheckMissionTimers(now);
-                CheckDailyResetCrossing(now);
-
-                _minuteAccumulator += 1;
-                if (_minuteAccumulator >= 60)
-                {
-                    _minuteAccumulator = 0;
-                    EventBus.Publish(new OnMinuteTickEvent(now));
-                }
+                long nowUtc = NowUTC;
+                TickSeconds(nowUtc);
             }
+        }
+
+        private void TickSeconds(long nowUtc)
+        {
+            _lastActiveTimestamp = nowUtc;
+
+            EventBus.Publish(new OnSecondTickEvent(nowUtc));
+            CheckMissionTimers(nowUtc);
+            CheckDailyResetCrossing(nowUtc);
+            TickMinute(nowUtc);
+        }
+
+        private void TickMinute(long nowUtc)
+        {
+            _minuteAccumulator += 1;
+            if (_minuteAccumulator < 60)
+            {
+                return;
+            }
+
+            _minuteAccumulator = 0;
+            EventBus.Publish(new OnMinuteTickEvent(nowUtc));
         }
 
         private void LoadSystemConstants()
@@ -312,8 +304,8 @@ namespace TheGuild.Core.Time
                 return;
             }
 
-            _dailyResetHour = DataManager.Instance.GetInt("DAILY_RESET_HOUR");
-            _offlineMaxSeconds = DataManager.Instance.GetInt("OFFLINE_MAX_SECONDS");
+            _dailyResetHour = TryLoadIntConstant("DAILY_RESET_HOUR", DEFAULT_DAILY_RESET_HOUR);
+            _offlineMaxSeconds = TryLoadIntConstant("OFFLINE_MAX_SECONDS", (int)DEFAULT_OFFLINE_MAX_SECONDS);
 
             if (_dailyResetHour < 0 || _dailyResetHour > 23)
             {
@@ -323,6 +315,19 @@ namespace TheGuild.Core.Time
             if (_offlineMaxSeconds <= 0)
             {
                 _offlineMaxSeconds = DEFAULT_OFFLINE_MAX_SECONDS;
+            }
+        }
+
+        private static int TryLoadIntConstant(string key, int defaultValue)
+        {
+            try
+            {
+                return DataManager.Instance.GetInt(key);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TimeSystem] 讀取 {key} 失敗：{ex.Message}，使用預設值 {defaultValue}");
+                return defaultValue;
             }
         }
 
@@ -341,7 +346,7 @@ namespace TheGuild.Core.Time
             for (int i = 0; i < _missionTimers.Count; i++)
             {
                 MissionTimer timer = _missionTimers[i];
-                long remainingSeconds = timer.DispatchTimestamp + timer.DurationSeconds - nowUtc;
+                long remainingSeconds = GetRemainingSeconds(in timer, nowUtc);
                 if (remainingSeconds <= 0)
                 {
                     PublishMissionExpired(timer.MissionInstanceId);
@@ -398,13 +403,51 @@ namespace TheGuild.Core.Time
             return boundary <= now;
         }
 
+        /// <summary>
+        /// 建立離線摘要資料並回傳是否需要進入 Pending。
+        /// 回傳 false 可能代表兩種狀況：
+        /// 1) 無離線時間，未發送任何事件。
+        /// 2) 離線有時間但 0 任務且無跨日，已立即發送 OnOfflineResolvedEvent。
+        /// </summary>
+        private bool TryBuildOfflineSummary(long lastActiveTimestamp, long nowUtc, out OfflineSummary summary)
+        {
+            summary = default;
+
+            long rawOfflineSeconds = nowUtc - lastActiveTimestamp;
+            if (rawOfflineSeconds <= 0)
+            {
+                return false;
+            }
+
+            long offlineSeconds = rawOfflineSeconds > _offlineMaxSeconds
+                ? _offlineMaxSeconds
+                : rawOfflineSeconds;
+
+            List<string> completedMissionIds = CollectCompletedMissionIds(nowUtc);
+            bool crossesDailyReset = ComputeDailyResetCrossing(lastActiveTimestamp, nowUtc);
+
+            if (completedMissionIds.Count == 0 && !crossesDailyReset)
+            {
+                EventBus.Publish(new OnOfflineResolvedEvent(offlineSeconds, 0));
+                return false;
+            }
+
+            summary = new OfflineSummary(
+                offlineSeconds,
+                completedMissionIds.Count,
+                completedMissionIds,
+                crossesDailyReset);
+
+            return true;
+        }
+
         private List<string> CollectCompletedMissionIds(long nowUtc)
         {
             List<string> completed = new List<string>(8);
             for (int i = 0; i < _missionTimers.Count; i++)
             {
                 MissionTimer timer = _missionTimers[i];
-                long remainingSeconds = timer.DispatchTimestamp + timer.DurationSeconds - nowUtc;
+                long remainingSeconds = GetRemainingSeconds(in timer, nowUtc);
                 if (remainingSeconds <= 0)
                 {
                     completed.Add(timer.MissionInstanceId);
@@ -412,6 +455,24 @@ namespace TheGuild.Core.Time
             }
 
             return completed;
+        }
+
+        private static long GetRemainingSeconds(in MissionTimer timer, long nowUtc)
+        {
+            return timer.DispatchTimestamp + timer.DurationSeconds - nowUtc;
+        }
+
+        private int IndexOfMission(string missionInstanceId)
+        {
+            for (int i = 0; i < _missionTimers.Count; i++)
+            {
+                if (_missionTimers[i].MissionInstanceId == missionInstanceId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }
