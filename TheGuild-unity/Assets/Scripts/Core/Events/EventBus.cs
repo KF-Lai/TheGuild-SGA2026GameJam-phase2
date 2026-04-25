@@ -33,6 +33,16 @@ namespace TheGuild.Core.Events
                 _typedHandlers[eventType] = handlers;
             }
 
+            if (handlers.Contains((Delegate)handler))
+            {
+                string handlerName = handler.Method?.Name ?? "<unknown>";
+                Debug.LogWarning(
+                    $"[EventBus] Duplicate subscribe ignored: {eventType.Name}, handler={handlerName}"
+                );
+
+                return;
+            }
+
             handlers.Add(handler);
         }
 
@@ -115,6 +125,16 @@ namespace TheGuild.Core.Events
             {
                 handlers = new List<Action>(4);
                 _namedHandlers[eventName] = handlers;
+            }
+
+            if (handlers.Contains(handler))
+            {
+                string handlerName = handler.Method?.Name ?? "<unknown>";
+                Debug.LogWarning(
+                    $"[EventBus] Duplicate subscribe ignored: {eventName}, handler={handlerName}"
+                );
+
+                return;
             }
 
             handlers.Add(handler);
