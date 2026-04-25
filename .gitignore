@@ -75,6 +75,9 @@ production/session-logs/
 .DS_Store
 Thumbs.db
 
+# Chromium / Electron crashpad log (Claude Code Desktop, VS Code)
+debug.log
+
 # Auto Code Optimize 暫存與批次紀錄（auto-code-optimize / -batch skill 生成）
 .claude/optimization-work/
 .claude/batch-manifests/.progress/
