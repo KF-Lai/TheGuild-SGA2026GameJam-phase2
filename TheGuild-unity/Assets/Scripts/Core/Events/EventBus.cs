@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace TheGuild.Core.Events
 {
@@ -76,10 +77,27 @@ namespace TheGuild.Core.Events
                 return;
             }
 
-            for (int i = 0; i < handlers.Count; i++)
+            Delegate[] snapshot = handlers.ToArray();
+            for (int i = 0; i < snapshot.Length; i++)
             {
-                Action<T> callback = handlers[i] as Action<T>;
-                callback?.Invoke(eventData);
+                Action<T> callback = snapshot[i] as Action<T>;
+                if (callback == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    callback.Invoke(eventData);
+                }
+                catch (Exception ex)
+                {
+                    string handlerName = callback.Method?.Name ?? "<unknown>";
+                    Debug.LogError(
+                        $"[EventBus] Exception in Publish<{eventType.Name}> handler {handlerName}: " +
+                        $"{ex.GetType().Name} - {ex.Message}"
+                    );
+                }
             }
         }
 
@@ -146,9 +164,27 @@ namespace TheGuild.Core.Events
                 return;
             }
 
-            for (int i = 0; i < handlers.Count; i++)
+            Action[] snapshot = handlers.ToArray();
+            for (int i = 0; i < snapshot.Length; i++)
             {
-                handlers[i]?.Invoke();
+                Action callback = snapshot[i];
+                if (callback == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    callback.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    string handlerName = callback.Method?.Name ?? "<unknown>";
+                    Debug.LogError(
+                        $"[EventBus] Exception in Publish(\"{eventName}\") handler {handlerName}: " +
+                        $"{ex.GetType().Name} - {ex.Message}"
+                    );
+                }
             }
         }
 
