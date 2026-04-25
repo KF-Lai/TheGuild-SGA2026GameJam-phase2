@@ -13,6 +13,12 @@ namespace TheGuild.Gameplay.Resources
     /// </summary>
     public sealed class ResourceManagement : MonoBehaviour
     {
+        private const string BankruptcyThresholdTableName = "BankruptcyThresholdTable";
+        private const string GoldInitialKey = "GOLD_INITIAL";
+        private const string GoldMaxKey = "GOLD_MAX";
+        private const string ReputationMinKey = "REPUTATION_MIN";
+        private const string ReputationMaxKey = "REPUTATION_MAX";
+
         private const int DefaultGoldInitial = 100;
         private const int DefaultGoldMax = 9999999;
         private const int DefaultReputationMin = -100;
@@ -42,7 +48,7 @@ namespace TheGuild.Gameplay.Resources
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RegisterTables()
         {
-            DataManager.RegisterTable<BankruptcyThresholdData>("BankruptcyThresholdTable");
+            DataManager.RegisterTable<BankruptcyThresholdData>(BankruptcyThresholdTableName);
         }
 
         /// <summary>
@@ -253,15 +259,7 @@ namespace TheGuild.Gameplay.Resources
         /// </summary>
         public void ResetBankruptcyState()
         {
-            BankruptcyWarningState previous = _warningState;
-            _warningState = BankruptcyWarningState.Normal;
-            _bankruptcyWarningStartTime = 0;
-            _warningDurationSec = 0;
-
-            if (previous != _warningState)
-            {
-                EventBus.Publish(new OnBankruptcyStateChangedEvent(previous, _warningState));
-            }
+            ExitWarning();
         }
 
         /// <summary>
@@ -349,10 +347,6 @@ namespace TheGuild.Gameplay.Resources
             _warningDurationSec = 0;
         }
 
-        private void Start()
-        {
-        }
-
         private void OnEnable()
         {
             SubscribeEvents();
@@ -404,10 +398,10 @@ namespace TheGuild.Gameplay.Resources
                 return;
             }
 
-            _goldInitial = DataManager.Instance.GetInt("GOLD_INITIAL");
-            _goldMax = DataManager.Instance.GetInt("GOLD_MAX");
-            _reputationMin = DataManager.Instance.GetInt("REPUTATION_MIN");
-            _reputationMax = DataManager.Instance.GetInt("REPUTATION_MAX");
+            _goldInitial = DataManager.Instance.GetInt(GoldInitialKey);
+            _goldMax = DataManager.Instance.GetInt(GoldMaxKey);
+            _reputationMin = DataManager.Instance.GetInt(ReputationMinKey);
+            _reputationMax = DataManager.Instance.GetInt(ReputationMaxKey);
 
             if (_goldMax < _goldInitial)
             {
@@ -452,19 +446,9 @@ namespace TheGuild.Gameplay.Resources
 
         private void EvaluateWarningState()
         {
-            BankruptcyWarningState previous = _warningState;
-
             if (_currentGold >= 0)
             {
-                _warningState = BankruptcyWarningState.Normal;
-                _bankruptcyWarningStartTime = 0;
-                _warningDurationSec = 0;
-
-                if (previous != _warningState)
-                {
-                    EventBus.Publish(new OnBankruptcyStateChangedEvent(previous, _warningState));
-                }
-
+                ExitWarning();
                 return;
             }
 
@@ -488,11 +472,7 @@ namespace TheGuild.Gameplay.Resources
         {
             if (_warningState == BankruptcyWarningState.Warning && newGold >= 0)
             {
-                BankruptcyWarningState previous = _warningState;
-                _warningState = BankruptcyWarningState.Normal;
-                _bankruptcyWarningStartTime = 0;
-                _warningDurationSec = 0;
-                EventBus.Publish(new OnBankruptcyStateChangedEvent(previous, _warningState));
+                ExitWarning();
                 return;
             }
 
@@ -500,6 +480,20 @@ namespace TheGuild.Gameplay.Resources
             {
                 EnterWarning();
             }
+        }
+
+        private void ExitWarning()
+        {
+            if (_warningState == BankruptcyWarningState.Normal)
+            {
+                return;
+            }
+
+            BankruptcyWarningState previous = _warningState;
+            _warningState = BankruptcyWarningState.Normal;
+            _bankruptcyWarningStartTime = 0;
+            _warningDurationSec = 0;
+            EventBus.Publish(new OnBankruptcyStateChangedEvent(previous, _warningState));
         }
 
         private void EnterWarning()
