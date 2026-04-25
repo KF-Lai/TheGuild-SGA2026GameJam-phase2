@@ -2,6 +2,8 @@
 
 > 2D 放置型經營遊戲 | Unity | SGA 2026 Game Jam
 
+---
+
 ## 專案概要
 
 玩家身為新上任的公會長，招募冒險者、接受委託、派遣任務、管理資源，經營與發展冒險者公會。
@@ -9,12 +11,16 @@
 設計重點：離線掛機、NPC 自主性、真實後果（死亡/破產）。
 範疇控制：聚焦核心循環，功能蔓延時執行 `/scope-check`，詳見 `README.md`。
 
+---
+
 ## 技術棧
 
 - **引擎**：Unity 2D (URP) + C# (.NET)
 - **UI**：UI Toolkit (UXML/USS) 為主，UGUI 為輔（世界空間 UI）
 - **資料驅動**：CSV 表格放在 `Assets/Resources/Data/`，欄位規格見 `design/data-specs/`
 - **命名慣例**：`PascalCase`（public）、`_camelCase`（private field）、`camelCase`（local）
+
+---
 
 ## 目錄結構
 
@@ -32,6 +38,8 @@ TheGuild-unity/Assets/
   Tests/EditMode|PlayMode/  ← Unity Test Framework
 ```
 
+---
+
 ## 協作模式（本專案專屬）
 
 工項分級制度與 Codex 互動規範詳見 `~/.claude/CLAUDE.md`（全域自動載入）。本專案專屬對映：
@@ -41,6 +49,8 @@ TheGuild-unity/Assets/
 - **Gemini Web Search**：全域 PreToolUse hook 自動觸發，無需手動呼叫
 - **Unity 操作**：透過 UnityMCP（refresh、tests、scene、asset、console）
 - **CSV 生成**：Claude Code 直接 `Write` 到 `Resources/Data/`，Unity refresh 後 .meta 自動生成
+
+---
 
 ## MCP 工具
 
@@ -55,6 +65,9 @@ TheGuild-unity/Assets/
 - **設計文件 / 程式碼註釋**：繁體中文（Unity API、識別符號、專有名詞保持英文）
 - **識別符號**：英文（PascalCase / _camelCase / camelCase）
 - **時間單位**：全專案只用「秒」或「小時」，禁用分/天/週
+- **Git commit 訊息**：繁體中文（subject 與 description；技術 prefix 如 `opt(round-N):` / `feat:` / `fix:` 與 `Co-Authored-By` trailer 保持英文標準格式）
+
+---
 
 ## 規則檔索引
 

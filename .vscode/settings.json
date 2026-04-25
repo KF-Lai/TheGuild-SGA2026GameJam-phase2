@@ -1,3 +1,6 @@
 {
-  "dotnet.preferCSharpExtension": true
+  "dotnet.preferCSharpExtension": true,
+  "editor.letterSpacing": 1,
+  "editor.lineHeight": 1.8,
+  "markdown.styles": [".vscode/markdown.css"]
 }
