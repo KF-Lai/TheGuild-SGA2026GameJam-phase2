@@ -13,12 +13,14 @@ namespace TheGuild.Core.Time
     {
         private const int DEFAULT_DAILY_RESET_HOUR = 0;
         private const long DEFAULT_OFFLINE_MAX_SECONDS = 604800L;
+        private const float MAX_REALTIME_CATCHUP_SECONDS = 60f;
 
         private static Func<long> _clockProviderForTests;
         private static Func<float> _deltaProviderForTests;
 
         private readonly List<MissionTimer> _missionTimers = new List<MissionTimer>(32);
         private readonly HashSet<string> _publishedExpirations = new HashSet<string>(8, StringComparer.Ordinal);
+        private readonly List<string> _expiredMissionScratch = new List<string>(8);
 
         private float _accumulator;
         private int _minuteAccumulator;
@@ -266,6 +268,14 @@ namespace TheGuild.Core.Time
 
         private void ProcessRealtime(float deltaSeconds)
         {
+            if (deltaSeconds > MAX_REALTIME_CATCHUP_SECONDS)
+            {
+                Debug.LogWarning(
+                    $"[TimeSystem] catastrophic delta {deltaSeconds:F1}s exceeds cap {MAX_REALTIME_CATCHUP_SECONDS}s; " +
+                    "truncated to prevent frame freeze. Consider Initialize() for offline-style catch-up.");
+                deltaSeconds = MAX_REALTIME_CATCHUP_SECONDS;
+            }
+
             _accumulator += deltaSeconds;
 
             while (_accumulator >= 1f)
@@ -348,14 +358,21 @@ namespace TheGuild.Core.Time
 
         private void CheckMissionTimers(long nowUtc)
         {
+            _expiredMissionScratch.Clear();
+
             for (int i = 0; i < _missionTimers.Count; i++)
             {
                 MissionTimer timer = _missionTimers[i];
                 long remainingSeconds = GetRemainingSeconds(in timer, nowUtc);
                 if (remainingSeconds <= 0)
                 {
-                    PublishMissionExpired(timer.MissionInstanceId);
+                    _expiredMissionScratch.Add(timer.MissionInstanceId);
                 }
+            }
+
+            for (int i = 0; i < _expiredMissionScratch.Count; i++)
+            {
+                PublishMissionExpired(_expiredMissionScratch[i]);
             }
         }
 

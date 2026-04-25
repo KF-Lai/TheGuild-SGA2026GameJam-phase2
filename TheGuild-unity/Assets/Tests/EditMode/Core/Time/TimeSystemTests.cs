@@ -6,6 +6,7 @@ using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.Time;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Tests.EditMode.Core.Time
 {
@@ -446,6 +447,40 @@ namespace Tests.EditMode.Core.Time
             register.Invoke(null, null);
 
             Assert.Pass();
+        }
+
+        [Test]
+        public void AC_TS_27_ProcessRealtime_CapsCatastrophicDelta()
+        {
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("catastrophic delta"));
+
+            int second = 0;
+            EventBus.Subscribe<OnSecondTickEvent>(_ => second++);
+
+            _now += 600;
+            _timeSystem.TickForTests(600f);
+
+            Assert.AreEqual(60, second);
+        }
+
+        [Test]
+        public void AC_TS_28_CheckMissionTimers_HandlerUnregisterDoesNotSkipOthers()
+        {
+            int expired = 0;
+            EventBus.Subscribe<OnMissionExpiredEvent>(e =>
+            {
+                expired++;
+                _timeSystem.UnregisterMission(e.MissionInstanceId);
+            });
+
+            _timeSystem.RegisterMission("m1", _now, 10);
+            _timeSystem.RegisterMission("m2", _now, 10);
+            _timeSystem.RegisterMission("m3", _now, 10);
+
+            _now += 10;
+            _timeSystem.TickForTests(1f);
+
+            Assert.AreEqual(3, expired);
         }
 
         private static void ResetDataManagerForTestsByReflection()
