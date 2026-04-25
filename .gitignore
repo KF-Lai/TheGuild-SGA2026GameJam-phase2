@@ -74,3 +74,8 @@ production/session-logs/
 # OS generated
 .DS_Store
 Thumbs.db
+
+# Auto Code Optimize 暫存與批次紀錄（auto-code-optimize / -batch skill 生成）
+.claude/optimization-work/
+.claude/batch-manifests/.progress/
+.claude/batch-manifests/.reports/

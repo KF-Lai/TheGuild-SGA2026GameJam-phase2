@@ -15,7 +15,23 @@
       "Bash(gh api:*)",
       "WebFetch(domain:github.com)",
       "Skill(update-config)",
-      "Read(//c/Users/x94d9/.claude/**)"
+      "Read(//c/Users/x94d9/.claude/**)",
+      "Bash(mkdir -p \".claude/skills/auto-code-optimize-batch\")",
+      "Bash(mkdir -p \".claude/batch-manifests\")",
+      "Write(.claude/optimization-work/**)",
+      "Edit(.claude/optimization-work/**)",
+      "Read(.claude/optimization-work/**)",
+      "Write(.claude/batch-manifests/.progress/**)",
+      "Edit(.claude/batch-manifests/.progress/**)",
+      "Read(.claude/batch-manifests/.progress/**)",
+      "Write(.claude/batch-manifests/.reports/**)",
+      "Edit(.claude/batch-manifests/.reports/**)",
+      "Read(.claude/batch-manifests/.reports/**)",
+      "Bash(mkdir -p .claude/optimization-work)",
+      "Bash(mkdir -p .claude/batch-manifests/.progress)",
+      "Bash(mkdir -p .claude/batch-manifests/.reports)",
+      "Bash(rm .claude/optimization-work/batch-notes-*.md)",
+      "Bash(rm .claude/optimization-work/_inline-*.md)"
     ]
   }
 }
