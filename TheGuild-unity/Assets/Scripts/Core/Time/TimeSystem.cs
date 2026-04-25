@@ -62,6 +62,11 @@ namespace TheGuild.Core.Time
         /// </summary>
         public void Initialize(long lastActiveTimestamp)
         {
+            if (_offlineState != OfflineState.Uninitialized)
+            {
+                return;
+            }
+
             long nowUtc = NowUTC;
             _lastActiveTimestamp = lastActiveTimestamp;
 
