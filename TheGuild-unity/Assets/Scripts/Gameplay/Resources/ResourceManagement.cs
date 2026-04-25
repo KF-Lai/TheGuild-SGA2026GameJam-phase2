@@ -77,7 +77,8 @@ namespace TheGuild.Gameplay.Resources
                 return true;
             }
 
-            return _currentGold >= amount;
+            long target = (long)_currentGold - amount;
+            return target >= _currentBankruptcyThreshold;
         }
 
         /// <summary>
@@ -310,12 +311,38 @@ namespace TheGuild.Gameplay.Resources
                 sanitizedBankruptcyWarningStartTime = 0;
             }
 
-            _currentGold = snapshot.CurrentGold;
-            _currentReputation = snapshot.CurrentReputation;
+            int sanitizedCurrentGold = snapshot.CurrentGold;
+            if (sanitizedCurrentGold > _goldMax)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到 CurrentGold={snapshot.CurrentGold} 超過上限 {_goldMax}，已 clamp 為 {_goldMax}。");
+                sanitizedCurrentGold = _goldMax;
+            }
+
+            int sanitizedCurrentReputation = snapshot.CurrentReputation;
+            if (sanitizedCurrentReputation < _reputationMin)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到 CurrentReputation={snapshot.CurrentReputation} 低於下限 {_reputationMin}，已 clamp 為 {_reputationMin}。");
+                sanitizedCurrentReputation = _reputationMin;
+            }
+            else if (sanitizedCurrentReputation > _reputationMax)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到 CurrentReputation={snapshot.CurrentReputation} 超過上限 {_reputationMax}，已 clamp 為 {_reputationMax}。");
+                sanitizedCurrentReputation = _reputationMax;
+            }
+
+            int sanitizedCurrentBankruptcyThreshold = snapshot.CurrentBankruptcyThreshold;
+            if (sanitizedCurrentBankruptcyThreshold > 0)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到正值 CurrentBankruptcyThreshold={snapshot.CurrentBankruptcyThreshold}，已改為 {DefaultBankruptcyThreshold}。");
+                sanitizedCurrentBankruptcyThreshold = DefaultBankruptcyThreshold;
+            }
+
+            _currentGold = sanitizedCurrentGold;
+            _currentReputation = sanitizedCurrentReputation;
             _warningState = sanitizedWarningState;
             _bankruptcyWarningStartTime = sanitizedBankruptcyWarningStartTime;
             _warningDurationSec = sanitizedWarningDurationSec;
-            _currentBankruptcyThreshold = snapshot.CurrentBankruptcyThreshold;
+            _currentBankruptcyThreshold = sanitizedCurrentBankruptcyThreshold;
 
             EvaluateWarningState();
         }
@@ -465,10 +492,10 @@ namespace TheGuild.Gameplay.Resources
 
         private void HandleOfflineResolved(OnOfflineResolvedEvent evt)
         {
-            if (_warningState == BankruptcyWarningState.Warning)
+            if (_warningState == BankruptcyWarningState.Warning && _currentGold < 0)
             {
-                long remaining = GetBankruptcyWarningRemainingSeconds();
-                if (remaining > 0 && evt.OfflineSeconds >= remaining)
+                long elapsed = GetNowUtc() - _bankruptcyWarningStartTime;
+                if (elapsed >= _warningDurationSec)
                 {
                     TriggerBankruptcy();
                     return;

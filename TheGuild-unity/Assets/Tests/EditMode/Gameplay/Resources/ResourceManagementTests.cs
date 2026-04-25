@@ -102,7 +102,16 @@ namespace Tests.EditMode.Gameplay.Resources
             Assert.AreEqual(999_999, delta);
         }
 
-        [Test] public void AC_RM_03_CanAffordBoundary() { Assert.IsTrue(_rm.CanAfford(0)); Assert.IsTrue(_rm.CanAfford(-1)); Assert.IsTrue(_rm.CanAfford(100)); Assert.IsFalse(_rm.CanAfford(101)); }
+        [Test]
+        public void AC_RM_03_CanAffordBoundary()
+        {
+            Assert.IsTrue(_rm.CanAfford(0));
+            Assert.IsTrue(_rm.CanAfford(-1));
+            Assert.IsTrue(_rm.CanAfford(100));
+            Assert.IsTrue(_rm.CanAfford(101));
+            Assert.IsTrue(_rm.CanAfford(200));
+            Assert.IsFalse(_rm.CanAfford(201));
+        }
         [Test] public void AC_RM_04_AddGoldRejectBelowThreshold() { Assert.IsFalse(_rm.AddGold(-201)); Assert.AreEqual(100, _rm.GetGold()); }
 
         [Test]
@@ -204,6 +213,60 @@ namespace Tests.EditMode.Gameplay.Resources
 
             _rm.RestoreSnapshot(snap);
             Assert.AreEqual(BankruptcyWarningState.Bankrupt, _rm.GetBankruptcyWarningState());
+        }
+
+        [Test]
+        public void AC_RM_RestoreSnapshot_GoldOverMaxClampedAndWarn()
+        {
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("CurrentGold.*clamp"));
+            ResourceSnapshot snap = new ResourceSnapshot
+            {
+                CurrentGold = 10_000_000,
+                CurrentReputation = 0,
+                WarningState = BankruptcyWarningState.Normal,
+                BankruptcyWarningStartTime = 0,
+                WarningDurationSec = 0,
+                CurrentBankruptcyThreshold = -100
+            };
+
+            _rm.RestoreSnapshot(snap);
+            Assert.AreEqual(9_999_999, _rm.GetGold());
+        }
+
+        [Test]
+        public void AC_RM_RestoreSnapshot_ReputationOutOfRangeClampedAndWarn()
+        {
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("CurrentReputation.*clamp"));
+            ResourceSnapshot snap = new ResourceSnapshot
+            {
+                CurrentGold = 100,
+                CurrentReputation = 999,
+                WarningState = BankruptcyWarningState.Normal,
+                BankruptcyWarningStartTime = 0,
+                WarningDurationSec = 0,
+                CurrentBankruptcyThreshold = -100
+            };
+
+            _rm.RestoreSnapshot(snap);
+            Assert.AreEqual(100, _rm.GetReputation());
+        }
+
+        [Test]
+        public void AC_RM_RestoreSnapshot_PositiveBankruptcyThresholdResetAndWarn()
+        {
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("CurrentBankruptcyThreshold.*-100"));
+            ResourceSnapshot snap = new ResourceSnapshot
+            {
+                CurrentGold = 100,
+                CurrentReputation = 0,
+                WarningState = BankruptcyWarningState.Normal,
+                BankruptcyWarningStartTime = 0,
+                WarningDurationSec = 0,
+                CurrentBankruptcyThreshold = 50
+            };
+
+            _rm.RestoreSnapshot(snap);
+            Assert.AreEqual(-100, _rm.GetCurrentBankruptcyThreshold());
         }
 
         [Test]

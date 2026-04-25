@@ -90,6 +90,7 @@ namespace Tests.PlayMode.Gameplay.Resources
             _rm.AddGold(-150);
             Assert.AreEqual(BankruptcyWarningState.Warning, _rm.GetBankruptcyWarningState());
 
+            _now += 90000;
             EventBus.Publish(new OnOfflineResolvedEvent(90000, 0));
 
             yield return null;
