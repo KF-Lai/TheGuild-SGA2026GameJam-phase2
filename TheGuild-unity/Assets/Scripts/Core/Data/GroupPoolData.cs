@@ -12,7 +12,7 @@ namespace TheGuild.Core.Data
         public string groupName;
         public string[] memberIDs = Array.Empty<string>();
         public int pickCount = 1;
-        public string pickMode = "uniform";
+        public string pickMode = RandomPool.PICK_MODE_UNIFORM;
         public float[] weights = Array.Empty<float>();
     }
 }

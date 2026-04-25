@@ -8,6 +8,9 @@ namespace TheGuild.Core.Data
     /// </summary>
     public static class RandomPool
     {
+        public const string PICK_MODE_WEIGHTED = "weighted";
+        public const string PICK_MODE_UNIFORM = "uniform";
+
         /// <summary>
         /// 從來源池抽取指定數量元素（無置回）。
         /// </summary>
@@ -34,7 +37,7 @@ namespace TheGuild.Core.Data
             }
 
             List<float> remainingWeights = BuildRemainingWeights(source.Count, weights);
-            bool useWeighted = string.Equals(pickMode, "weighted", StringComparison.OrdinalIgnoreCase);
+            bool useWeighted = string.Equals(pickMode, PICK_MODE_WEIGHTED, StringComparison.OrdinalIgnoreCase);
             if (useWeighted && !HasPositiveWeight(remainingWeights))
             {
                 useWeighted = false;

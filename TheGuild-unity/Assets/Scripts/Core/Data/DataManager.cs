@@ -234,7 +234,7 @@ namespace TheGuild.Core.Data
             }
 
             List<T> result = RandomPool.PickWithoutReplacement(candidates, targetCount, pool.pickMode, weights, _random, out bool fallbackToUniform);
-            if (fallbackToUniform && string.Equals(pool.pickMode, "weighted", StringComparison.OrdinalIgnoreCase))
+            if (fallbackToUniform && string.Equals(pool.pickMode, RandomPool.PICK_MODE_WEIGHTED, StringComparison.OrdinalIgnoreCase))
             {
                 Debug.LogWarning($"[DataManager] 群組池權重總和為 0，退化為 uniform：groupID={groupID}，型別={typeof(T).Name}");
             }
@@ -253,7 +253,7 @@ namespace TheGuild.Core.Data
             }
 
             IReadOnlyList<T> filtered = GetWhere(predicate);
-            return RandomPool.PickWithoutReplacement(filtered, count, "uniform", null, _random, out _);
+            return RandomPool.PickWithoutReplacement(filtered, count, RandomPool.PICK_MODE_UNIFORM, null, _random, out _);
         }
 
         internal static void SetTableTextProviderForTests(Func<string, string> provider)
@@ -344,20 +344,28 @@ namespace TheGuild.Core.Data
                     continue;
                 }
 
-                if (registration.IsSystemConstants)
+                try
                 {
-                    Dictionary<string, string> constants = CsvParser.ParseSystemConstants(csvText, registration.TableName, COMMENT_PREFIX);
-                    MergeSystemConstants(constants, registration.TableName);
-                    continue;
+                    if (registration.IsSystemConstants)
+                    {
+                        Dictionary<string, string> constants = CsvParser.ParseSystemConstants(csvText, registration.TableName, COMMENT_PREFIX);
+                        MergeSystemConstants(constants, registration.TableName);
+                        continue;
+                    }
+
+                    Dictionary<string, object> parsed = CsvParser.Parse(csvText, registration.DataType, registration.TableName, LIST_SEPARATOR, COMMENT_PREFIX);
+                    _tableCache[registration.DataType] = parsed;
+                    _tableNameByType[registration.DataType] = registration.TableName;
+
+                    if (registration.IsGroupPool)
+                    {
+                        CacheGroupPools(parsed, registration.TableName);
+                    }
                 }
-
-                Dictionary<string, object> parsed = CsvParser.Parse(csvText, registration.DataType, registration.TableName, LIST_SEPARATOR, COMMENT_PREFIX);
-                _tableCache[registration.DataType] = parsed;
-                _tableNameByType[registration.DataType] = registration.TableName;
-
-                if (registration.IsGroupPool)
+                catch (System.Exception ex)
                 {
-                    CacheGroupPools(parsed, registration.TableName);
+                    Debug.LogError($"[DataManager] 表格 {registration.TableName} 解析失敗：{ex.GetType().Name} - {ex.Message}");
+                    continue;
                 }
             }
         }
