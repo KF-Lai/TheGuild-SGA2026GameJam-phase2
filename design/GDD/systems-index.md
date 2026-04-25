@@ -162,6 +162,8 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | WEAK_TYPE_PENALTY              | 0.15    | 弱點任務類型成功率懲罰                                        |
 | WOUNDED_RECOVERY_HOURS         | 6       | Wounded 冒險者的恢復等待時間（小時）                          |
 
+> **FT-08 Guild Staff 系統常數獨立分表**：FT-08 的 `EFFECT_MAX_*`（聚合上限：`EFFECT_MAX_WILLINGNESS_BONUS` / `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` / `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` / `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC`）、`PITY_THRESHOLD`、`REALLOCATING_AUTO_LEAVE_SECONDS`、`BUILDING_SWITCH_COOLDOWN_SECONDS`、`ROSTER_CAP`、`TRASH_ROLL_RATE_AT_RARITY_1` 等專屬常數**不在此表**，皆收錄於 `StaffTuning.csv`（見下節 § 參數表）。理由：避免 SystemConstants 因 FT-08 子系統爆量、保持核心常數表精簡可讀，並讓 FT-08 自帶可調表與 GDD §7.2 對齊。
+
 ### 參數表（Per-System）
 
 | 表格名稱                   | PK               | 主要欄位                                                                               | 引用                                                      |
