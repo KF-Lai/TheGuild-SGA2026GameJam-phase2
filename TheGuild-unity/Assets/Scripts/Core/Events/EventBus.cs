@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -87,27 +88,42 @@ namespace TheGuild.Core.Events
                 return;
             }
 
-            Delegate[] snapshot = handlers.ToArray();
-            for (int i = 0; i < snapshot.Length; i++)
+            int count = handlers.Count;
+            if (count == 0)
             {
-                Action<T> callback = snapshot[i] as Action<T>;
-                if (callback == null)
-                {
-                    continue;
-                }
+                return;
+            }
 
-                try
+            Delegate[] rented = ArrayPool<Delegate>.Shared.Rent(count);
+            try
+            {
+                handlers.CopyTo(0, rented, 0, count);
+                for (int i = 0; i < count; i++)
                 {
-                    callback.Invoke(eventData);
+                    Action<T> callback = rented[i] as Action<T>;
+                    if (callback == null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        callback.Invoke(eventData);
+                    }
+                    catch (Exception ex)
+                    {
+                        string handlerName = callback.Method?.Name ?? "<unknown>";
+                        Debug.LogError(
+                            $"[EventBus] Exception in Publish<{eventType.Name}> handler {handlerName}: " +
+                            $"{ex.GetType().Name} - {ex.Message}"
+                        );
+                    }
                 }
-                catch (Exception ex)
-                {
-                    string handlerName = callback.Method?.Name ?? "<unknown>";
-                    Debug.LogError(
-                        $"[EventBus] Exception in Publish<{eventType.Name}> handler {handlerName}: " +
-                        $"{ex.GetType().Name} - {ex.Message}"
-                    );
-                }
+            }
+            finally
+            {
+                Array.Clear(rented, 0, count);
+                ArrayPool<Delegate>.Shared.Return(rented);
             }
         }
 
@@ -184,27 +200,42 @@ namespace TheGuild.Core.Events
                 return;
             }
 
-            Action[] snapshot = handlers.ToArray();
-            for (int i = 0; i < snapshot.Length; i++)
+            int count = handlers.Count;
+            if (count == 0)
             {
-                Action callback = snapshot[i];
-                if (callback == null)
-                {
-                    continue;
-                }
+                return;
+            }
 
-                try
+            Action[] rented = ArrayPool<Action>.Shared.Rent(count);
+            try
+            {
+                handlers.CopyTo(0, rented, 0, count);
+                for (int i = 0; i < count; i++)
                 {
-                    callback.Invoke();
+                    Action callback = rented[i];
+                    if (callback == null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        callback.Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        string handlerName = callback.Method?.Name ?? "<unknown>";
+                        Debug.LogError(
+                            $"[EventBus] Exception in Publish(\"{eventName}\") handler {handlerName}: " +
+                            $"{ex.GetType().Name} - {ex.Message}"
+                        );
+                    }
                 }
-                catch (Exception ex)
-                {
-                    string handlerName = callback.Method?.Name ?? "<unknown>";
-                    Debug.LogError(
-                        $"[EventBus] Exception in Publish(\"{eventName}\") handler {handlerName}: " +
-                        $"{ex.GetType().Name} - {ex.Message}"
-                    );
-                }
+            }
+            finally
+            {
+                Array.Clear(rented, 0, count);
+                ArrayPool<Action>.Shared.Return(rented);
             }
         }
 

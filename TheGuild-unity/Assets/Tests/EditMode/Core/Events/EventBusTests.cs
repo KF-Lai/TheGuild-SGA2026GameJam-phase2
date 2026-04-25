@@ -72,5 +72,63 @@ namespace Tests.EditMode.Core.Events
 
             Assert.AreEqual(2, count);
         }
+
+        [Test]
+        public void AC_EB_PublishReentrant_DoesNotCorruptOuterIteration()
+        {
+            int handlerACount = 0;
+            int handlerBCount = 0;
+            bool reentered = false;
+
+            System.Action<TestEvent> handlerA = _ =>
+            {
+                handlerACount++;
+                if (!reentered)
+                {
+                    reentered = true;
+                    EventBus.Publish(new TestEvent());
+                }
+            };
+
+            System.Action<TestEvent> handlerB = _ => handlerBCount++;
+
+            EventBus.Subscribe(handlerA);
+            EventBus.Subscribe(handlerB);
+
+            EventBus.Publish(new TestEvent());
+
+            Assert.AreEqual(2, handlerACount);
+            Assert.AreEqual(2, handlerBCount);
+        }
+
+        [Test]
+        public void AC_EB_PublishHandlerSelfUnsubscribe_DoesNotSkipOthers()
+        {
+            int aCount = 0;
+            int bCount = 0;
+            int cCount = 0;
+            System.Action<TestEvent> handlerA = _ => aCount++;
+            System.Action<TestEvent> handlerC = _ => cCount++;
+            System.Action<TestEvent> handlerB = null;
+            handlerB = _ =>
+            {
+                bCount++;
+                EventBus.Unsubscribe(handlerB);
+            };
+
+            EventBus.Subscribe(handlerA);
+            EventBus.Subscribe(handlerB);
+            EventBus.Subscribe(handlerC);
+
+            EventBus.Publish(new TestEvent());
+
+            Assert.AreEqual(1, aCount);
+            Assert.AreEqual(1, bCount);
+            Assert.AreEqual(1, cCount);
+        }
+
+        private readonly struct TestEvent
+        {
+        }
     }
 }
