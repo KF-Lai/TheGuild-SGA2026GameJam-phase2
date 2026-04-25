@@ -299,6 +299,11 @@ namespace TheGuild.Core.Data
 
         private void InitializeInstance()
         {
+            if (Instance == this && _loaded)
+            {
+                return;
+            }
+
             if (Instance != null && Instance != this)
             {
                 if (Application.isPlaying)
