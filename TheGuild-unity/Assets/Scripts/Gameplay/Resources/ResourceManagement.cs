@@ -289,11 +289,32 @@ namespace TheGuild.Gameplay.Resources
                 return;
             }
 
+            BankruptcyWarningState sanitizedWarningState = snapshot.WarningState;
+            if (!Enum.IsDefined(typeof(BankruptcyWarningState), sanitizedWarningState))
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到無效 WarningState={snapshot.WarningState}，已改為 {BankruptcyWarningState.Normal}。");
+                sanitizedWarningState = BankruptcyWarningState.Normal;
+            }
+
+            long sanitizedWarningDurationSec = snapshot.WarningDurationSec;
+            if (sanitizedWarningDurationSec < 0)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到負值 WarningDurationSec={snapshot.WarningDurationSec}，已 clamp 為 0。");
+                sanitizedWarningDurationSec = 0;
+            }
+
+            long sanitizedBankruptcyWarningStartTime = snapshot.BankruptcyWarningStartTime;
+            if (sanitizedBankruptcyWarningStartTime < 0)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到負值 BankruptcyWarningStartTime={snapshot.BankruptcyWarningStartTime}，已 clamp 為 0。");
+                sanitizedBankruptcyWarningStartTime = 0;
+            }
+
             _currentGold = snapshot.CurrentGold;
             _currentReputation = snapshot.CurrentReputation;
-            _warningState = snapshot.WarningState;
-            _bankruptcyWarningStartTime = snapshot.BankruptcyWarningStartTime;
-            _warningDurationSec = snapshot.WarningDurationSec;
+            _warningState = sanitizedWarningState;
+            _bankruptcyWarningStartTime = sanitizedBankruptcyWarningStartTime;
+            _warningDurationSec = sanitizedWarningDurationSec;
             _currentBankruptcyThreshold = snapshot.CurrentBankruptcyThreshold;
 
             EvaluateWarningState();
@@ -398,10 +419,10 @@ namespace TheGuild.Gameplay.Resources
                 return;
             }
 
-            _goldInitial = DataManager.Instance.GetInt(GoldInitialKey);
-            _goldMax = DataManager.Instance.GetInt(GoldMaxKey);
-            _reputationMin = DataManager.Instance.GetInt(ReputationMinKey);
-            _reputationMax = DataManager.Instance.GetInt(ReputationMaxKey);
+            _goldInitial = ReadConfigIntOrDefault(GoldInitialKey, DefaultGoldInitial);
+            _goldMax = ReadConfigIntOrDefault(GoldMaxKey, DefaultGoldMax);
+            _reputationMin = ReadConfigIntOrDefault(ReputationMinKey, DefaultReputationMin);
+            _reputationMax = ReadConfigIntOrDefault(ReputationMaxKey, DefaultReputationMax);
 
             if (_goldMax < _goldInitial)
             {
@@ -413,6 +434,19 @@ namespace TheGuild.Gameplay.Resources
                 int swap = _reputationMin;
                 _reputationMin = _reputationMax;
                 _reputationMax = swap;
+            }
+        }
+
+        private int ReadConfigIntOrDefault(string key, int fallback)
+        {
+            try
+            {
+                return DataManager.Instance.GetInt(key);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ResourceManagement] LoadConfig 讀取 {key} 失敗：{ex.Message}");
+                return fallback;
             }
         }
 
@@ -498,6 +532,11 @@ namespace TheGuild.Gameplay.Resources
 
         private void EnterWarning()
         {
+            if (_warningState == BankruptcyWarningState.Warning)
+            {
+                return;
+            }
+
             BankruptcyWarningState previous = _warningState;
             _warningState = BankruptcyWarningState.Warning;
             _bankruptcyWarningStartTime = GetNowUtc();
@@ -531,16 +570,30 @@ namespace TheGuild.Gameplay.Resources
                 return DefaultWarningDurationSec;
             }
 
-            IReadOnlyList<BankruptcyThresholdData> matched = DataManager.Instance.GetWhere<BankruptcyThresholdData>(
-                x => x.reputationMin <= reputation && reputation <= x.reputationMax);
-
-            if (matched.Count > 0)
+            IReadOnlyList<BankruptcyThresholdData> matched;
+            try
             {
-                return matched[0].warningDurationSec;
+                matched = DataManager.Instance.GetWhere<BankruptcyThresholdData>(
+                    x => x.reputationMin <= reputation && reputation <= x.reputationMax);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ResourceManagement] LookupWarningDuration 查詢 reputation={reputation} 失敗：{ex.Message}");
+                return DefaultWarningDurationSec;
             }
 
-            Debug.LogError($"[ResourceManagement] 找不到對應聲望區間設定，reputation={reputation}");
-            return DefaultWarningDurationSec;
+            if (matched == null || matched.Count == 0)
+            {
+                Debug.LogError($"[ResourceManagement] 找不到對應聲望區間設定，reputation={reputation}");
+                return DefaultWarningDurationSec;
+            }
+
+            if (matched.Count > 1)
+            {
+                Debug.LogWarning($"[ResourceManagement] 聲望區間設定重疊，reputation={reputation}，matched.Count={matched.Count}。將採用第一筆。");
+            }
+
+            return matched[0].warningDurationSec;
         }
 
         private static long GetNowUtc()
