@@ -92,6 +92,11 @@ TryUpgradeBuilding(buildingID):
     F03.AddGold(-upgrade.cost)   // 非 AddGoldAllowBankruptcy：建築升級屬主動消費，無債務豁免
     currentLevel = nextLevel
     發布 OnBuildingUpgraded(buildingID, fromLevel, toLevel)
+
+    // 保險櫃升級後推送新破產倒數秒數
+    IF buildingID == 5:
+        F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())
+
     回傳 SUCCESS
 ```
 
@@ -106,7 +111,7 @@ TryUpgradeBuilding(buildingID):
 | `GetRecruitRefreshInterval()` | `TimeSpan` | FT-01（刷新計時） |
 | `GetRosterCap()` | `int` | FT-01（招募上限閘） |
 | `GetMaxConcurrentMissions()` | `int` | FT-02（派遣上限閘） |
-| `GetBankruptcyWarningSeconds()` | `int` | F-03（破產倒數設定） |
+| `GetBankruptcyWarningSeconds()` | `int` | F-03（破產倒數設定）；同時透過啟動推送（`Start()`）與升級推送（`buildingID=5` 升級時）主動寫入 F-03 `_currentWarningDuration` |
 | `IsStaffSystemUnlocked()` | `bool` | FT-08、P-02 |
 
 所有 API 皆同步、即時讀 `BuildingTable` 對應等級行，**不快取**。
@@ -163,11 +168,16 @@ TryUpgradeBuilding(buildingID):
 
 #### 職員休息室
 
-| 等級 | 效果 | 費用 | 公會等級需求 |
+| 等級 | 效果（FT-08 面試自動刷新間隔，秒） | 費用 | 公會等級需求 |
 |---|---|---|---|
-| 0 | 未建造（職員系統鎖定） | — | — |
-| 1 | `IsStaffSystemUnlocked()` 回傳 `true` | 500g | — |
-| 2+ | 待 FT-08 後補 | TBD | TBD |
+| 0 | 未建造（職員系統鎖定，`IsStaffSystemUnlocked()` 回 `false`） | — | — |
+| 1 | 24h（86,400s）+ `IsStaffSystemUnlocked()` 回 `true` | 500g | — |
+| 2 | 18h（64,800s） | 1,500g | Lv2 |
+| 3 | 12h（43,200s） | 4,500g | Lv3 |
+| 4 | 8h（28,800s） | 13,500g | Lv4 |
+| 5 | 6h（21,600s） | 40,000g | Lv5 |
+
+> 職員休息室 L2~L5 透過縮短 FT-08 面試自動刷新間隔提供加速。完整 `BuildingTable[6]` 數值與設計理由見 §7.1 + §7.3；FT-08 §4.1.3 / §7.3 對齊。
 
 ### 3.6 事件發布契約
 
@@ -250,6 +260,30 @@ IsStaffSystemUnlocked():
 | 扣除金幣後 | 500 − 350 = 150g | — |
 | 委託板等級 | 2 → 3 | `GetMissionSlotCount()` 回傳 11 |
 
+### 4.4 啟動推送（破產倒數秒數）
+
+系統啟動時，主動將當前保險櫃等級對應的破產倒數秒數推送至 F-03。對齊 C-06 `SetBankruptcyThreshold` 啟動推送模式。
+
+```
+Start():
+    // buildingID=5（預備金保險櫃）初始必為 Lv1（新遊戲初始已建造），推送 L1 = 10800s
+    // 存檔載入時以載入後等級為準，GetBankruptcyWarningSeconds() 自動查 BuildingTable[5]
+    F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())
+```
+
+### 4.5 升級推送（保險櫃升級時）
+
+保險櫃升級成功後，立即推送新等級對應的秒數。其他建築升級不執行此推送。
+
+```
+// 在 TryUpgradeBuilding() 升等後執行（§3.3 流程末尾）
+AfterUpgrade(buildingID, newLevel):
+    IF buildingID == 5:
+        F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())
+        // 此時 GetBankruptcyWarningSeconds() 已查新等級
+        // 範例：L4→L5 升級後推送 172800（48h）
+```
+
 ---
 
 ## 5. 邊緣案例（Edge Cases）
@@ -276,8 +310,8 @@ IsStaffSystemUnlocked():
 
 **Case 5.5 — 存讀檔時建築等級超出 maxLevel（資料表被修改為較低上限）**
 - 情境：存檔記錄委託板 `currentLevel = 5`，但新版 `BuildingTable` 將 `maxLevel` 改為 3
-- 行為：讀檔後 `currentLevel` 維持存檔值（5），效果值查 `effectData[5]`；若 effectData 無 index 5，DataManager 應在載入時拋出範圍錯誤
-- 防禦：讀檔後驗證 `currentLevel <= BuildingTable[id].maxLevel`，若超出則 clamp 至 `maxLevel` 並輸出 `Debug.LogWarning`
+- 行為：讀檔時 FT-07 `RestoreFromSave` 內部驗證 `currentLevel <= BuildingTable[id].maxLevel`；超出則 **clamp 至 `maxLevel`** 並輸出 `Debug.LogWarning("buildingID={id}: clamped from {saved} to {maxLevel}")`；clamp 後續查 `effectData[maxLevel]` 必有效，不會拋例外
+- 設計理由：採取 clamp 而非 fail-fast，避免 GDD/CSV 縮減 maxLevel 時舊存檔失效；玩家仍能繼續遊玩，僅該建築降回新上限（罕見路徑，正常開發中不會發生）
 
 **Case 5.6 — 聲望閘判定時 FT-06 尚未初始化**
 - 情境：場景載入順序異常，FT-07 在 FT-06 就緒前收到升級請求
@@ -311,7 +345,7 @@ IsStaffSystemUnlocked():
 | **FT-01 Adventurer Recruitment** | `GetRosterCap()` | 招募名冊上限閘門 |
 | **FT-01 Adventurer Recruitment** | `GetRecruitRefreshInterval()` | 候選池刷新計時 |
 | **FT-02 Mission Dispatch** | `GetMaxConcurrentMissions()` | 同時派遣上限閘門 |
-| **F-03 Resource Management** | `GetBankruptcyWarningSeconds()` | 破產倒數秒數設定 |
+| **F-03 Resource Management** | `SetBankruptcyWarningDuration(int)` | FT-07 主動推送：啟動時（`Start()`）與保險櫃升級時，呼叫 `F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())` 寫入破產倒數秒數；F-03 被動接收，不查詢 FT-07 |
 | **FT-08 Guild Staff** | `IsStaffSystemUnlocked()` | 判斷職員系統是否可用 |
 | **FT-08 Guild Staff** | `GetBuildingLevel(6)` | 自動刷新間隔階梯（讀 `BuildingTable[6, level].effectValue`）|
 | **FT-08 Guild Staff** | `BuildingTable[buildingID].slotCount` | slot 指派 capacity（FT-08 §3.7 直接讀資料表，無需經 FT-07 API）|
@@ -343,6 +377,43 @@ F-01 → F-03 → FT-06 → FT-07 → FT-01 / FT-02 / F-03（破產秒數）/ FT
 ```
 
 FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等 FT-07 的 API 就緒。
+
+### 6.5 ISaveable 持久化契約
+
+| 欄位 | 值 |
+|---|---|
+| `OwnerKey` | `"ft07Buildings"` |
+| `IsCritical` | `false`（Degradable；還原失敗時所有建築重置為初始等級，玩家失去已投入的升級費用，但核心循環仍可繼續） |
+
+> **決策記錄**：FT-10 §3.3.4 將 FT-07 列為 Degradable。BuildingState 重置意味玩家失去所有已花費金幣的升級進度（最多 6 棟建築的升級費用），此為不可逆損失。此 `IsCritical = false` 決策遵循 FT-10 既定分類，如認為後果過重可提升為 Critical（請於 design-review 階段確認）。
+
+**`Serialize()` 序列化欄位**：
+
+序列化 `BuildingState[]`（6 棟建築），每棟僅保留 `currentLevel`：
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| `buildingID` | `int` | 建築 ID（1~6） |
+| `currentLevel` | `int` | 當前等級（buildingID=6 可為 0；其他為 1~maxLevel） |
+
+**`RestoreFromSave(string ownerJson)` 行為**：
+
+1. 反序列化 6 筆 `BuildingState`。
+2. 驗證每筆 `currentLevel ≤ BuildingTable[buildingID].maxLevel`；超出時 clamp 至 `maxLevel` 並輸出 `Debug.LogWarning`（對齊 §5 Case 5.5 / AC-14，不拋例外）。
+3. 還原完成後，呼叫 `F-03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())` 推送預備金保險櫃等級對應的破產倒數秒數（對齊 §3.3 / §4.4-4.5 / AC-19）。
+
+**`InitializeAsNewGame()` 預設值**：
+
+| buildingID | name | `currentLevel` |
+|---|---|---|
+| 1 | 委託板 | `1` |
+| 2 | 招募廣告欄 | `1` |
+| 3 | 公會大廳 | `1` |
+| 4 | 公會櫃臺 | `1` |
+| 5 | 預備金保險櫃 | `1` |
+| 6 | 職員休息室 | `0`（未建造） |
+
+對應 FT-10 §3.3.3 拓撲順序 row 5、§3.3.4 Degradable 分類、§6.1 #15（FT-10 設計來源清單）。
 
 ---
 
@@ -460,3 +531,10 @@ FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等
 ### 8.6 存讀檔
 
 - **AC-15**：存檔後重新載入，所有建築等級與升級前一致；`GetMissionSlotCount()` 等效果 API 回傳值與存檔前相同
+
+### 8.7 破產倒數推送
+
+- **AC-16**：新遊戲 `Start()` 完成後，`F03.GetBankruptcyWarningDuration()` == `10800`（預備金保險櫃 L1 對應 3h）
+- **AC-17**：預備金保險櫃從 L1 升至 L5 後，`F03.GetBankruptcyWarningDuration()` == `172800`（48h）；每次升級（L1→L2、L2→L3 等）後值即時更新
+- **AC-18**：升級其他建築（委託板、公會大廳等，`buildingID != 5`）後，`F03.GetBankruptcyWarningDuration()` 不變
+- **AC-19**：存檔載入後 `Start()` 以存檔等級推送正確秒數——例如保險櫃存檔等級為 L3，`Start()` 後 `F03.GetBankruptcyWarningDuration()` == `43200`

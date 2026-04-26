@@ -107,13 +107,14 @@ CalculateRates(adventurer, mission):
    - `source` ∈ `{ PlayerManual, NpcAutoPick }`（Jam 階段；未來擴充 `OfflineAutoPick` 由 FT-11 提供），由呼叫端（P-02 / FT-03）透過 `Dispatch` 參數傳入（見 §3.8）
    - FT-05 Guild Gold Flow 訂閱此事件執行預收傭金（`AddGoldAllowBankruptcy(-baseReward)`，見 F-03 §3.2 rule 7、FT-05 §3.9.1）
    - **挑 FT-02 為單一發布點**：FT-03 自主接單也透過 `FT-02.Dispatch` 間接發布，避免雙重發布；FT-04 結算、FT-11 離線回補同理各自專屬事件
-4. 呼叫 C-02 `UpdateStatus(instanceID, Dispatched)`
-5. 設定 `adventurer.currentMissionID = activeMissionID`（runtime 任務實例 ID）
-6. 記錄派遣時間戳 `dispatchTimestamp = F-02.NowUTC`
-7. 計算預計完成時間 `completionTimestamp = dispatchTimestamp + duration × 60`
-   - `duration` = `C-01.GetBaseDuration(difficulty)`（一般任務）或 `C-01.GetEscortDuration(difficulty)`（護送任務）
-8. 發布 `EventBus.Publish(OnAdventurerDispatched, instanceID, activeMissionID)`
-9. 通知 C-06 危險度計數：`C06.OnMissionAccepted(difficulty)`（C-06 §3 `OnMissionAccepted` 規格；若難度達下一階 `minDifficulty` 則 `acceptedMissionCount += 1`、觸發 `CheckLevelUp()`）
+4. 呼叫 C-02 `UpdateStatus(instanceID, Dispatched, activeMissionID)`(走 C-02 §3.5 overload,自動設定 `currentMissionID = activeMissionID`,維持 invariant)
+5. 記錄派遣時間戳 `dispatchTimestamp = F-02.NowUTC`
+   > FT-02 透過自身的 `activeMissions` 列表追蹤任務生命週期(§3.7),不依賴 F-02 計時器清單(F-02 §3.6 不再維護任務計時器,亦無 `RegisterMission` API)
+6. 計算預計完成時間 `completionTimestamp = dispatchTimestamp + duration × 60`
+   - `duration` = `C-01.GetBaseDuration(difficulty)`(一般任務)或 `C-01.GetEscortDuration(difficulty)`(護送任務)
+7. 發布 `EventBus.Publish(OnAdventurerDispatched, instanceID, activeMissionID)`
+8. 通知 C-06 危險度計數:`C06.OnMissionAccepted(difficulty)`(C-06 §3 `OnMissionAccepted` 規格;若難度達下一階 `minDifficulty` 則 `acceptedMissionCount += 1`、觸發 `CheckLevelUp()`)
+9. 從 `_commissionBoard` 移除該 `missionID`:若 `_staticMissionPool.Contains(missionID)` 則從 `_staticMissionPool` 移除;否則從 `_regularMissionPool` 移除(`IsCommissionOnBoard` 判斷存在後再移除;若兩池均無則靜默忽略)
 
 > **順序保證**：步驟 3 `OnCommissionAccepted` 在步驟 4 狀態變更前發布——FT-05 預收失敗時（理論上 `AddGoldAllowBankruptcy` 不會 reject，但若未來改語義），Dispatch 可於步驟 3 收到異常即 rollback（Game Jam 階段不實作 rollback，信任 F-03 保證）。
 >
@@ -149,6 +150,8 @@ TickCompletionCheck():
 ```
 
 > 結算後由 FT-04 呼叫 FT-02 `RemoveActiveMission(activeMissionID)` 清理。
+>
+> **FT-02 為任務計時與事件的單一發布點**：F-02 §3 不再維護任務計時器清單，所有任務時序狀態由 FT-02 `activeMissions` 擁有。下游系統（FT-04、P-03）訂閱 `OnMissionCompleted` 而非 F-02 事件。
 
 ### 3.8 查詢 API
 
@@ -161,6 +164,81 @@ TickCompletionCheck():
 | 依冒險者查詢 | `GetActiveMissionByAdventurer(int instanceID) : ActiveMission` | 找不到回傳 `null` |
 | 移除已結算任務 | `RemoveActiveMission(int activeMissionID) : void` | FT-04 結算後呼叫 |
 | 進行中任務數量 | `GetActiveMissionCount() : int` | 派遣前檢查用（對照 FT-07 `GetMaxConcurrentMissions()` 上限） |
+| 取得可用委託 | `GetAvailableCommissions() : IReadOnlyList<int>` | 回傳 `_regularMissionPool ∪ _staticMissionPool` 合集；FT-03 自主接單 + P-02 委託板 UI 用（§3.9.3） |
+| 依來源取得委託 | `GetCommissionsBySource(CommissionSource source) : IReadOnlyList<int>` | `source ∈ {Regular, Static}`；供需要區分的訂閱者（§3.9.3） |
+| 委託是否在池中 | `IsCommissionOnBoard(int missionID) : bool` | 冪等檢查用（§3.9.3） |
+| 注入靜態委託 | `InjectStaticMission(int missionID) : InjectStaticMissionResult` | FT-09 劇情委託注入入口；驗證 `categoryID == 3`（§3.9.2） |
+
+### 3.9 委託板池服務（CommissionBoard）
+
+FT-02 同時擔任「委託板的 runtime 任務池」管理者，持有玩家當前可接的所有委託 missionID 清單。池分兩個子集：
+
+#### 3.9.1 池結構
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| `_regularMissionPool` | `List<int>` | 由常規生成流程（C-06 加權 + C-01 模板）注入的委託 missionID；玩家手動審核 / FT-03 自主接單可派遣 |
+| `_staticMissionPool` | `List<int>` | 由 FT-09 等劇情系統透過 `InjectStaticMission` 注入的靜態委託 missionID（`MissionTemplate.categoryID == 3`）；永久停留至玩家派遣或外部移除 |
+
+> 兩池並存於同一委託板；`GetAvailableCommissions()` 一律回傳合集，呼叫者（FT-03 / P-02）無需區分。
+
+#### 3.9.2 注入 API
+
+**`InjectStaticMission(int missionID) → InjectStaticMissionResult`**
+
+| 回傳碼 | 觸發條件 |
+|---|---|
+| `OK` | 注入成功；`missionID` 加入 `_staticMissionPool`，發布 `OnCommissionPosted(missionID, source=Static)` |
+| `UNKNOWN_MISSION_ID` | `C01.GetTemplate(missionID)` 回 null |
+| `WRONG_CATEGORY` | `template.categoryID != 3` |
+| `ALREADY_ON_BOARD` | `missionID` 已存在於 `_staticMissionPool` 或 `_regularMissionPool`（冪等保護） |
+| `BOARD_DISABLED` | FT-02 暫停或委託板服務未啟用（Jam 階段不會發生） |
+
+呼叫者：FT-09 §3.5.2 ConfirmDialogue Step 4 透過此 API 注入劇情委託。
+
+**`PostRegularMission(int missionID) → PostResult`**（內部 API）
+
+由 FT-02 內部委託生成流程呼叫；將 missionID 加入 `_regularMissionPool` 並發布 `OnCommissionPosted(missionID, source=Regular)`。
+
+**Jam 階段常規生成時序**（最簡規則，三軌並存）:
+
+| 軌道 | 觸發 | 動作 |
+|---|---|---|
+| **啟動填池** | 新遊戲首次進入主場景 + Bootstrap 完成後 | 補滿至 `FT07.GetMissionSlotCount()`(委託板等級決定;對應 §7 Tuning Knob 由 FT-07 BuildingTable 控制),依下方「抽取規則」逐筆呼叫 `PostRegularMission(missionID)` |
+| **每日重置補池** | F-02 `OnDailyReset` 訂閱 callback | 計算缺額 `deficit = max(0, FT07.GetMissionSlotCount() - _regularMissionPool.Count - _staticMissionPool.Count)`(`GetMissionSlotCount` 由 FT-07 §3.4 提供);若 deficit > 0,依下方「抽取規則」逐筆 `PostRegularMission` |
+| **危險度升階補池** | C-06 `OnDangerLevelChanged` 訂閱 callback | 同每日重置:依 `C-06.GetPoolWeights()`(已升階為新權重)補滿至 `FT07.GetMissionSlotCount()` |
+
+**抽取規則**(每筆):
+1. **抽 difficulty**:依 `C-06.GetPoolWeights()` 對 9 種難度做加權隨機(`MissionPoolWeights[currentDangerLevel]` 提供 weightF_E / weightD / weightC / weightB / weightA / weightS_SSS;F_E 與 S_SSS 為合計權重,內部再均勻拆 F/E 與 S/SS/SSS,SSS 不計入常規池)
+2. **抽 missionID**:呼叫 `C-01.GetRegularTemplates(difficulty)`(C-01 §3.3 帶參版本)取該難度的常規模板清單(`categoryID == 0`),從清單中均勻隨機抽一筆
+3. **冪等保護**:同 `missionID` 已在 `_commissionBoard`(任一池)→ 跳過該筆,重抽 difficulty + missionID
+4. **收斂保護**:若連續 N 次抽到重複(N = 目標補池筆數 × 2)→ 放棄剩餘補池,LogWarning「regular pool 收斂(模板池可能不足)」
+
+**設計理由**:Jam 階段不需即時生成(避免 frame-bound 邏輯複雜化);啟動 + 每日 + 危險度升階三個觸發點足以維持「打開遊戲總有委託可接」的核心循環體感。Post-Jam 可擴充為基於時間流逝的連續生成。
+
+#### 3.9.3 查詢 API
+
+| API | 簽名 | 說明 |
+|---|---|---|
+| 取得可用委託 | `GetAvailableCommissions() : IReadOnlyList<int>` | 回傳 `_regularMissionPool ∪ _staticMissionPool` 的合集；FT-03 自主接單（§3.3）+ P-02 委託板 UI 用 |
+| 依 source 取得 | `GetCommissionsBySource(CommissionSource source) : IReadOnlyList<int>` | source ∈ {Regular, Static}；供需要區分的訂閱者 |
+| 是否已在池中 | `IsCommissionOnBoard(int missionID) : bool` | 用於冪等檢查 |
+
+#### 3.9.4 派遣後從池移除
+
+§3.5 step 10 已規範：`Dispatch` 成功後，由 FT-02 內部於 `OnAdventurerDispatched` 之後將 missionID 從對應池移除（`_staticMissionPool` 優先；不存在則嘗試 `_regularMissionPool`）；不發 `OnCommissionRemoved` 事件（派遣本身已透過 `OnAdventurerDispatched` 通知下游）。
+
+#### 3.9.5 事件契約
+
+**`OnCommissionPosted(int missionID, CommissionSource source)`**：任意池注入新 missionID 時發布。
+- `source` enum：`Regular`（常規生成）/ `Static`（劇情靜態注入）
+- 訂閱者：P-02 Main UI（委託板 UI 顯示新委託；Static 可呈現視覺差異）
+
+#### 3.9.6 持久化
+
+`_regularMissionPool` 與 `_staticMissionPool` 由 FT-10 序列化（透過 FT-02 的 ISaveable 實作）；載入後直接還原（missionID 由 C-01 驗證合法性，不合法則跳過並 LogWarning）。
+
+---
 
 ## 4. 公式（Formulas）
 
@@ -286,12 +364,24 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | `RemoveActiveMission` 傳入不存在的 `activeMissionID` | `Debug.LogWarning`，無操作 |
 | FT-04 結算後忘記呼叫 `RemoveActiveMission` | ActiveMission 殘留，每 Tick 重複發布 `OnMissionCompleted`；FT-04 應忽略已結算的重複事件 |
 
+### 5.6 委託板池服務（CommissionBoard）
+
+| 情況 | 處理方式 |
+|------|---------|
+| `InjectStaticMission` 傳入的 `missionID` 在 C-01 找不到 | 回傳 `UNKNOWN_MISSION_ID`，不加入任何池（對應 FT-09 EC-7） |
+| `InjectStaticMission` 傳入的 `missionID` 對應 `categoryID != 3` | 回傳 `WRONG_CATEGORY`，不加入任何池（對應 FT-09 EC-7） |
+| `InjectStaticMission` 同一 `missionID` 重複注入 | 回傳 `ALREADY_ON_BOARD`，冪等保護，不重複加入 |
+| 派遣時 `missionID` 同時存在於 `_staticMissionPool` 與 `_regularMissionPool`（理論不應發生，`ALREADY_ON_BOARD` 保護） | `_staticMissionPool` 優先移除（§3.9.4 靜態優先規則）；`Debug.LogWarning` 提示異常狀態 |
+| `GetAvailableCommissions` 於兩池均空時呼叫 | 回傳空集合，不報錯 |
+| 載入存檔後 `_regularMissionPool` 或 `_staticMissionPool` 內含不合法 `missionID`（C-01 找不到） | 跳過該 missionID，`Debug.LogWarning`；保留合法項目 |
+
 ### 5.5 存檔相關
 
 | 情況 | 處理方式 |
 |------|---------|
 | 需序列化的狀態 | `activeMissions` 列表、`_nextActiveMissionID` 自增計數器 |
 | 載入存檔後 `activeMissionID` 計數器重建 | 取所有 ActiveMission 中最大 `activeMissionID + 1` |
+| 載入存檔後重新訂閱計時事件 | FT-02 在 `RestoreFromSave` 內確認已訂閱 F-02 `OnSecondTick`（若 `OnEnable` 已訂閱則不重複）；`activeMissions` 還原後立即由 `OnSecondTick` 驅動 `TickCompletionCheck`，無需呼叫任何 F-02 計時器 API |
 | 存檔中 `missionID` 在當前 CSV 找不到 | `Debug.LogWarning`，保留 ActiveMission（finalSuccessRate / finalDeathRate 已快照），結算不受影響 |
 | 存檔中 `adventurerInstanceID` 在名冊中找不到 | `Debug.LogError`，移除該 ActiveMission，發布 `OnMissionCancelled` 事件 |
 
@@ -302,7 +392,7 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 | 系統 | 依賴內容 | 介面 |
 |------|---------|------|
 | F-01 DataManager | 載入 `SuccessRateTable`、`DeathRateTable` | `DataManager.GetAll<T>()` |
-| F-02 Time System | 取得當前 timestamp（派遣時間、完成檢查）；訂閱 `OnSecondTick` 驅動完成檢查 | `NowUTC`、Tick 回呼 |
+| F-02 Time System | 取得當前 timestamp（派遣時間）；訂閱 `OnSecondTick` 驅動完成檢查；F-02 不提供計時器清單 API | `NowUTC`、`OnSecondTick` 回呼 |
 | C-01 Mission Database | 查詢任務模板（difficulty, typeID）、任務時長 | `GetTemplate(missionID)`、`GetBaseDuration(difficulty)`、`GetEscortDuration(difficulty)` |
 | C-02 Adventurer Management | 查詢冒險者資料（rank, professionID, raceID, traitIDs, status）；更新狀態 | `GetAdventurer(instanceID)`、`GetByStatus(Idle)`、`UpdateStatus()` |
 | C-03 Profession System | 查詢職業擅長/弱點 | `IsStrongType(professionID, typeID)`、`IsWeakType(professionID, typeID)` |
@@ -315,11 +405,12 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 
 | 系統 | 依賴內容 | 使用介面 |
 |------|---------|---------|
-| FT-03 NPC Decision | 讀取 `CalculateRates` 的成功率/死亡率作為 willingness 計算輸入；自主接單呼叫 `Dispatch(..., NpcAutoPick)` 觸發預收 | `CalculateRates(instanceID, missionID)`、`Dispatch(..., source)` |
+| FT-03 NPC Decision | 讀取 `CalculateRates` 的成功率/死亡率作為 willingness 計算輸入；自主接單呼叫 `Dispatch(..., NpcAutoPick)` 觸發預收；自主接單前呼叫 `GetAvailableCommissions()` 取可派遣任務清單 | `CalculateRates(instanceID, missionID)`、`Dispatch(..., source)`、`GetAvailableCommissions()` |
 | FT-04 Outcome Resolution | 訂閱 `OnMissionCompleted` 事件、讀取 ActiveMission 快照數值進行結算、結算後呼叫移除 | `GetActiveMission(activeMissionID)`、`RemoveActiveMission(activeMissionID)` |
 | FT-05 Guild Gold Flow | 訂閱 `OnCommissionAccepted(missionID, baseReward, source)` 執行預收傭金 | `OnCommissionAccepted` 事件 |
-| FT-10 Save/Load | 序列化/反序列化 `activeMissions` 列表 | `GetActiveMissions()` |
-| P-02 Main UI | 顯示成功率/死亡率預覽、進行中任務列表與倒數計時；玩家手動派遣呼叫 `Dispatch(..., PlayerManual)` | `CalculateRates()`、`GetActiveMissions()`、`GetActiveMissionByAdventurer()`、`Dispatch(..., source)` |
+| FT-09 Faction Story System | 呼叫 `InjectStaticMission(missionID)` 於玩家確認劇情對話後注入靜態劇情委託（§3.9.2）；訂閱 `OnCommissionPosted(missionID, source=Static)` 可選 | `InjectStaticMission(missionID)` |
+| FT-10 Save/Load | 序列化/反序列化 `activeMissions` 列表及 `_regularMissionPool` / `_staticMissionPool` 兩池 | `GetActiveMissions()`、`_regularMissionPool`、`_staticMissionPool`（§3.9.6） |
+| P-02 Main UI | 顯示成功率/死亡率預覽、進行中任務列表與倒數計時；玩家手動派遣呼叫 `Dispatch(..., PlayerManual)`；委託板 UI 呼叫 `GetAvailableCommissions()` 並訂閱 `OnCommissionPosted` 更新顯示 | `CalculateRates()`、`GetActiveMissions()`、`GetActiveMissionByAdventurer()`、`Dispatch(..., source)`、`GetAvailableCommissions()`、`OnCommissionPosted` 事件 |
 
 ### 6.3 循環依賴注意事項
 
@@ -327,6 +418,33 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 - FT-03 讀取 FT-02 `CalculateRates`，FT-02 不依賴 FT-03——**無循環依賴**
 - FT-04 訂閱 FT-02 事件並呼叫 `RemoveActiveMission`，FT-02 不依賴 FT-04——**無循環依賴**
 - FT-02 呼叫 C-06 `OnMissionAccepted`，C-06 不依賴 FT-02——**無循環依賴**
+
+### 6.4 ISaveable 持久化契約
+
+| 欄位 | 值 |
+|---|---|
+| `OwnerKey` | `"ft02Dispatch"` |
+| `IsCritical` | `false`（Degradable；還原失敗時清空進行中任務，玩家失去任務進度但核心循環仍可繼續） |
+
+**`Serialize()` 序列化欄位**：
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| `activeMissions` | `List<ActiveMission>` | 所有進行中任務（§3.5 既定結構） |
+| `_nextActiveMissionID` | `int` | 下一個可用 activeMissionID |
+| `_regularMissionPool` | `List<int>` | 常規委託池（missionID 列表，§3.9.6） |
+| `_staticMissionPool` | `List<int>` | 靜態劇情委託池（missionID 列表，§3.9） |
+
+**`RestoreFromSave(string ownerJson)` 行為**：
+
+1. 反序列化上述欄位。
+2. 逐筆驗證 `ActiveMission.missionID` 透過 `C-01.GetTemplate(missionID)` 確認合法、`adventurerInstanceID` 透過 `C-02.GetAdventurer(instanceID)` 確認存在。
+3. 驗證失敗的單筆 `ActiveMission`：從列表移除並發布 `OnMissionCancelled(activeMissionID)`（對齊 §5.5；C-02 的冒險者狀態由 C-02 在 RestoreFromSave 時已設為 Idle，此事件僅通知下游）。
+4. 還原完成後，FT-02 自行重新訂閱 `F-02.OnSecondTick` 觸發 `TickCompletionCheck`（§5.5 既定，無需外部呼叫）。
+
+**`InitializeAsNewGame()` 預設值**：空 `activeMissions` 列表，`_nextActiveMissionID = 1`，`_regularMissionPool` / `_staticMissionPool` 各為空列表。
+
+對應 FT-10 §3.3.3 拓撲順序 row 6、§3.3.4 Degradable 分類、§6.1 #10（FT-10 設計來源清單）。
 
 ## 7. 可調參數（Tuning Knobs）
 

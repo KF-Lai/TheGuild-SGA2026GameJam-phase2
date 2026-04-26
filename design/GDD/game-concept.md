@@ -404,7 +404,7 @@ if effectiveScore < ACCEPTANCE_THRESHOLD(0.25) → 拒絕
 
 ### 公會進度（Guild Progression）
 
-**公會等級表**：
+**公會等級表（Phase 1 legacy；Phase 2 以 FT-06 GDD 為當前權威）**：
 
 | 等級 | 稱號 | 聲望門檻 | 最大同時任務 | 名冊容量 | 可接難度上限 |
 | ---- | ---- | ---- | ---- | ---- | ---- |
@@ -415,6 +415,8 @@ if effectiveScore < ACCEPTANCE_THRESHOLD(0.25) → 拒絕
 | Lv5 | 傳說尚未終結之處 | ≥150 | 6 | 15 | SSS |
 
 > 等級只升不降。聲望跌回門檻以下不觸發降等。
+>
+> **Phase 2 變更（以 FT-06 GDD §3.5 為準）**:稱號全面更新(新手 / 初階 / 中階 / 高階 / 名聲顯赫的冒險者公會);聲望門檻調整為 0/100/300/700/1500;**老手招募階級上限**(`GetMaxRecruitableRank`)為 D/C/B/A/S(冒險者階級上限為 S);**常規任務難度上限**(`GetMaxMissionDifficulty`)為 D/C/B/A/SS(Lv5 開放 SS 級常規委託,SS 需 trait 擅長才有人接,SSS 透過特殊管道觸發見 FT-09 / C-01);名冊容量與並行任務上限改由 FT-07 BuildingTable 提供(公會大廳 / 公會櫃臺各自獨立升級)。本表保留作為 Phase 1 設計記錄。
 
 **公會建設（5 項，一次性解鎖）**：
 

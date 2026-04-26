@@ -458,8 +458,8 @@ ExecuteRefresh(refreshType, poolID):
                  minGuildLevel ≤ currentGuildLevel ≤ maxGuildLevel AND
                  poolID != currentPoolID
 
-    2. 扣費（僅 Manual）：
-       FT05.TryDeductGold(refreshCost(guildLevel))
+    2. 扣費（僅 Manual；主動消費，走 F-03 標準 API 不允許進入負債）：
+       F03.AddGold(-refreshCost(guildLevel))   // pre-check 已於 step 1 確保 GetGold() ≥ cost
 
     3. 解除過期保留（無條件，所有路徑）：
        FOR each c in reservedCandidates:
@@ -2072,9 +2072,10 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | FT-07 | `GetBuildingLevel(6) : int` | §4.1.3 自動刷新間隔 | 回 0 視為 L0，系統閘關閉 |
 | FT-07 | `GetBuildingLevel(1/4/5) : int` | §3.6 slot 指派驗證（委託板 / 櫃台 / 保險櫃）| slot capacity = 0，對應 effect 回 0 |
 | FT-07 | `BuildingTable[6].upgradeData[L].effectValue` | §4.1.3 間隔查表（經 FT-07 讀 CSV）| 同上 |
-| **F-02 TimeSystem** | `GetUtcNow() : long` | 所有時間戳運算（`now`）| FT-08 拋異常（時間系統為硬依賴）|
-| **F-03 DataManager** | CSV 載入 + schema 驗證 API | 啟動期載入 5 張 FT-08 表 | 驗證失敗 → fail-fast，不啟動遊戲 |
-| **F-01 ResourceManagement** | `GetGold() : long` / `TryDeductGold(amount) : bool` | §4.1.2 手動刷新扣款 | FT-08 手動刷新回 `GOLD_INSUFFICIENT` |
+| **FT-06 Guild Core** | `GetCurrentLevel() : int` | §3.3.4 池可開放性檢查（`pool.minGuildLevel ≤ currentGuildLevel ≤ pool.maxGuildLevel`）| FT-06 缺席時 FT-08 不啟動，屬全域 Bootstrap 失敗 |
+| **F-02 Time System** | `NowUTC : long` (property) | 所有時間戳運算（`now`）| FT-08 拋異常（時間系統為硬依賴）|
+| **F-01 DataManager** | CSV 載入 + schema 驗證 API（`Get<T>` / `GetAll<T>` / `GetInt` / `GetFloat`） | 啟動期載入 5 張 FT-08 表 + `StaffTuning` / `SystemConstants` 常數 | 驗證失敗 → fail-fast，不啟動遊戲 |
+| **F-03 Resource Management** | `GetGold() : int` / `CanAfford(int amount) : bool` / `AddGold(int amount) : bool` | §4.1.2 手動刷新扣款（走 `AddGold(-cost)`，**非** `AddGoldAllowBankruptcy`，因主動消費不允許進入負債，與 FT-07 §3.3 升級流程一致）| FT-08 手動刷新回 `GOLD_INSUFFICIENT` |
 
 ### 6.2 下游消費者（FT-08 被消費）
 
@@ -2137,12 +2138,63 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | 對方 GDD | 需補登記內容 | 狀態 |
 |---|---|---|
 | FT-07 §3.2 / §5.7 / §7.1 / §7.3 | 職員休息室 `maxLevel = 5` + 自動刷新間隔階梯 | ✅ 已寫入（2026-04-25 C1 對齊）|
-| FT-01 §6 | `GetRecruitRefreshReductionSec()` 消費、slot effect 來源為 FT-08 | ⬜ 待處理 |
+| FT-01 §6 | `GetRecruitRefreshReductionSec()` 消費、slot effect 來源為 FT-08 | ✅ 已寫入（2026-04-25 A.4 紀錄；FT-01 §6.1 已列 FT-08 上游）|
 | FT-03 §6 | `GetStaffWillingnessBonus()` 消費已登記、Jam 版無需新增 | ✅ 已存在 |
-| FT-05 §6 / §7 | `OnStaffSalaryDue` 發布者為 FT-08；`GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus` 來源 | ⬜ 待處理 |
-| FT-10 §3 | 序列化契約：`StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` | ⬜ 待處理 |
-| P-02 §6 | 面試 UI UX 責任：簡歷卡 / 上下滑翻動 / 蓋印章 / 保留按鈕 disable 依 `reserveConsumedFlag` | ⬜ 待處理 |
-| `systems-index.md` | FT-08 升級為「Designed（Jam 版完成）」 | ⬜ 待處理 |
+| FT-05 §6 / §7 | `OnStaffSalaryDue` 發布者為 FT-08；`GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus` 來源 | ✅ 已寫入（2026-04-25 A.4 紀錄；FT-05 §6.4 已標 [x]）|
+| FT-10 §3 | 序列化契約：`StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` | ✅ 已寫入（FT-10 §1 設計來源 + §3.3.3 拓撲順序 row 7 + §6.1 #11 + §6.4 #13）|
+| P-02 §6 | 面試 UI UX 責任：簡歷卡 / 上下滑翻動 / 蓋印章 / 保留按鈕 disable 依 `reserveConsumedFlag` | ⬜ 待 P-02 GDD 撰寫時補 |
+| `systems-index.md` | FT-08 升級為「Designed（Jam 版完成）」 | ✅ 已寫入（2026-04-25 A.4 紀錄）|
+
+### 6.7 ISaveable 持久化契約
+
+| 欄位 | 值 |
+|---|---|
+| `OwnerKey` | `"ft08Staff"` |
+| `IsCritical` | `true`（`CandidateCardValidationException` fail-fast，違規 rarity 不可信任整個 staff block，整檔回退；§3.2.3 既定） |
+
+**`Serialize()` 序列化欄位**：
+
+序列化三個子結構（對應 §3.2.3 `StaffPlayerState` schema）：
+
+**(1) `StaffPlayerState`**
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| `pityCounter` | `int` | 保底計數器（跨會話累積） |
+| `nextInstanceID` | `int` | 下一個可用職員 instanceID |
+| `currentPoolID` | `int` | 當前啟用的抽卡池 ID |
+| `lastAutoRefreshTimestamp` | `long` | 最近一次自動刷新的 UTC Unix 秒；0 代表從未刷新 |
+| `reserveConsumedFlag` | `bool` | 本池是否已消費保留名額（永久化） |
+
+**(2) `StaffInstance[]`**（目前名冊中所有職員）
+
+序列化 §3.1 定義的所有 `StaffInstance` 欄位（全部為持久欄位，§3.1 無 runtime-only 例外）。
+
+**(3) `CandidateCard[]`**（`currentCandidates` + `reservedCandidates` 兩個列表）
+
+序列化 §3.2.3 定義的所有 `CandidateCard` 欄位。
+
+**`RestoreFromSave(string ownerJson)` 行為**：
+
+1. 反序列化上述三個子結構。
+2. 逐筆驗證每張 `CandidateCard`：`staffID > 0` 時，`rolledRarity` **必須** 等於 `StaffTable[staffID].rarity`；違規立即拋 `CandidateCardValidationException`（§3.2.3 fail-fast，觸發整檔回退）。
+3. 驗證每個 `StaffInstance` 的狀態機不變式（§3.8.5）：`status`、`assignedBuildingID` 組合合法；違規拋例外（整檔回退）。
+4. 驗證 `StaffTuning` / `StaffPlayerState` 欄位範圍（§3.2.3）；違規拋例外。
+
+**`InitializeAsNewGame()` 預設值**：
+
+| 欄位 | 初始值 |
+|---|---|
+| 職員名冊 | 空列表 |
+| `currentCandidates` | 空列表 |
+| `reservedCandidates` | 空列表 |
+| `pityCounter` | `0` |
+| `nextInstanceID` | `1` |
+| `currentPoolID` | `1` |
+| `lastAutoRefreshTimestamp` | `0` |
+| `reserveConsumedFlag` | `false` |
+
+對應 FT-10 §3.3.3 拓撲順序 row 7、§3.3.4 Critical 分類（`CandidateCardValidationException`）、§6.1 #16（FT-10 設計來源清單）。
 
 ---
 

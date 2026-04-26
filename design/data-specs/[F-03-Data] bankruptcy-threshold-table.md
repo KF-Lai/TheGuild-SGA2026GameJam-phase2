@@ -1,6 +1,12 @@
 # [F-03-Data] BankruptcyThresholdTable
 
-依當前聲望決定破產警告期長度的查找表。
+> **⚠️ Phase 2 已 deprecated(2026-04-26 design-review C4 修補)**:破產警告期長度改由 FT-07 預備金保險櫃等級透過 `F-03.SetBankruptcyWarningDuration()` 主動推送(見 F-03 §3.5 / §3.6 / §4.6 + FT-07 §3.3 / §4.4-4.5)。本表 `warningDurationSec` 欄位**不再 runtime 查詢**;F-03 不主動載入本表。
+>
+> 本規格保留為**設計參考**,記錄 Phase 1 的「依聲望段查倒數」設計意圖。Phase 2 玩法以 FT-07 保險櫃投資緩解破產壓力為主軸。
+>
+> **DataManager 載入清單**:Phase 2 應從 F-03 `ResourceManagement.RegisterTables()` 移除本表;若需保留聲望段資訊,改用 `ReputationLabelTable`(僅 label 文字,無 warningDurationSec)。
+
+依當前聲望決定破產警告期長度的查找表(Phase 1 legacy)。
 
 ## 基本資訊
 
@@ -9,8 +15,8 @@
 - **註冊位置**：F-03 `ResourceManagement.RegisterTables()`（`RuntimeInitializeOnLoadMethod`）
 - **資料類別**：`TheGuild.Gameplay.Resources.BankruptcyThresholdData`
 - **讀取 API**：`DataManager.Instance.GetWhere<BankruptcyThresholdData>(predicate)`
-- **消費者**：
-  - F-03 ResourceManagement：`LookupWarningDuration(reputation)` 依 `reputation ∈ [reputationMin, reputationMax]` 取對應 `warningDurationSec`
+- **消費者**(已 deprecated):
+  - ~~F-03 ResourceManagement:`LookupWarningDuration(reputation)` 依 `reputation ∈ [reputationMin, reputationMax]` 取對應 `warningDurationSec`~~ — **Phase 2 已移除**:F-03 改為被動接收 `SetBankruptcyWarningDuration(int)` 推送(由 FT-07 預備金保險櫃等級觸發,F-03 §3.5 / §3.6 / §4.6 + FT-07 §3.3 / §4.4-4.5);本 runtime 用語為 Phase 1 舊版行為
 
 ## 欄位定義
 

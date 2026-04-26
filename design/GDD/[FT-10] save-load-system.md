@@ -23,7 +23,7 @@ _系統 ID：FT-10_
   - `[C-02] adventurer-management.md` §3.1 / §6 — `AdventurerInstance` runtime 物件由 FT-10 序列化整個名冊
   - `[C-06] world-danger-system.md` §3 — `currentDangerLevel` / `gameStartTimestamp` 由 FT-10 還原；Awake 設預設、FT-10 在 Start 之前還原
   - `[FT-01] adventurer-recruitment.md` §5.4 / §6 — 序列化候選池、刷新時間戳、免費刷新次數
-  - `[FT-02] mission-dispatch.md` §5.5 / §6 — 序列化 `activeMissions` 列表、`_nextActiveMissionID`；載入後重建計數器並由 Mission Dispatch 重新呼叫 `RegisterMission` 還原 F-02 計時器
+  - `[FT-02] mission-dispatch.md` §5.5 / §6 — 序列化 `activeMissions` 列表、`_nextActiveMissionID`；載入後重建計數器，FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`（無需任何 F-02 計時器 API）
   - `[FT-03] npc-decision-system.md` §6 — 透過 C-02 `AdventurerInstance` 一併序列化 `idleSinceTimestamp` / `lastAutoPickupTimestamp`
   - `[FT-04] outcome-resolution.md` §6 — FT-04 **無持久狀態**，不參與序列化
   - `[FT-05] guild-gold-flow.md` — Jam 範疇外，未來擴充收支日誌時訂閱（FT-10 Jam 版不持久化結算歷史）
@@ -190,12 +190,15 @@ FT-10 在玩家層面幾乎是隱形系統——好的存讀檔體驗是「**讓
   "c06WorldDanger": { ... },
   "ft01Recruitment": { ... },
   "ft02Dispatch": { ... },
+  "ft03Decision": {},
   "ft06Guild": { ... },
   "ft07Buildings": { ... },
   "ft08Staff": { ... },
   "factionStorySaveData": { ... }
 }
 ```
+
+> **`ft03Decision` 為薄層 ISaveable**（對齊 FT-03 §6.4）:FT-03 自身**無 instance 級別持久化欄位**（`idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 `AdventurerInstance` 一併序列化）,故 root 範例顯示為空物件 `{}`,實際 `Serialize()` 回傳 `"{}"`。允許省略此 key——若省略,Bootstrap Step C 對 FT-03 呼叫 `RestoreFromSave(null)` 等同 `InitializeAsNewGame()`,僅重新訂閱事件。
 
 **`schemaMeta` 欄位**（FT-10 擁有）：
 
@@ -332,7 +335,7 @@ Phase E: 完成 / 首次遊玩
 | 3 | C-02 Adventurer | `AdventurerInstance[]`（含 FT-03 `idleSinceTimestamp` / `lastAutoPickupTimestamp`） | F-01（驗證 templateID） |
 | 4 | FT-06 Guild Core | `GuildState`（`guildName` / `displayName` / `foundingTimestamp` / `currentLevel` / `gameOverState`） | F-03（聲望門檻判定） |
 | 5 | FT-07 Buildings | `BuildingState[]`（6 棟 `currentLevel`） | FT-06（聲望閘） |
-| 6 | FT-02 Dispatch | `activeMissions[]` / `_nextActiveMissionID`；還原後對每筆 active mission 呼叫 F-02 `RegisterMission` 重建計時器 | C-01（驗證 missionID）/ C-02（驗證 adventurerID） |
+| 6 | FT-02 Dispatch | `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`；`activeMissions` 還原即可立即被檢查，無需額外 API 呼叫 | C-01（驗證 missionID）/ C-02（驗證 adventurerID） |
 | 7 | FT-08 Staff | `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]`；驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` 違規拋 `CandidateCardValidationException`（critical） | F-01（驗證 staffID）/ FT-06（minGuildLevel 閘） |
 | 8 | FT-01 Recruitment | 候選池 / 刷新時間戳 / 免費刷新次數 | C-02（候選即將注入名冊） |
 | 9 | FT-03 NPC Decision | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 一併還原；本階段僅做訂閱重建 | C-02 |
@@ -999,7 +1002,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 4 | C-02 Adventurer Mgmt | `ISaveable` 實作 | 序列化 `AdventurerInstance[]` 完整名冊（含 FT-03 idle 時間戳） | §1 設計來源 + C-02 §3.1 / §6 |
 | 5 | C-06 World Danger | `ISaveable` 實作 | 序列化 `currentDangerLevel` / `gameStartTimestamp` | §1 設計來源 + C-06 §3 |
 | 6 | FT-01 Recruitment | `ISaveable` 實作 | 序列化候選池 / 刷新時間戳 / 免費刷新次數 | §1 設計來源 + FT-01 §5.4 / §6 |
-| 7 | FT-02 Mission Dispatch | `ISaveable` 實作 + `RegisterMission(activeMission)` | 序列化 `activeMissions[]` / `_nextActiveMissionID`；還原後對每筆 active mission 由 FT-02 重新呼叫 `RegisterMission` 重建 F-02 計時器 | §1 設計來源 + FT-02 §5.5 / §6 |
+| 7 | FT-02 Mission Dispatch | `ISaveable` 實作 | 序列化 `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`，不需呼叫任何 F-02 計時器 API | §1 設計來源 + FT-02 §5.5 / §6 |
 | 8 | FT-03 NPC Decision | `ISaveable` 實作（薄層；實際欄位由 C-02 一併處理） | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 已內嵌於 `AdventurerInstance`；FT-03 僅做訂閱重建 | §1 設計來源 + FT-03 §6 |
 | 9 | FT-06 Guild Core | `ISaveable` 實作 + `IsGameOver()` 查詢 + `OnGameOver` 事件 | 序列化 `GuildState` 全量；訂閱 `OnGameOver` 觸發 §3.5.1 封存流程 | §1 設計來源 + FT-06 §3.1 / §3.2 / §3.5 |
 | 10 | FT-07 Guild Building | `ISaveable` 實作 | 序列化 `BuildingState[]`（6 棟 `currentLevel`） | §1 設計來源 + FT-07 §3.1 / §6 |
@@ -1067,7 +1070,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 4 | `[C-02] adventurer-management.md` | 新增 §6 反向依賴：FT-10 透過 `ISaveable` 序列化 `AdventurerInstance[]`；補 `ISaveable` 實作要求 | C-02 §3 / §6 |
 | 5 | `[C-06] world-danger-system.md` | 新增 §6 反向依賴：FT-10 透過 `ISaveable` 還原 `currentDangerLevel` / `gameStartTimestamp`；明示 Awake 設預設、FT-10 在 Start 之前還原的時序 | C-06 §3 / §6 |
 | 6 | `[FT-01] adventurer-recruitment.md` | 新增 §6 反向依賴：FT-10 透過 `ISaveable` 序列化候選池與刷新狀態；補 `ISaveable` 實作要求 | FT-01 §5.4 / §6 |
-| 7 | `[FT-02] mission-dispatch.md` | 新增 §6 反向依賴：FT-10 還原後 FT-02 主動對每筆 active mission 重新呼叫 `RegisterMission` 重建 F-02 計時器；補 `ISaveable` 實作要求 | FT-02 §5.5 / §6 |
+| 7 | `[FT-02] mission-dispatch.md` | 新增 §6 反向依賴：FT-10 還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick`，`activeMissions` 還原即可立即被 `TickCompletionCheck` 驅動；補 `ISaveable` 實作要求 | FT-02 §5.5 / §6 |
 | 8 | `[FT-03] npc-decision-system.md` | 新增 §6 反向依賴：FT-10 透過 C-02 `AdventurerInstance` 一併序列化 idle 時間戳；FT-03 自身的 `RestoreFromSave` 為薄層（僅做訂閱重建） | FT-03 §6 |
 | 9 | `[FT-04] outcome-resolution.md` | 在 §6 / §1 既定範圍補一行「**無持久狀態，不參與序列化**」的明示宣告（已在 FT-10 §1 設計來源引用 FT-04 §6） | FT-04 §6 |
 | 10 | `[FT-05] guild-gold-flow.md` | 在 §6 補一行「Jam 版不持久化結算歷史；FT-10 §1 既定範疇外」的明示宣告（Post-Jam 擴充收支日誌時再修訂） | FT-05 §6 |

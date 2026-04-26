@@ -63,7 +63,16 @@ FT-03 NPC Decision System 負責兩種 NPC 決策行為。
 | `NotInterested` | `willingnessScore` ≥ `ACCEPTANCE_THRESHOLD`，但加上 jitter 後低於門檻 | 今天就是不想接 |
 | `NotWilling` | behavior 特質修正後低於門檻（特質將 willingness 壓低） | 個性使然，拒絕此類任務 |
 
-> 判斷優先序：先算 `willingnessScore`（未加 jitter）確認基礎意願→ 套用 behavior 特質修正 → 加 jitter → 比較門檻。`rejectionReason` 由「哪一步首次讓分數低於門檻」決定。
+> 判斷優先序與三階段中間值（對齊 §4.1 公式步驟）:
+> - **Step 1 後** `willingnessScoreBase` = `finalSuccessRate − finalDeathRate × DEATH_AVERSION`
+> - **Step 2 後** `willingnessScoreAfterTraits` = `willingnessScoreBase + Σ(behavior trait deltas)`
+> - **Step 3 後** `willingnessScoreAfterStaff` = `willingnessScoreAfterTraits + FT08.GetStaffWillingnessBonus()`
+> - **Step 4 後** `effectiveScore` = `willingnessScoreAfterStaff + jitter`(±WILLINGNESS_JITTER)
+>
+> `rejectionReason` 由「**哪一階段首次讓分數低於 `ACCEPTANCE_THRESHOLD`**」決定:
+> - `willingnessScoreBase < threshold` 且死亡率主導(`finalDeathRate × DEATH_AVERSION > finalSuccessRate`)→ `TooRisky`
+> - `willingnessScoreAfterTraits < threshold` 但 `willingnessScoreBase ≥ threshold` → `NotWilling`(behavior 特質壓低)
+> - `effectiveScore < threshold` 但 `willingnessScoreAfterStaff ≥ threshold` → `NotInterested`(jitter 拉低)
 
 ---
 
@@ -99,7 +108,10 @@ AutoPickupTick():
 
 ```
 TryAutoPickup(adventurer, now):
-    candidates = MissionBoard.GetAvailable()   // 已審核、無人推薦進行中、難度 ≤ 公會等級上限
+    candidates = FT02.GetAvailableCommissions()
+                     .Where(missionID => DIFFICULTY_INDEX(C01.GetTemplate(missionID).difficulty)
+                                          <= DIFFICULTY_INDEX(FT06.GetMaxMissionDifficulty()))
+    // 已審核、無人推薦進行中(由 FT-02 §3.9.4 派遣後自動從池移除)、難度 ≤ 公會可接最高任務難度
     bestMission = null
     bestScore   = -∞
     foreach mission in candidates:
@@ -117,6 +129,24 @@ TryAutoPickup(adventurer, now):
 
 > 玩家無法中斷已觸發的自主接單。防止任務被搶走的唯一手段是在計算視窗前主動推薦。
 > `OnAutoPickup` 事件供 P-03 Notification System 顯示通知。
+
+---
+
+### 3.4 查詢與操作 API
+
+| API | 簽名 | 說明 |
+|-----|------|------|
+| 推薦判斷 | `MakeDecision(int instanceID, int missionID) : DecisionResult` | 計算 effectiveScore,回傳接受/拒絕(含 RejectionReason)；冒險者非 Idle 回傳 `accepted=false, rejectionReason=null`(§5.1) |
+| 預覽分數 | `PreviewEffectiveScore(int instanceID, int missionID) : float` | 計算當下 effectiveScore（不含 jitter）供 P-02 顯示;可選 API,主流程使用 `MakeDecision` |
+| 取得 Idle since | `GetIdleSinceTimestamp(int instanceID) : long` | 透過 C-02 AdventurerInstance 查詢(C-02 §3.1 補欄位後) |
+
+### 3.5 事件契約
+
+| 事件 | 觸發時機 | Payload | 訂閱者 |
+|------|---------|--------|-------|
+| `OnAutoPickup` | §3.3 自主接單成功派遣後 | `(int adventurerInstanceID, int missionID)` | P-03 Notification System(顯示「冒險者自行接取委託」) |
+
+> FT-03 不發布其他事件;`OnCommissionAccepted` 由 FT-02 §3.5 step 3 發布(單一發布點原則,見 §6.3)。
 
 ---
 
@@ -206,7 +236,7 @@ CalcEffectiveScore(adventurer, mission, finalSuccessRate, finalDeathRate):
 | 委託板上無可用任務（`candidates` 為空） | 更新 `lastAutoPickupTimestamp`，靜默跳過，等下一個 interval |
 | 所有可用任務的 `bestScore` 均 < `ACCEPTANCE_THRESHOLD` | 更新 `lastAutoPickupTimestamp`，本輪無接單，靜默跳過 |
 | `FT02.Dispatch()` 回傳 `false`（任務在計算瞬間被搶走，或進行中任務數達上限） | 自主接單視為失敗，不重試，等下一個 interval |
-| 離線期間累積多個 `AUTO_PICKUP_INTERVAL` 未觸發 | 重啟後第一次 `OnMinuteTick` 補算一次，不補算所有錯過的 interval |
+| 離線期間累積多個 `AUTO_PICKUP_INTERVAL` 未觸發 | **離線期間 NPC 自主接單暫停**（對齊 F-02 §3.2 rule 6：離線不補發 `OnMinuteTick`）；重啟後依正常節奏接收 `OnMinuteTick`，不主動補算離線期間錯過的 interval。Jam 階段 FT-11 Offline Resolver 未實作，離線自主接單能力延後至 Post-Jam |
 | 存檔讀取後 `lastAutoPickupTimestamp = 0`（新遊戲或首次載入） | 冒險者進入 `Idle` 後正常等待 `AUTO_PICKUP_IDLE_MINUTES` 再觸發，視同正常流程 |
 | 冒險者在 `TryAutoPickup` 執行中途死亡或被玩家推薦（理論上不可能，因為是同一幀邏輯） | 防禦性：`FT02.Dispatch()` 內部檢查狀態，回傳 `false` 時自主接單靜默失敗 |
 
@@ -222,7 +252,8 @@ CalcEffectiveScore(adventurer, mission, finalSuccessRate, finalDeathRate):
 | F-02 Time System | 取得當前 timestamp；訂閱 `OnMinuteTick` 驅動自主接單檢查 | `NowUTC`、Tick 回呼 |
 | C-02 Adventurer Management | 查詢 Idle 冒險者列表；讀取 `idleSinceTimestamp`、`lastAutoPickupTimestamp`；更新這兩個欄位 | `GetByStatus(Idle)`、`GetAdventurer(instanceID)` |
 | C-05 Trait System | 查詢 behavior 類特質 effectTarget / effectValue | `GetTrait(traitID)` |
-| FT-02 Mission Dispatch | 計算成功率/死亡率（推薦判斷與自主接單均使用）；推薦接受後執行派遣（自主接單傳 `source = NpcAutoPick`，FT-02 內部發布 `OnCommissionAccepted` 驅動 FT-05 預收，FT-03 本身**不**直接發布該事件） | `CalculateRates(instanceID, missionID)`、`Dispatch(instanceID, missionID, source)` |
+| FT-02 Mission Dispatch | 計算成功率/死亡率（推薦判斷與自主接單均使用）；推薦接受後執行派遣（自主接單傳 `source = NpcAutoPick`，FT-02 內部發布 `OnCommissionAccepted` 驅動 FT-05 預收，FT-03 本身**不**直接發布該事件）；自主接單時讀取委託板可用任務（依 FT-02 委託板池服務） | `CalculateRates(instanceID, missionID)`、`Dispatch(instanceID, missionID, source)`、`GetAvailableCommissions() : IReadOnlyList<int>`（FT-02 §3.9.3） |
+| FT-06 Guild Core | 自主接單過濾「難度 ≤ 公會可接最高任務難度」（§3.3 TryAutoPickup 候選任務過濾） | `GetMaxMissionDifficulty() : string`（FT-06 §3.6） |
 | FT-08 Guild Staff System | 查詢委託官被動加成值 | `GetStaffWillingnessBonus() : float` |
 
 ### 6.2 下游依賴（依賴 FT-03 的系統）
@@ -238,6 +269,27 @@ CalcEffectiveScore(adventurer, mission, finalSuccessRate, finalDeathRate):
 - FT-03 依賴 FT-02 執行 `CalculateRates` 與 `Dispatch`，FT-02 不依賴 FT-03——**無循環依賴**
 - FT-03 依賴 FT-08 查詢加成，FT-08 不依賴 FT-03——**無循環依賴**
 - FT-03 與 FT-05 Guild Gold Flow 為**間接關係**：FT-03 自主接單 → `FT-02.Dispatch(..., NpcAutoPick)` → FT-02 發布 `OnCommissionAccepted` → FT-05 執行預收。FT-03 不直接呼叫 FT-05 API、不訂閱 FT-05 事件，故 FT-05 不列入 FT-03 § 6.2 下游（單一發布點原則，見 FT-02 § 3.5）。
+
+---
+
+### 6.4 ISaveable 持久化契約
+
+| 欄位 | 值 |
+|---|---|
+| `OwnerKey` | `"ft03Decision"` |
+| `IsCritical` | `false`（Degradable；FT-03 本身無實例級持久狀態） |
+
+**持久化責任說明**：
+
+FT-03 不持有任何實例級狀態。`idleSinceTimestamp` 與 `lastAutoPickupTimestamp` 屬於 `AdventurerInstance`，由 C-02 於 row 3 一併序列化與還原（FT-10 §3.3.3 row 9 / §6.1 #8 既定）。
+
+**`Serialize()` 回傳值**：`"{}"` — 空物件，無業務欄位。
+
+**`RestoreFromSave(string ownerJson)` 行為**：不還原任何欄位；負責重新訂閱 `F-02.OnMinuteTick`（或 `OnSecondTick`）以驅動 `AutoPickupTick`，確保自主接單計時在 Bootstrap 後恢復。
+
+**`InitializeAsNewGame()` 行為**：無任何狀態需重置，僅確認事件訂閱已在 `OnEnable` 中建立（通常由 MonoBehaviour 生命週期處理，此方法為 no-op）。
+
+對應 FT-10 §3.3.3 拓撲順序 row 9、§3.3.4 Degradable 分類、§6.1 #8（FT-10 設計來源清單）。
 
 ---
 

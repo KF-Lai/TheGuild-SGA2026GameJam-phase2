@@ -268,6 +268,39 @@ OnMissionAccepted(difficulty):
 - FT-02 呼叫 C-06 `OnMissionAccepted`，C-06 不依賴 FT-02——**無循環依賴**
 - C-06 主動呼叫 F-03 `SetBankruptcyThreshold`（Core → Foundation 單向推送），F-03 完全不知 C-06 存在——**無循環依賴，無反向依賴**
 
+### 6.4 ISaveable 持久化契約
+
+| 欄位 | 值 |
+|---|---|
+| `OwnerKey` | `"c06WorldDanger"` |
+| `IsCritical` | `false`（Degradable；還原失敗時重置至 E 階，核心循環仍可進行） |
+
+**`Serialize()` 序列化欄位**：
+
+| 欄位 | 型別 | 說明 |
+|---|---|---|
+| `currentDangerLevel` | `string` | 當前危險度階級（`"E"` / `"D"` / `"C"` / `"B"` / `"A"`） |
+| `acceptedMissionCount` | `int` | 朝下一階累積的任務計數 |
+| `gameStartTimestamp` | `long` | 公會建立時的 UTC Unix 秒（時間閘基準） |
+| `_cachedMaxFactionScore` | `int` | FT-09 最近推送的最大陣營分數（陣營閘依據） |
+
+**`RestoreFromSave(string ownerJson)` 行為**：
+
+1. 反序列化上述 4 個欄位。
+2. 驗證 `currentDangerLevel` ∈ `{"E", "D", "C", "B", "A"}`；違規拋例外（觸發 `InitializeAsNewGame()`，對應 Degradable 策略）。
+3. 還原完成後，立即呼叫 `F-03.SetBankruptcyThreshold(GetMaxDebt())` 推送當前危險度對應的破產門檻（§5.2 已定義 `gameStartTimestamp = 0` 的處理）。
+
+**`InitializeAsNewGame()` 預設值**：
+
+| 欄位 | 初始值 |
+|---|---|
+| `currentDangerLevel` | `"E"` |
+| `acceptedMissionCount` | `0` |
+| `gameStartTimestamp` | `NowUTC`（由 F-02 取得） |
+| `_cachedMaxFactionScore` | `0` |
+
+對應 FT-10 §3.3.3 拓撲順序 row 2、§3.3.4 Degradable 分類、§6.1 #5（FT-10 設計來源清單）。
+
 ## 7. 可調參數（Tuning Knobs）
 
 > 時間閘、進度閘、陣營閘的所有閾值均定義於 `WorldDangerTable.csv`，修改平衡值直接改表格，程式碼無需改動。

@@ -45,9 +45,9 @@ _狀態：草稿_
 | FT-05 | **Guild Gold Flow**        | 公會全金流統一執行：預收、結算、維護費、薪水；破產狀態轉移快照 | ✅ 已設計 | `SystemConstants`                         |
 | FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、可接難度上限、Game Over 流程、公會基礎狀態 | ✅ 已設計 | `GuildLevelTable`                         |
 | FT-07 | **Guild Building System**  | 6 棟可升級建築、雙軌閘門（金幣+聲望）、效果值 API（名冊/並行任務/刷新間隔/破產倒數） | ✅ 已設計 | `BuildingTable`                           |
-| FT-08 | **Guild Staff System**     | 多池抽卡面試（A/B 池）、保底、保留、3 種職員效果聚合、每日薪水管線 | ✅ 已設計（Jam 版主結構：§1~§2 / §3.1~§3.2 / §3.6 / §4~§8 完成；§3.3~§3.5 + §3.7~§3.13 待補） | `StaffTable`, `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffTuning`, `StaffPlayerState` |
-| FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情節點                              | 待設計    | `FactionRouteTable`, `StoryNodeTable`     |
-| FT-10 | **Save/Load System**       | Unity 本地存檔、離線計算                                       | 待設計    | —                                         |
+| FT-08 | **Guild Staff System**     | 多池抽卡面試（A/B 池）、保底、保留、5 個 effect/UI flag 聚合 API、薪水管線(Phase 2 Jam 不發) | ✅ 已設計（Jam 版主結構 + Batch C §3.3~§3.13 全部完成;§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2 由 FT-05 統一接管薪水）| `StaffTable`, `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffTuning`, `StaffPlayerState` |
+| FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情階段、`MissionFactionScoreWeight` 加權累分     | ✅ 已設計 | `FactionRouteTable`, `StoryStageTable`, `MissionFactionScoreWeight` |
+| FT-10 | **Save/Load System**       | Unity 本地存檔(三軌寫入策略)、Bootstrap 順序協調、Backup rotation、Game Over 封存、離線計算交棒 F-02         | ✅ 已設計 | —                                         |
 | FT-11 | **Offline Resolver**       | 離線期間 NPC 自主接單追認、結算回補、金流批次補算              | 待設計（Jam 範疇外，佔位） | `SystemConstants`（`OFFLINE_MAX_SECONDS`） |
 
 ### Presentation 層（UI）
@@ -195,8 +195,10 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq                   | —                                                         |
 | `MissionPoolWeights`       | dangerLevel      | weightF_E, weightD, weightC, weightB, weightA, weightS_SSS                             | —                                                         |
 | `BankruptcyThresholdTable` | reputationMin    | reputationMax, warningDurationSec                                                      | —                                                         |
-| `FactionRouteTable`        | factionID (int)  | name, description, threshold                                                           | —                                                         |
-| `StoryNodeTable`           | nodeID           | factionID, nodeIndex, triggerCondition, missionID, dialogueKey                         | factionID                                                 |
+| `FactionRouteTable`        | factionID (int)  | name, description                                                                      | —                                                         |
+| `StoryStageTable`          | stageID (int)    | factionID, stageIndex, scoreThreshold, missionID, dialogueKey（FT-09 §3.2.2）          | factionID, MissionTemplate                                |
+| `MissionFactionScoreWeight` | difficulty (string) | factionScoreDelta（FT-09 §3.2.3,9 種難度全覆蓋）                                  | —                                                         |
+| `VeteranRankWeightTable`   | rank             | weight（FT-01 §4.4 / 7.3,5 階加權隨機表）                                              | —                                                         |
 | `ReputationLabelTable`     | labelID          | name, minReputation, maxReputation                                                     | —                                                         |
 
 ### 文字表（Standalone Text Tables）
@@ -287,6 +289,14 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 
 ---
 
+1. **Sprint 1 開工前 grep audit**:批次處理 FT-09/FT-10 反向依賴 + F-02 §5.2 舊 EC 清理
+2. **Codex 工項書建立順序**:對齊 systems-index Day 1-3 開發優先序
+   - F-01 → F-02 → F-03 → C-01 → C-03 → C-02 → FT-02 → FT-03 → FT-04 → FT-05 → FT-01 → P-02
+3. **資料表 CSV 生成**:依各 GDD §7 與對應 data-spec 規格書,於 Sprint 1 一次性生成
+4. **二次設計爭議若浮現**:本報告「設計層面決策點」4 項可作為複審入口
+
+---
+
 ## 進度追蹤
 
 | 系統                            | 概念 | GDD | 工項需求書 | 實作 | 測試 |
@@ -307,9 +317,9 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-05 Guild Gold Flow           | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
 | FT-06 Guild Core                | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
 | FT-07 Guild Building System     | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-08 Guild Staff System        | ✅   | 🟡 主結構完成（§3.3~§3.5 + §3.7~§3.13 待補）  | ⬜         | ⬜   | ⬜   |
-| FT-09 Faction Story System      | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
-| FT-10 Save/Load System          | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
+| FT-08 Guild Staff System        | ✅   | ✅(§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2)  | ⬜         | ⬜   | ⬜   |
+| FT-09 Faction Story System      | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
+| FT-10 Save/Load System          | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
 | FT-11 Offline Resolver          | ⬜   | ⬜  | ⬜         | ⬜   | ⬜   |
 | P-01 Desktop Transparent Window | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
 | P-02 Main UI Framework          | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
