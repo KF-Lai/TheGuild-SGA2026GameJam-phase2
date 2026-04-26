@@ -5,7 +5,7 @@
 ## 基本資訊
 
 - **檔案路徑**：`TheGuild-unity/Assets/Resources/Data/Tables/VeteranRankWeightTable.csv`
-- **解析方式**：`CsvParser.Parse`（標準 row-based 解析）
+- **解析方式**：`CsvParser.Parse`（column-based）
 - **註冊位置**：F-01 DataManager `Awake` 載入；FT-01 Adventurer Recruitment 透過 `DataManager.Get<VeteranRankWeightData>(rank)` 查詢
 - **讀取 API**：`DataManager.GetAll<VeteranRankWeightData>()` 取全表 + `DataManager.Get<VeteranRankWeightData>(rank)` 取單筆
 - **消費者**：
@@ -42,12 +42,8 @@
 # FT-01 §4.4 RollVeteranRank 使用；對齊 game-concept Phase 1 legacy 加權分布
 # weight 為相對權重，加權隨機由 DataManager 自動正規化
 
-rank,weight
-D,40
-C,30
-B,18
-A,9
-S,3
+rank,D,C,B,A,S
+weight,40,30,18,9,3
 ```
 
 ## 安全範圍與調參指引

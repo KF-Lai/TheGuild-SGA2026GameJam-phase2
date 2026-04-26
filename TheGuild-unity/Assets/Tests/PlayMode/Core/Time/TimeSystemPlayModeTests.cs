@@ -29,7 +29,7 @@ namespace Tests.PlayMode.Core.Time
                 {
                     (Func<string, string>)(name =>
                         name == "SystemConstants"
-                            ? "key,value,description\nDAILY_RESET_HOUR,0,h\nOFFLINE_MAX_SECONDS,604800,c\n"
+                            ? "key,DAILY_RESET_HOUR,OFFLINE_MAX_SECONDS\nvalue,0,604800\ndescription,h,c\n"
                             : null)
                 });
             DataManager.RegisterSystemConstantsTable("SystemConstants");

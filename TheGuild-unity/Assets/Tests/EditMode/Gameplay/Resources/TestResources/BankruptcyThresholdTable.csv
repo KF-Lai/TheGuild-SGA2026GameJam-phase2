@@ -1,7 +1,4 @@
-﻿id,reputationMin,reputationMax,warningDurationSec
-1,-100,-1,86400
-2,0,29,43200
-3,30,59,172800
-4,60,79,259200
-5,80,100,604800
-6,101,200,999
+id,1,2,3,4,5,6
+reputationMin,-100,0,30,60,80,101
+reputationMax,-1,29,59,79,100,200
+warningDurationSec,86400,43200,172800,259200,604800,999

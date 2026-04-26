@@ -12,32 +12,46 @@ namespace Tests.EditMode.Core.Data
     public sealed class DataManagerTests
     {
         private const string TestTableCsv =
-            "id,name,cost,weight,tags,isUnique\n" +
-            "warrior,勇者,100,0.5,melee|physical,true\n" +
-            "mage,法師,150,0.3,ranged|magical,false\n" +
+            "id,warrior,mage,rogue\n" +
+            "name,勇者,法師,盜賊\n" +
+            "cost,100,150,120\n" +
             "# 這是註解\n" +
-            "rogue,盜賊,120,0.2,\"melee|stealth,unique\",1\n";
+            "weight,0.5,0.3,0.2\n" +
+            "tags,melee|physical,ranged|magical,\"melee|stealth,unique\"\n" +
+            "isUnique,true,false,1\n";
 
         private const string TestMissionCsv =
-            "id,title\n" +
-            "123,測試任務\n";
+            "id,123\n" +
+            "title,測試任務\n";
 
         private const string TestSystemConstantsCsv =
-            "key,value,description\n" +
-            "TEST_RATE,0.2,測試用比例\n" +
-            "TEST_COUNT,5,測試用整數\n";
+            "key,TEST_RATE,TEST_COUNT\n" +
+            "value,0.2,5\n" +
+            "description,測試用比例,測試用整數\n";
 
         private const string GroupPoolUniformCsv =
-            "groupID,groupName,memberIDs,pickCount,pickMode,weights\n" +
-            "warrior_traits,戰士池,warrior|mage|rogue,2,uniform,1|1|1\n";
+            "groupID,warrior_traits\n" +
+            "groupName,戰士池\n" +
+            "memberIDs,warrior|mage|rogue\n" +
+            "pickCount,2\n" +
+            "pickMode,uniform\n" +
+            "weights,1|1|1\n";
 
         private const string GroupPoolWeightedCsv =
-            "groupID,groupName,memberIDs,pickCount,pickMode,weights\n" +
-            "weighted_traits,權重池,warrior|mage,1,weighted,7|3\n";
+            "groupID,weighted_traits\n" +
+            "groupName,權重池\n" +
+            "memberIDs,warrior|mage\n" +
+            "pickCount,1\n" +
+            "pickMode,weighted\n" +
+            "weights,7|3\n";
 
         private const string GroupPoolInsufficientCsv =
-            "groupID,groupName,memberIDs,pickCount,pickMode,weights\n" +
-            "small_pool,小池,warrior|mage|rogue,5,uniform,1|1|1\n";
+            "groupID,small_pool\n" +
+            "groupName,小池\n" +
+            "memberIDs,warrior|mage|rogue\n" +
+            "pickCount,5\n" +
+            "pickMode,uniform\n" +
+            "weights,1|1|1\n";
 
         [SetUp]
         public void SetUp()
@@ -291,7 +305,7 @@ namespace Tests.EditMode.Core.Data
             {
                 if (name == "DuplicateTable")
                 {
-                    return "id,title\nrow1,替換成功\n";
+                    return "id,row1\ntitle,替換成功\n";
                 }
 
                 return null;

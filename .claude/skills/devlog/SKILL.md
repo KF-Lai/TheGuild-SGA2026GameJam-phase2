@@ -1,6 +1,6 @@
 ---
 name: devlog
-description: "Summarizes today's development work and appends a new DevelopLog_YYMMDD.md into the DevLogs/ folder. Compares against previous logs to capture only new items."
+description: "Summarizes today's development work and appends a new DevelopLog_YYMMDD.md into the devlogs/ folder at project root. Compares against previous logs to capture only new items."
 argument-hint: "(no arguments needed)"
 user-invocable: true
 allowed-tools: Read, Glob, Write, Bash
@@ -14,14 +14,14 @@ Get today's date from the system context (`currentDate`). Format as `YYMMDD` for
 
 ## 2. Check for Existing Log
 
-Check if `DevLogs/DevelopLog_YYMMDD.md` already exists for today.
+Check if `devlogs/DevelopLog_YYMMDD.md` already exists for today.
 
 - If it exists: read it to avoid duplicating entries. Offer to append new items or overwrite.
 - If it does not exist: proceed to create.
 
 ## 3. Read Previous Log for Comparison
 
-Read the most recent existing log in `DevLogs/` (sorted by filename descending) to understand what was already recorded. This helps identify what is genuinely new today.
+Read the most recent existing log in `devlogs/` (sorted by filename descending) to understand what was already recorded. This helps identify what is genuinely new today.
 
 ## 4. Summarize Today's Work
 
@@ -33,7 +33,7 @@ Summarize the current session's development activities following these principle
 
 ## 5. Write the Log
 
-Create `DevLogs/DevelopLog_YYMMDD.md` using this template:
+Create `devlogs/DevelopLog_YYMMDD.md` using this template:
 
 ```markdown
 # DevLog — YYYY-MM-DD

@@ -35,16 +35,25 @@ namespace TheGuild.Core.Data
             }
 
             List<CsvRow> rows = ParseRows(csvText);
-            int headerIndex = FindHeaderIndex(rows, commentPrefix);
-            if (headerIndex < 0)
+            int pkRowIndex = FindHeaderIndex(rows, commentPrefix);
+            if (pkRowIndex < 0)
             {
                 return result;
             }
 
-            List<string> headers = rows[headerIndex].Columns;
-            Dictionary<string, MemberBinding> memberMap = GetMemberMap(dataType);
+            CsvRow pkRow = rows[pkRowIndex];
+            List<string> pkColumns = pkRow.Columns;
+            string pkColumnName = pkColumns.Count > 0 ? pkColumns[0].Trim() : string.Empty;
+            if (string.IsNullOrEmpty(pkColumnName))
+            {
+                Debug.LogError($"[CsvParser] 主鍵欄位為空：表格={tableName}，行={pkRow.LineNumber}");
+                return result;
+            }
 
-            for (int i = headerIndex + 1; i < rows.Count; i++)
+            Dictionary<string, MemberBinding> memberMap = GetMemberMap(dataType);
+            List<CsvRow> fieldRows = new List<CsvRow>();
+
+            for (int i = pkRowIndex + 1; i < rows.Count; i++)
             {
                 CsvRow row = rows[i];
                 if (IsIgnorableRow(row.Columns, commentPrefix))
@@ -52,34 +61,46 @@ namespace TheGuild.Core.Data
                     continue;
                 }
 
-                if (row.Columns.Count != headers.Count)
+                if (row.Columns.Count != pkColumns.Count)
                 {
                     Debug.LogWarning($"[CsvParser] 欄位數不符，已跳過：表格={tableName}，列號={row.LineNumber}");
                     continue;
                 }
 
-                string id = row.Columns[0].Trim();
+                fieldRows.Add(row);
+            }
+
+            for (int col = 1; col < pkColumns.Count; col++)
+            {
+                string id = pkColumns[col].Trim();
                 if (string.IsNullOrEmpty(id))
                 {
-                    Debug.LogWarning($"[CsvParser] 主鍵為空，已跳過：表格={tableName}，列號={row.LineNumber}");
+                    Debug.LogWarning($"[CsvParser] 主鍵為空，已跳過：表格={tableName}，列號={pkRow.LineNumber}");
                     continue;
                 }
 
                 object instance = Activator.CreateInstance(dataType);
-                for (int col = 0; col < headers.Count; col++)
+                if (memberMap.TryGetValue(pkColumnName, out MemberBinding pkBinding))
                 {
-                    string header = headers[col].Trim();
-                    if (string.IsNullOrEmpty(header))
+                    object converted = ConvertValue(pkColumns[col], pkBinding.MemberType, tableName, pkRow.LineNumber, pkColumnName, listSeparator);
+                    pkBinding.SetValue(instance, converted);
+                }
+
+                for (int rowIndex = 0; rowIndex < fieldRows.Count; rowIndex++)
+                {
+                    CsvRow fieldRow = fieldRows[rowIndex];
+                    string fieldName = fieldRow.Columns[0].Trim();
+                    if (string.IsNullOrEmpty(fieldName))
                     {
                         continue;
                     }
 
-                    if (!memberMap.TryGetValue(header, out MemberBinding binding))
+                    if (!memberMap.TryGetValue(fieldName, out MemberBinding binding))
                     {
                         continue;
                     }
 
-                    object converted = ConvertValue(row.Columns[col], binding.MemberType, tableName, row.LineNumber, header, listSeparator);
+                    object converted = ConvertValue(fieldRow.Columns[col], binding.MemberType, tableName, fieldRow.LineNumber, fieldName, listSeparator);
                     binding.SetValue(instance, converted);
                 }
 
@@ -101,42 +122,43 @@ namespace TheGuild.Core.Data
         {
             Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.Ordinal);
             List<CsvRow> rows = ParseRows(csvText);
-            int headerIndex = FindHeaderIndex(rows, commentPrefix);
-            if (headerIndex < 0)
-            {
-                return result;
-            }
-
-            List<string> headers = rows[headerIndex].Columns;
-            int keyIndex = FindColumnIndex(headers, "key");
-            int valueIndex = FindColumnIndex(headers, "value");
-
-            if (keyIndex < 0 || valueIndex < 0)
+            int keyRowIndex = FindHeaderIndex(rows, commentPrefix);
+            if (keyRowIndex < 0)
             {
                 Debug.LogError($"[CsvParser] SystemConstants 缺少 key/value 欄位：表格={tableName}");
                 return result;
             }
 
-            for (int i = headerIndex + 1; i < rows.Count; i++)
+            CsvRow keyRow = rows[keyRowIndex];
+            int valueRowIndex = FindNextContentRowIndex(rows, keyRowIndex + 1, commentPrefix);
+
+            if (!IsNamedRow(keyRow.Columns, "key") || valueRowIndex < 0)
             {
-                CsvRow row = rows[i];
-                if (IsIgnorableRow(row.Columns, commentPrefix))
-                {
-                    continue;
-                }
+                Debug.LogError($"[CsvParser] SystemConstants 缺少 key/value 欄位：表格={tableName}");
+                return result;
+            }
 
-                if (row.Columns.Count != headers.Count)
-                {
-                    Debug.LogWarning($"[CsvParser] 欄位數不符，已跳過：表格={tableName}，列號={row.LineNumber}");
-                    continue;
-                }
+            CsvRow valueRow = rows[valueRowIndex];
+            if (!IsNamedRow(valueRow.Columns, "value"))
+            {
+                Debug.LogError($"[CsvParser] SystemConstants 缺少 key/value 欄位：表格={tableName}");
+                return result;
+            }
 
-                string key = row.Columns[keyIndex].Trim();
-                string value = row.Columns[valueIndex].Trim();
+            if (valueRow.Columns.Count != keyRow.Columns.Count)
+            {
+                Debug.LogWarning($"[CsvParser] 欄位數不符，已跳過：表格={tableName}，列號={valueRow.LineNumber}");
+                return result;
+            }
+
+            for (int col = 1; col < keyRow.Columns.Count; col++)
+            {
+                string key = keyRow.Columns[col].Trim();
+                string value = valueRow.Columns[col].Trim();
 
                 if (string.IsNullOrEmpty(key))
                 {
-                    Debug.LogWarning($"[CsvParser] SystemConstants key 為空，已跳過：表格={tableName}，列號={row.LineNumber}");
+                    Debug.LogWarning($"[CsvParser] SystemConstants key 為空，已跳過：表格={tableName}，列號={keyRow.LineNumber}");
                     continue;
                 }
 
@@ -149,6 +171,26 @@ namespace TheGuild.Core.Data
             }
 
             return result;
+        }
+
+        private static bool IsNamedRow(List<string> columns, string expectedName)
+        {
+            return columns != null
+                && columns.Count > 0
+                && string.Equals(columns[0].Trim(), expectedName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int FindNextContentRowIndex(List<CsvRow> rows, int startIndex, char commentPrefix)
+        {
+            for (int i = startIndex; i < rows.Count; i++)
+            {
+                if (!IsIgnorableRow(rows[i].Columns, commentPrefix))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private static Dictionary<string, MemberBinding> GetMemberMap(Type dataType)

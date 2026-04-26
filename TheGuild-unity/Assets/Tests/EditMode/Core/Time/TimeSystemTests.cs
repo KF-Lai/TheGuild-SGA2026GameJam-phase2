@@ -505,9 +505,9 @@ namespace Tests.EditMode.Core.Time
                     return null;
                 }
 
-                return "key,value,description\n" +
-                       "DAILY_RESET_HOUR,0,utc hour\n" +
-                       "OFFLINE_MAX_SECONDS,604800,max offline sec\n";
+                return "key,DAILY_RESET_HOUR,OFFLINE_MAX_SECONDS\n" +
+                       "value,0,604800\n" +
+                       "description,utc hour,max offline sec\n";
             };
 
             setProvider?.Invoke(null, new object[] { provider });

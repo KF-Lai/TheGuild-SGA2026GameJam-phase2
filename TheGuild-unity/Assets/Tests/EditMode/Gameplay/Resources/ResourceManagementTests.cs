@@ -438,13 +438,9 @@ namespace Tests.EditMode.Gameplay.Resources
         {
             if (tableName == "SystemConstants")
             {
-                return "key,value,description\n" +
-                       "DAILY_RESET_HOUR,0,UTC hour\n" +
-                       "OFFLINE_MAX_SECONDS,604800,cap\n" +
-                       "GOLD_INITIAL,100,initial\n" +
-                       "GOLD_MAX,9999999,max\n" +
-                       "REPUTATION_MIN,-100,min\n" +
-                       "REPUTATION_MAX,100,max\n";
+                return "key,DAILY_RESET_HOUR,OFFLINE_MAX_SECONDS,GOLD_INITIAL,GOLD_MAX,REPUTATION_MIN,REPUTATION_MAX\n" +
+                       "value,0,604800,100,9999999,-100,100\n" +
+                       "description,UTC hour,cap,initial,max,min,max\n";
             }
 
             return null;

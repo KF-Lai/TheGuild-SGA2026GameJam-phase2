@@ -82,7 +82,7 @@ skill 內**不複述**上述內容；DS 產出時若需引用，以 markdown lin
 ## 基本資訊
 
 - **檔案路徑**：`TheGuild-unity/Assets/Resources/Data/Tables/<TableName>.csv`
-- **解析方式**：`CsvParser.Parse`（一般 row-based）｜ `CsvParser.ParseSystemConstants`（key-value 表）
+- **解析方式**：`CsvParser.Parse`（column-based / 轉置格式）｜ `CsvParser.ParseSystemConstants`（key-value 表，亦為 column-based）
 - **註冊位置**：<Owner 系統的 RegisterTables() / RuntimeInitializeOnLoadMethod，未明示則寫 GDD 章節依據>
 - **資料類別**：`<C# class FQN，例：TheGuild.Gameplay.Resources.BankruptcyThresholdData>`（key-value 表填「無」）
 - **讀取 API**：`DataManager.Get<T>(key)` / `GetAll<T>()` / `GetWhere<T>(predicate)` 等實際 API
@@ -123,12 +123,12 @@ skill 內**不複述**上述內容；DS 產出時若需引用，以 markdown lin
 # === <表用途> ===
 # <說明：對齊 GDD §章節 / game-concept 哪段設計>
 
-<header,row>
-<row 1>
-<row 2>
-<row 3>
+<pkFieldName,record1ID,record2ID,record3ID>
+<field2Name,record1Value,record2Value,record3Value>
+<field3Name,record1Value,record2Value,record3Value>
+<...>
 ```
-（3~5 列；數值務必對齊 GDD §7 給的調參或 game-concept 的設計意圖，不自行推測）
+（每個欄位一列；3~5 筆記錄，數值務必對齊 GDD §7 給的調參或 game-concept 的設計意圖，不自行推測；CSV 為 column-based / 轉置格式，規範見 `.claude/rules/data-files.md`）
 
 ## 附錄（依需要保留，無內容則整段刪除）
 

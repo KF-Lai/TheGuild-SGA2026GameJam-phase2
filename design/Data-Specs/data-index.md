@@ -28,6 +28,8 @@
 
 CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義於 [`.claude/rules/data-files.md`](../../.claude/rules/data-files.md)（規範來源：`design/GDD/【F-01】data-manager.md` §3.2）。新增或修改 CSV 前先檢視該規則檔。
 
+> **2026-04-26 格式變更**：CSV 從 row-based 改為 **column-based / 轉置格式**（第一列為 PK 列，後續每列為一個欄位的定義列）。所有 DS 範例與測試 fixture 已同步轉置；解析邏輯見 `CsvParser.Parse` / `ParseSystemConstants`。
+
 本索引僅維護表格清單、Owner GDD、系統分類、DataSpec 與 CSV 實作狀態。
 
 ---
@@ -56,17 +58,17 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱 | GDD 來源 | 系統分類 | DataSpec 狀態 | CSV 狀態 |
 |---|---|---|---|---|
-| `MissionTemplate.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
-| `MissionTypeTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
-| `MissionCategoryTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
-| `MissionDifficultyTable.csv` | 【C-01】mission-database.md §3.1（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta；FT-02 §3.2 與 FT-09 §3.2.3 為消費者視角引用） | Core / C-01 MissionDatabase | 📐 | 📐 |
-| `AdventurerTemplate.csv` | 【C-02】adventurer-management.md | Core / C-02 AdventurerManagement | 📐 | 📐 |
-| `RecruitCostTable.csv` | 【C-02】adventurer-management.md §3.3 + §7.2（FT-01 §7.2 為消費者視角的引用） | Core / C-02 AdventurerManagement | 📐 | 📐 |
-| `ProfessionTable.csv` | 【C-03】profession-system.md §3.1 + §7.1（合併 raceIDs / raceWeights / traitGroupIDs；C-04 §3.2 與 C-05 §3.4 為消費者視角引用） | Core / C-03 ProfessionSystem | 📐 | 📐 |
-| `RaceTable.csv` | 【C-04】race-system.md §3.1 + §7.1 | Core / C-04 RaceSystem | 📐 | 📐 |
-| `TraitTable.csv` | 【C-05】trait-system.md §3.1 + §7.1 | Core / C-05 TraitSystem | 📐 | 📐 |
-| `TraitGroupTable.csv` | 【C-05】trait-system.md §3.3 + §7.2 | Core / C-05 TraitSystem | 📐 | 📐 |
-| `WorldDangerTable.csv` | 【C-06】world-danger-system.md §3.1 + §7.1~§7.3（單表整合升級閘 / 任務池權重 / 債務上限） | Core / C-06 WorldDangerSystem | 📐 | 📐 |
+| `MissionTemplate.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-template.md` | 📐 |
+| `MissionTypeTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-type-table.md` | 📐 |
+| `MissionCategoryTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-category-table.md` | 📐 |
+| `MissionDifficultyTable.csv` | 【C-01】mission-database.md §3.1（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta；FT-02 §3.2 與 FT-09 §3.2.3 為消費者視角引用） | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-difficulty-table.md` | 📐 |
+| `AdventurerTemplate.csv` | 【C-02】adventurer-management.md | Core / C-02 AdventurerManagement | ✅ `[C-02-DS] adventurer-template.md` | 📐 |
+| `RecruitCostTable.csv` | 【C-02】adventurer-management.md §3.3 + §7.2（FT-01 §7.2 為消費者視角的引用） | Core / C-02 AdventurerManagement | ✅ `[C-02-DS] recruit-cost-table.md` | 📐 |
+| `ProfessionTable.csv` | 【C-03】profession-system.md §3.1 + §7.1（合併 raceIDs / raceWeights / traitGroupIDs；C-04 §3.2 與 C-05 §3.4 為消費者視角引用） | Core / C-03 ProfessionSystem | ✅ `[C-03-DS] profession-table.md` | 📐 |
+| `RaceTable.csv` | 【C-04】race-system.md §3.1 + §7.1 | Core / C-04 RaceSystem | ✅ `[C-04-DS] race-table.md` | 📐 |
+| `TraitTable.csv` | 【C-05】trait-system.md §3.1 + §7.1 | Core / C-05 TraitSystem | ✅ `[C-05-DS] trait-table.md` | 📐 |
+| `TraitGroupTable.csv` | 【C-05】trait-system.md §3.3 + §7.2 | Core / C-05 TraitSystem | ✅ `[C-05-DS] trait-group-table.md` | 📐 |
+| `WorldDangerTable.csv` | 【C-06】world-danger-system.md §3.1 + §7.1~§7.3（單表整合升級閘 / 任務池權重 / 債務上限） | Core / C-06 WorldDangerSystem | ✅ `[C-06-DS] world-danger-table.md` | 📐 |
 
 ---
 
@@ -128,10 +130,10 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | 分類 | 表格數 | DataSpec ✅ | CSV ✅ |
 |---|---|---|---|
 | Foundation | 2 | 2 | 0 |
-| Core | 11 | 0 | 0 |
+| Core | 11 | 11 | 0 |
 | Feature | 14 | 1 | 0 |
 | 文字表 | 6 | 0 | 0 |
-| **總計（active）** | **33** | **3** | **0** |
+| **總計（active）** | **33** | **14** | **0** |
 | 歸檔 | 9 | 1 | — |
 
 > 2026-04-26 合併批次：移除 7 張表（A1 + A2 + B1 + B2），BankruptcyThresholdTable 移到歸檔分區（原計入 Foundation）；總表數 40 → 33。

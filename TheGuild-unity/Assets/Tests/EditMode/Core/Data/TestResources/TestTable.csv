@@ -1,5 +1,7 @@
-id,name,cost,weight,tags,isUnique
-warrior,勇者,100,0.5,melee|physical,true
-mage,法師,150,0.3,ranged|magical,false
+id,warrior,mage,rogue
+name,勇者,法師,盜賊
+cost,100,150,120
+weight,0.5,0.3,0.2
+tags,melee|physical,ranged|magical,"melee|stealth,unique"
+isUnique,true,false,1
 # 這是註解，會被跳過
-rogue,盜賊,120,0.2,"melee|stealth,unique",1

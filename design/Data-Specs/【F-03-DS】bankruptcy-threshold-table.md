@@ -13,7 +13,7 @@
 ## 基本資訊
 
 - **檔案路徑**：`TheGuild-unity/Assets/Resources/Data/Tables/BankruptcyThresholdTable.csv`
-- **解析方式**：`CsvParser.Parse`（一般資料表，第一欄為 PK）
+- **解析方式**：`CsvParser.Parse`（column-based）
 - **註冊位置**：F-03 `ResourceManagement.RegisterTables()`（`RuntimeInitializeOnLoadMethod`）
 - **資料類別**：`TheGuild.Gameplay.Resources.BankruptcyThresholdData`
 - **讀取 API**：`DataManager.Instance.GetWhere<BankruptcyThresholdData>(predicate)`
@@ -58,15 +58,11 @@
 # 依當前聲望決定金幣低於門檻時的警告期長度（秒）
 # 區間 inclusive，須完整覆蓋 -100~100，避免落入 fallback (86400 秒)
 
-ID,reputationMin,reputationMax,warningDurationSec
-# --- 負聲望段：警告期短，玩家壓力大 ---
-1,-100,-1,86400
-# --- 正聲望段：警告期遞增，給玩家更多翻身空間 ---
-2,0,29,43200
-3,30,59,172800
-4,60,79,259200
-5,80,100,604800
+ID,1,2,3,4,5
+reputationMin,-100,0,30,60,80
+reputationMax,-1,29,59,79,100
+warningDurationSec,86400,43200,172800,259200,604800
 
-# 下面這條是測試 fallback 行為用（超出聲望上限），實機請勿開啟
-#6,101,200,999
+# 若要新增第 6 段（超出聲望上限，測試 fallback 行為用），於 PK 列加 ",6"，
+# 各欄位列分別加 ",101" / ",200" / ",999"；實機請勿開啟。
 ```

@@ -56,16 +56,9 @@
 # === 系統常數 ===
 # parser 只認 key 與 value 欄位；description 純供設計師備註
 
-key,value,description
-# --- 時間系統 ---
-DAILY_RESET_HOUR,0,每日重置 UTC 小時（0~23）
-OFFLINE_MAX_SECONDS,604800,離線時間上限（7 天 = 604800 秒）
-
-# --- 資源系統 ---
-GOLD_INITIAL,200,公會初始金幣
-GOLD_MAX,9999999,金幣上限
-REPUTATION_MIN,-100,聲望下限
-REPUTATION_MAX,100,聲望上限
+key,DAILY_RESET_HOUR,OFFLINE_MAX_SECONDS,GOLD_INITIAL,GOLD_MAX,REPUTATION_MIN,REPUTATION_MAX
+value,0,604800,200,9999999,-100,100
+description,每日重置 UTC 小時（0~23）,離線時間上限（7 天 = 604800 秒）,公會初始金幣,金幣上限,聲望下限,聲望上限
 
 # 下面這條暫時關掉（測試用）
 #STARTING_DEBT,500,起始負債

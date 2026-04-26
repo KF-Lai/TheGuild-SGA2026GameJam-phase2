@@ -5,7 +5,7 @@
 ## 基本資訊
 
 - **檔案路徑**：`TheGuild-unity/Assets/Resources/Data/Tables/ReputationLabelTable.csv`
-- **解析方式**：`CsvParser.Parse`（一般 row-based，第一欄為 PK）
+- **解析方式**：`CsvParser.Parse`（column-based）
 - **註冊位置**：F-03 `ResourceManagement`（或 UI 初始化流程）透過 F-01 DataManager 載入；GDD §3.7 / §6.1
 - **資料類別**：（GDD 未指定對應 C# 類別名稱；建議 `TheGuild.Gameplay.Resources.ReputationLabelData`）
 - **讀取 API**：`DataManager.GetWhere<ReputationLabelData>(r => currentReputation >= r.minReputation && currentReputation <= r.maxReputation)`
@@ -50,17 +50,10 @@
 # 依 F-03 §3.7：10 筆完整覆蓋 -100~100，無缺口、無重疊
 # label 文字為設計師填入（GDD 未指定，此處為佔位示範）
 
-ID,minReputation,maxReputation,label
-1,-100,-81,臭名昭著
-2,-80,-61,惡名在外
-3,-60,-41,不受信任
-4,-40,-21,默默無聞
-5,-20,-1,初出茅廬
-6,0,19,小有名氣
-7,20,39,頗具聲望
-8,40,59,遠近馳名
-9,60,79,聲名赫赫
-10,80,100,傳奇公會
+ID,1,2,3,4,5,6,7,8,9,10
+minReputation,-100,-80,-60,-40,-20,0,20,40,60,80
+maxReputation,-81,-61,-41,-21,-1,19,39,59,79,100
+label,臭名昭著,惡名在外,不受信任,默默無聞,初出茅廬,小有名氣,頗具聲望,遠近馳名,聲名赫赫,傳奇公會
 ```
 
 （10 列示範；`label` 文字為暫定佔位，正式值由設計師確認後填入。）
