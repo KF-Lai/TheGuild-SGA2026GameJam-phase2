@@ -29,6 +29,10 @@ namespace TheGuild.Gameplay.Resources
         /// </summary>
         public long WarningDurationSec;
         /// <summary>
+        /// 快照建立時的目前破產警告持續秒數設定。
+        /// </summary>
+        public long CurrentWarningDuration;
+        /// <summary>
         /// 快照建立時的目前破產門檻。
         /// </summary>
         public int CurrentBankruptcyThreshold;

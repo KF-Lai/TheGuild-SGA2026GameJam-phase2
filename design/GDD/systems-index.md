@@ -27,26 +27,26 @@ _狀態：草稿_
 
 | ID   | 系統                      | 說明                                                        | GDD 狀態  | 對應資料表                                                                                    |
 | ---- | ------------------------- | ----------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------- |
-| C-01 | **Mission Database**      | 任務模板、難度（F~SSS）、類型、報酬、時長；D-02 文字 Facade | ✅ 已設計 | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `RewardTable`, `DurationTable` |
+| C-01 | **Mission Database**      | 任務模板、難度（F~SSS）、類型、報酬、時長、死亡率、陣營加分；D-02 文字 Facade | ✅ 已設計 | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `MissionDifficultyTable`（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta，由 FT-02 / FT-09 共用消費） |
 | C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊                     | ✅ 已設計 | `AdventurerTemplate`, `RecruitCostTable`                                                      |
 | C-03 | **Profession System**     | 7 種職業定義、擅長/弱點、成功率修正                         | ✅ 已設計 | `ProfessionTable`                                                                             |
-| C-04 | **Race System**           | 種族定義、屬性修正（如精靈調查+10%）                        | ✅ 已設計 | `RaceTable`, `ProfessionRacePool`                                                             |
+| C-04 | **Race System**           | 種族定義、屬性修正（如精靈調查+10%）                        | ✅ 已設計 | `RaceTable`（owner）；職業 → 種族池欄位 `raceIDs` / `raceWeights` 已合併入 C-03 `ProfessionTable` |
 | C-05 | **Trait System**          | 個性特質、行為/數值影響、隨機抽取群組                       | ✅ 已設計 | `TraitTable`, `TraitGroupTable`                                                               |
-| C-06 | **World Danger System**   | 5 階全局壓力、時間閘+進度閘+陣營閘、任務池偏移              | ✅ 已設計 | `WorldDangerTable`, `MissionPoolWeights`, `DebtLimitTable`                                    |
+| C-06 | **World Danger System**   | 5 階全局壓力、時間閘+進度閘+陣營閘、任務池偏移              | ✅ 已設計 | `WorldDangerTable`（單表整合升級閘 / 池權重 / 債務上限）                                       |
 
 ### Feature 層（依賴 Core）
 
 | ID    | 系統                       | 說明                                                           | GDD 狀態  | 對應資料表                                |
 | ----- | -------------------------- | -------------------------------------------------------------- | --------- | ----------------------------------------- |
 | FT-01 | **Adventurer Recruitment** | 新手自薦（自動刷新）、老手邀請（費用+聲望）                    | ✅ 已設計 | `RecruitCostTable`                        |
-| FT-02 | **Mission Dispatch**       | 推薦機制、rankDiff、成功率/死亡率公式                          | ✅ 已設計 | `SuccessRateTable`, `DeathRateTable`      |
+| FT-02 | **Mission Dispatch**       | 推薦機制、rankDiff、成功率/死亡率公式                          | ✅ 已設計 | `SuccessRateTable`（owner）；`baseDeathRate` 消費 C-01 `MissionDifficultyTable` |
 | FT-03 | **NPC Decision System**    | willingness 公式、接受/拒絕、閒置自主接單                      | ✅ 已設計 | `SystemConstants`                         |
 | FT-04 | **Outcome Resolution**     | 5 種結算結果、condition 救活、聲望變化、事件發布               | ✅ 已設計 | `ReputationDeltaTable`, `SystemConstants` |
 | FT-05 | **Guild Gold Flow**        | 公會全金流統一執行：預收、結算、維護費、薪水；破產狀態轉移快照 | ✅ 已設計 | `SystemConstants`                         |
 | FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、可接難度上限、Game Over 流程、公會基礎狀態 | ✅ 已設計 | `GuildLevelTable`                         |
 | FT-07 | **Guild Building System**  | 6 棟可升級建築、雙軌閘門（金幣+聲望）、效果值 API（名冊/並行任務/刷新間隔/破產倒數） | ✅ 已設計 | `BuildingTable`                           |
 | FT-08 | **Guild Staff System**     | 多池抽卡面試（A/B 池）、保底、保留、5 個 effect/UI flag 聚合 API、薪水管線(Phase 2 Jam 不發) | ✅ 已設計（Jam 版主結構 + Batch C §3.3~§3.13 全部完成;§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2 由 FT-05 統一接管薪水）| `StaffTable`, `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffTuning`, `StaffPlayerState` |
-| FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情階段、`MissionFactionScoreWeight` 加權累分     | ✅ 已設計 | `FactionRouteTable`, `StoryStageTable`, `MissionFactionScoreWeight` |
+| FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情階段、按難度加權累分     | ✅ 已設計 | `FactionRouteTable`, `StoryStageTable`（owner）；`factionScoreDelta` 消費 C-01 `MissionDifficultyTable` |
 | FT-10 | **Save/Load System**       | Unity 本地存檔(三軌寫入策略)、Bootstrap 順序協調、Backup rotation、Game Over 封存、離線計算交棒 F-02         | ✅ 已設計 | —                                         |
 | FT-11 | **Offline Resolver**       | 離線期間 NPC 自主接單追認、結算回補、金流批次補算              | 待設計（Jam 範疇外，佔位） | `SystemConstants`（`OFFLINE_MAX_SECONDS`） |
 
@@ -140,7 +140,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 
 | key                            | value   | description                                                   |
 | ------------------------------ | ------- | ------------------------------------------------------------- |
-| GOLD_INITIAL                   | 100     | 玩家起始金幣                                                  |
+| GOLD_INITIAL                   | 200     | 玩家起始金幣                                                  |
 | GOLD_MAX                       | 9999999 | 金幣上限                                                      |
 | COMMISSION_RATE                | 0.20    | 成功傭金比例                                                  |
 | PENALTY_RATE                   | 0.10    | 失敗賠償比例                                                  |
@@ -168,21 +168,17 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 
 | 表格名稱                   | PK               | 主要欄位                                                                               | 引用                                                      |
 | -------------------------- | ---------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `ProfessionTable`          | professionID     | name, description, strongType, weakType                                                | —                                                         |
+| `ProfessionTable`          | professionID     | name, description, strongTypeIDs, weakTypeIDs, tier, baseProfessionID, raceIDs, raceWeights, traitGroupIDs（C-03 §3.1，整合 C-04 / C-05 消費欄位） | typeID, raceID, groupID                                  |
 | `RaceTable`                | raceID           | name, description, statModifiers (JSON)                                                | —                                                         |
 | `TraitTable`               | traitID          | name, description, effectType, effectTarget, effectValue                               | —                                                         |
 | `TraitGroupTable`          | groupID          | groupName, traitIDs (CSV list), pickCount, pickMode                                    | traitID                                                   |
-| `ProfessionRacePool`       | professionID     | raceIDs (CSV list), weights (CSV list)                                                 | professionID, raceID                                      |
-| `ProfessionTraitPool`      | professionID     | traitGroupIDs (CSV list)                                                               | professionID, groupID                                     |
 | `AdventurerTemplate`       | templateID (int) | name, rank, professionID, raceID, fixedTraits, factionID, isUnique                     | professionID, raceID, traitID, FactionRouteTable          |
 | `RecruitCostTable`         | rank             | cost, reputationReq                                                                    | —                                                         |
 | `MissionTemplate`          | missionID (int)  | difficulty, typeID, factionID, categoryID                                              | MissionTypeTable, MissionCategoryTable, FactionRouteTable |
 | `MissionTypeTable`         | typeID (int)     | typeName                                                                               | —                                                         |
 | `MissionCategoryTable`     | categoryID (int) | categoryName                                                                           | —                                                         |
-| `RewardTable`              | difficulty       | baseReward                                                                             | —                                                         |
-| `DurationTable`            | difficulty       | baseDuration                                                                           | —                                                         |
+| `MissionDifficultyTable`   | difficulty       | baseReward, baseDuration, baseDeathRate, factionScoreDelta（C-01 §3.1，9 行覆蓋 F~SSS；FT-02 / FT-09 共用消費）| —                                                         |
 | `SuccessRateTable`         | rankDiff         | successRate                                                                            | —                                                         |
-| `DeathRateTable`           | difficulty       | baseDeathRate                                                                          | —                                                         |
 | `ReputationDeltaTable`     | difficulty       | successDelta, failDelta                                                                | —                                                         |
 | `GuildLevelTable`          | level            | title, reputationThreshold, maxDifficulty                                              | —                                                         |
 | `BuildingTable`            | (buildingID, level) | name, maxLevel, effectValue, upgradeCost, guildLevelReq                             | —                                                         |
@@ -192,12 +188,10 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | `StaffRarityProbTable`     | rarity (1~5)     | baseProbability（見 FT-08 §4.1.5） | —                                                         |
 | `TrashItemTable`           | trashItemID (int) | name, description, drawWeightTier1~5（見 FT-08 §3.5） | —                                                         |
 | `StaffTuning`              | key              | value（FT-08 專屬常數：EFFECT_MAX_*, PITY_THRESHOLD, REALLOCATING_AUTO_LEAVE_SECONDS, BUILDING_SWITCH_COOLDOWN_SECONDS, ROSTER_CAP；見 FT-08 §7.2） | —                                                         |
-| `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq                   | —                                                         |
-| `MissionPoolWeights`       | dangerLevel      | weightF_E, weightD, weightC, weightB, weightA, weightS_SSS                             | —                                                         |
+| `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq, weightF_E, weightD, weightC, weightB, weightA, weightS_SSS, maxDebt（C-06 §3.1，整合升級閘 / 池權重 / 債務上限） | —                                                         |
 | `BankruptcyThresholdTable` | reputationMin    | reputationMax, warningDurationSec                                                      | —                                                         |
 | `FactionRouteTable`        | factionID (int)  | name, description                                                                      | —                                                         |
 | `StoryStageTable`          | stageID (int)    | factionID, stageIndex, scoreThreshold, missionID, dialogueKey（FT-09 §3.2.2）          | factionID, MissionTemplate                                |
-| `MissionFactionScoreWeight` | difficulty (string) | factionScoreDelta（FT-09 §3.2.3,9 種難度全覆蓋）                                  | —                                                         |
 | `VeteranRankWeightTable`   | rank             | weight（FT-01 §4.4 / 7.3,5 階加權隨機表）                                              | —                                                         |
 | `ReputationLabelTable`     | labelID          | name, minReputation, maxReputation                                                     | —                                                         |
 
@@ -299,30 +293,30 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 
 ## 進度追蹤
 
-| 系統                            | 概念 | GDD | 工項需求書 | 實作 | 測試 |
-| ------------------------------- | ---- | --- | ---------- | ---- | ---- |
-| F-01 DataManager                | ✅   | ✅  | ✅         | ⬜   | ⬜   |
-| F-02 Time System                | ✅   | ✅  | ✅         | ⬜   | ⬜   |
-| F-03 Resource Management        | ✅   | ✅  | ✅         | ⬜   | ⬜   |
-| C-01 Mission Database           | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| C-02 Adventurer Management      | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| C-03 Profession System          | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| C-04 Race System                | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| C-05 Trait System               | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| C-06 World Danger System        | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-01 Adventurer Recruitment    | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-02 Mission Dispatch          | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-03 NPC Decision System       | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-04 Outcome Resolution        | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-05 Guild Gold Flow           | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-06 Guild Core                | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-07 Guild Building System     | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-08 Guild Staff System        | ✅   | ✅(§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2)  | ⬜         | ⬜   | ⬜   |
-| FT-09 Faction Story System      | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-10 Save/Load System          | ✅   | ✅  | ⬜         | ⬜   | ⬜   |
-| FT-11 Offline Resolver          | ⬜   | ⬜  | ⬜         | ⬜   | ⬜   |
-| P-01 Desktop Transparent Window | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
-| P-02 Main UI Framework          | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
-| P-03 Notification System        | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
-| D-01 Character Content DB       | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
-| D-02 Mission Content DB         | ✅   | ⬜  | ⬜         | ⬜   | ⬜   |
+| 系統                              | 概念  | GDD                                     | 工項需求書 | 實作  | 測試  |
+| ------------------------------- | --- | --------------------------------------- | ----- | --- | --- |
+| F-01 DataManager                | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
+| F-02 Time System                | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
+| F-03 Resource Management        | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
+| C-01 Mission Database           | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| C-02 Adventurer Management      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| C-03 Profession System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| C-04 Race System                | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| C-05 Trait System               | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| C-06 World Danger System        | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-01 Adventurer Recruitment    | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-02 Mission Dispatch          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-03 NPC Decision System       | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-04 Outcome Resolution        | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-05 Guild Gold Flow           | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-06 Guild Core                | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-07 Guild Building System     | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-08 Guild Staff System        | ✅   | ✅(§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2) | ⬜     | ⬜   | ⬜   |
+| FT-09 Faction Story System      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-10 Save/Load System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
+| FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| P-01 Desktop Transparent Window | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| P-02 Main UI Framework          | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| D-01 Character Content DB       | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| D-02 Mission Content DB         | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |

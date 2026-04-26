@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.Time;
@@ -13,7 +12,6 @@ namespace TheGuild.Gameplay.Resources
     /// </summary>
     public sealed class ResourceManagement : MonoBehaviour
     {
-        private const string BankruptcyThresholdTableName = "BankruptcyThresholdTable";
         private const string GoldInitialKey = "GOLD_INITIAL";
         private const string GoldMaxKey = "GOLD_MAX";
         private const string ReputationMinKey = "REPUTATION_MIN";
@@ -37,6 +35,7 @@ namespace TheGuild.Gameplay.Resources
         private BankruptcyWarningState _warningState;
         private long _bankruptcyWarningStartTime;
         private long _warningDurationSec;
+        private long _currentWarningDuration = DefaultWarningDurationSec;
 
         private bool _isProcessing;
 
@@ -44,12 +43,6 @@ namespace TheGuild.Gameplay.Resources
         /// 單例實體。
         /// </summary>
         public static ResourceManagement Instance { get; private set; }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void RegisterTables()
-        {
-            DataManager.RegisterTable<BankruptcyThresholdData>(BankruptcyThresholdTableName);
-        }
 
         /// <summary>
         /// 取得目前金幣。
@@ -275,6 +268,7 @@ namespace TheGuild.Gameplay.Resources
                 WarningState = _warningState,
                 BankruptcyWarningStartTime = _bankruptcyWarningStartTime,
                 WarningDurationSec = _warningDurationSec,
+                CurrentWarningDuration = _currentWarningDuration,
                 CurrentBankruptcyThreshold = _currentBankruptcyThreshold
             };
         }
@@ -302,6 +296,13 @@ namespace TheGuild.Gameplay.Resources
             {
                 Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到負值 WarningDurationSec={snapshot.WarningDurationSec}，已 clamp 為 0。");
                 sanitizedWarningDurationSec = 0;
+            }
+
+            long sanitizedCurrentWarningDuration = snapshot.CurrentWarningDuration;
+            if (sanitizedCurrentWarningDuration <= 0)
+            {
+                Debug.LogWarning($"[ResourceManagement] RestoreSnapshot 偵測到非正值 CurrentWarningDuration={snapshot.CurrentWarningDuration}，已改為 {DefaultWarningDurationSec}。");
+                sanitizedCurrentWarningDuration = DefaultWarningDurationSec;
             }
 
             long sanitizedBankruptcyWarningStartTime = snapshot.BankruptcyWarningStartTime;
@@ -342,6 +343,7 @@ namespace TheGuild.Gameplay.Resources
             _warningState = sanitizedWarningState;
             _bankruptcyWarningStartTime = sanitizedBankruptcyWarningStartTime;
             _warningDurationSec = sanitizedWarningDurationSec;
+            _currentWarningDuration = sanitizedCurrentWarningDuration;
             _currentBankruptcyThreshold = sanitizedCurrentBankruptcyThreshold;
 
             EvaluateWarningState();
@@ -393,6 +395,7 @@ namespace TheGuild.Gameplay.Resources
             _warningState = BankruptcyWarningState.Normal;
             _bankruptcyWarningStartTime = 0;
             _warningDurationSec = 0;
+            _currentWarningDuration = DefaultWarningDurationSec;
         }
 
         private void OnEnable()
@@ -505,6 +508,28 @@ namespace TheGuild.Gameplay.Resources
             EvaluateWarningState();
         }
 
+        /// <summary>
+        /// 取得目前破產警告持續秒數設定。
+        /// </summary>
+        public long GetBankruptcyWarningDuration()
+        {
+            return _currentWarningDuration;
+        }
+
+        /// <summary>
+        /// 設定下次進入破產警告時鎖定的持續秒數。
+        /// </summary>
+        public void SetBankruptcyWarningDuration(int newDurationSec)
+        {
+            if (newDurationSec <= 0)
+            {
+                Debug.LogError($"[ResourceManagement] SetBankruptcyWarningDuration 失敗：newDurationSec 必須大於 0，輸入值={newDurationSec}。");
+                return;
+            }
+
+            _currentWarningDuration = newDurationSec;
+        }
+
         private void EvaluateWarningState()
         {
             if (_currentGold >= 0)
@@ -522,10 +547,6 @@ namespace TheGuild.Gameplay.Resources
             if (_warningState != BankruptcyWarningState.Warning)
             {
                 EnterWarning();
-            }
-            else
-            {
-                _warningDurationSec = LookupWarningDuration(_currentReputation);
             }
         }
 
@@ -567,7 +588,7 @@ namespace TheGuild.Gameplay.Resources
             BankruptcyWarningState previous = _warningState;
             _warningState = BankruptcyWarningState.Warning;
             _bankruptcyWarningStartTime = GetNowUtc();
-            _warningDurationSec = LookupWarningDuration(_currentReputation);
+            _warningDurationSec = _currentWarningDuration;
 
             if (previous != _warningState)
             {
@@ -587,40 +608,6 @@ namespace TheGuild.Gameplay.Resources
             _bankruptcyWarningStartTime = 0;
             _warningDurationSec = 0;
             EventBus.Publish(new OnBankruptcyStateChangedEvent(previous, _warningState));
-        }
-
-        private long LookupWarningDuration(int reputation)
-        {
-            if (DataManager.Instance == null)
-            {
-                Debug.LogError("[ResourceManagement] LookupWarningDuration 失敗：DataManager.Instance 為 null。");
-                return DefaultWarningDurationSec;
-            }
-
-            IReadOnlyList<BankruptcyThresholdData> matched;
-            try
-            {
-                matched = DataManager.Instance.GetWhere<BankruptcyThresholdData>(
-                    x => x.reputationMin <= reputation && reputation <= x.reputationMax);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[ResourceManagement] LookupWarningDuration 查詢 reputation={reputation} 失敗：{ex.Message}");
-                return DefaultWarningDurationSec;
-            }
-
-            if (matched == null || matched.Count == 0)
-            {
-                Debug.LogError($"[ResourceManagement] 找不到對應聲望區間設定，reputation={reputation}");
-                return DefaultWarningDurationSec;
-            }
-
-            if (matched.Count > 1)
-            {
-                Debug.LogWarning($"[ResourceManagement] 聲望區間設定重疊，reputation={reputation}，matched.Count={matched.Count}。將採用第一筆。");
-            }
-
-            return matched[0].warningDurationSec;
         }
 
         private static long GetNowUtc()

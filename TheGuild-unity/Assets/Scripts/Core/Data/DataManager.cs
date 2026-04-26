@@ -189,6 +189,39 @@ namespace TheGuild.Core.Data
         }
 
         /// <summary>
+        /// 取得 SystemConstants 字串常數值；找不到 key 回傳空字串 + LogError。
+        /// </summary>
+        public string GetString(string key)
+        {
+            if (!TryGetSystemConstantRawValue(key, out string value))
+            {
+                return string.Empty;
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// 取得 SystemConstants 布林常數值；接受 "true"/"false"（case-insensitive）；
+        /// 找不到 key 或解析失敗皆回 false + LogError。
+        /// </summary>
+        public bool GetBool(string key)
+        {
+            if (!TryGetSystemConstantRawValue(key, out string value))
+            {
+                return false;
+            }
+
+            if (bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+            Debug.LogError($"[DataManager] SystemConstants 布林解析失敗：key={key}，value={value}");
+            return false;
+        }
+
+        /// <summary>
         /// 依群組池設定抽取資料（支援 weighted / uniform，無置回）。
         /// </summary>
         public List<T> PickRandom<T>(string groupID, int? overrideCount = null) where T : class

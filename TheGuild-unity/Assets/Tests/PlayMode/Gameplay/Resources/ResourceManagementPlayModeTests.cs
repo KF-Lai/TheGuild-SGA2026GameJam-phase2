@@ -32,7 +32,6 @@ namespace Tests.PlayMode.Gameplay.Resources
             TestReflectionHelpers.InvokeStatic(typeof(DataManager), "SetTableTextProviderForTests", new[] { typeof(Func<string, string>) }, (Func<string, string>)GetTableCsv);
 
             DataManager.RegisterSystemConstantsTable("SystemConstants");
-            DataManager.RegisterTable<BankruptcyThresholdData>("BankruptcyThresholdTable");
 
             GameObject dmGo = new GameObject("DM_F03_Play");
             _dm = dmGo.AddComponent<DataManager>();
@@ -73,7 +72,7 @@ namespace Tests.PlayMode.Gameplay.Resources
         [UnityTest]
         public IEnumerator AC_RM_09_WarningCountdownExpires_TriggersBankrupt()
         {
-            // 不加 reputation：rep=0 -> band 2 (0~29) -> duration=43200
+            _rm.SetBankruptcyWarningDuration(43200);
             _rm.AddGold(-150);
             Assert.AreEqual(BankruptcyWarningState.Warning, _rm.GetBankruptcyWarningState());
 
@@ -108,17 +107,6 @@ namespace Tests.PlayMode.Gameplay.Resources
                        "GOLD_MAX,9999999,max\n" +
                        "REPUTATION_MIN,-100,min\n" +
                        "REPUTATION_MAX,100,max\n";
-            }
-
-            if (tableName == "BankruptcyThresholdTable")
-            {
-                return "id,reputationMin,reputationMax,warningDurationSec\n" +
-                       "1,-100,-1,86400\n" +
-                       "2,0,29,43200\n" +
-                       "3,30,59,172800\n" +
-                       "4,60,79,259200\n" +
-                       "5,80,100,604800\n" +
-                       "6,101,200,999\n";
             }
 
             return null;

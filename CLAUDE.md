@@ -74,7 +74,7 @@ TheGuild-unity/Assets/
 | 主題 | 檔案 |
 |---|---|
 | CSV 資料格式與欄位規範 | `.claude/rules/data-files.md` |
-| CSV 表格規格書範本 / 索引 | `design/data-specs/README.md` |
+| CSV 表格規格書索引 | `design/Data-Specs/data-index.md` |
 | 玩法程式碼 | `.claude/rules/gameplay-code.md` |
 | UI 程式碼 | `.claude/rules/ui-code.md` |
 | 設計文件 | `.claude/rules/design-docs.md` |

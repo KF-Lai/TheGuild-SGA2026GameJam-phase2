@@ -45,7 +45,6 @@ namespace Tests.EditMode.Gameplay.Resources
                 (Func<string, string>)GetTableCsv);
 
             DataManager.RegisterSystemConstantsTable("SystemConstants");
-            DataManager.RegisterTable<BankruptcyThresholdData>("BankruptcyThresholdTable");
 
             GameObject dmGo = new GameObject("DM_F03_Test");
             _dm = dmGo.AddComponent<DataManager>();
@@ -155,30 +154,32 @@ namespace Tests.EditMode.Gameplay.Resources
         }
 
         [Test]
-        public void AC_RM_12_WarningDurationLookupByReputationBand()
+        public void AC_RM_12_SetBankruptcyWarningDurationUpdatesCurrentValue()
         {
-            _rm.AddReputation(80);
-            _rm.AddGold(-150);
-            Assert.AreEqual(604800, _rm.GetBankruptcyWarningRemainingSeconds());
+            Assert.AreEqual(86400, _rm.GetBankruptcyWarningDuration());
+
+            _rm.SetBankruptcyWarningDuration(172800);
+
+            Assert.AreEqual(172800, _rm.GetBankruptcyWarningDuration());
         }
 
         [Test]
-        public void AC_RM_13_ReenterWarningUsesCurrentReputationBand()
+        public void AC_RM_13_ReenterWarningUsesCurrentWarningDuration()
         {
-            _rm.AddReputation(80);
+            _rm.SetBankruptcyWarningDuration(172800);
             _rm.AddGold(-150);
             long first = _rm.GetBankruptcyWarningRemainingSeconds();
-            Assert.AreEqual(604800, first);
+            Assert.AreEqual(172800, first);
 
             _rm.AddGold(250);
             Assert.AreEqual(BankruptcyWarningState.Normal, _rm.GetBankruptcyWarningState());
 
-            _rm.AddReputation(-100);
+            _rm.SetBankruptcyWarningDuration(10800);
             _rm.AddGold(-250);
             long second = _rm.GetBankruptcyWarningRemainingSeconds();
 
             Assert.AreEqual(BankruptcyWarningState.Warning, _rm.GetBankruptcyWarningState());
-            Assert.AreEqual(86400, second);
+            Assert.AreEqual(10800, second);
             Assert.AreNotEqual(first, second);
         }
 
@@ -208,6 +209,7 @@ namespace Tests.EditMode.Gameplay.Resources
                 WarningState = BankruptcyWarningState.Normal,
                 BankruptcyWarningStartTime = 0,
                 WarningDurationSec = 0,
+                CurrentWarningDuration = 86400,
                 CurrentBankruptcyThreshold = -100
             };
 
@@ -226,6 +228,7 @@ namespace Tests.EditMode.Gameplay.Resources
                 WarningState = BankruptcyWarningState.Normal,
                 BankruptcyWarningStartTime = 0,
                 WarningDurationSec = 0,
+                CurrentWarningDuration = 86400,
                 CurrentBankruptcyThreshold = -100
             };
 
@@ -244,6 +247,7 @@ namespace Tests.EditMode.Gameplay.Resources
                 WarningState = BankruptcyWarningState.Normal,
                 BankruptcyWarningStartTime = 0,
                 WarningDurationSec = 0,
+                CurrentWarningDuration = 86400,
                 CurrentBankruptcyThreshold = -100
             };
 
@@ -262,6 +266,7 @@ namespace Tests.EditMode.Gameplay.Resources
                 WarningState = BankruptcyWarningState.Normal,
                 BankruptcyWarningStartTime = 0,
                 WarningDurationSec = 0,
+                CurrentWarningDuration = 86400,
                 CurrentBankruptcyThreshold = 50
             };
 
@@ -337,12 +342,16 @@ namespace Tests.EditMode.Gameplay.Resources
         }
 
         [Test]
-        public void AC_RM_24_LookupFallbackWhenNoBand()
+        public void AC_RM_24_SetBankruptcyWarningDurationRejectsNonPositive()
         {
-            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("找不到對應聲望區間設定"));
-            _rm.AddReputation(101);
-            _rm.AddGold(-150);
-            Assert.AreEqual(86400, _rm.GetBankruptcyWarningRemainingSeconds());
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("SetBankruptcyWarningDuration.*輸入值=0"));
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("SetBankruptcyWarningDuration.*輸入值=-1"));
+
+            _rm.SetBankruptcyWarningDuration(172800);
+            _rm.SetBankruptcyWarningDuration(0);
+            _rm.SetBankruptcyWarningDuration(-1);
+
+            Assert.AreEqual(172800, _rm.GetBankruptcyWarningDuration());
         }
 
         [Test]
@@ -356,11 +365,17 @@ namespace Tests.EditMode.Gameplay.Resources
         }
 
         [Test]
-        public void AC_RM_27_AddReputationTriggersEvaluate()
+        public void AC_RM_27_SetBankruptcyWarningDurationDoesNotAffectLockedWarning()
         {
+            _rm.SetBankruptcyWarningDuration(172800);
             _rm.AddGold(-150);
+            Assert.AreEqual(172800, _rm.GetBankruptcyWarningRemainingSeconds());
+
+            _rm.SetBankruptcyWarningDuration(10800);
             _rm.AddReputation(80);
-            Assert.AreEqual(604800, _rm.GetBankruptcyWarningRemainingSeconds());
+
+            Assert.AreEqual(10800, _rm.GetBankruptcyWarningDuration());
+            Assert.AreEqual(172800, _rm.GetBankruptcyWarningRemainingSeconds());
         }
 
         [Test]
@@ -381,26 +396,42 @@ namespace Tests.EditMode.Gameplay.Resources
         }
 
         [Test]
-        public void AC_RM_30_RegisterTablesOnlyBankruptcyTable()
+        public void AC_RM_30_RestoreSnapshotRestoresCurrentWarningDuration()
         {
-            TestReflectionHelpers.InvokeStatic(typeof(ResourceManagement), "RegisterTables");
-            Assert.Pass();
+            ResourceSnapshot snap = new ResourceSnapshot
+            {
+                CurrentGold = 100,
+                CurrentReputation = 0,
+                WarningState = BankruptcyWarningState.Normal,
+                BankruptcyWarningStartTime = 0,
+                WarningDurationSec = 0,
+                CurrentWarningDuration = 172800,
+                CurrentBankruptcyThreshold = -100
+            };
+
+            _rm.RestoreSnapshot(snap);
+
+            Assert.AreEqual(172800, _rm.GetBankruptcyWarningDuration());
         }
 
         [Test]
-        public void AC_RM_31_RegisterBeforeDataManagerAwake()
+        public void AC_RM_31_RestoreSnapshotNonPositiveCurrentWarningDurationFallbackAndWarn()
         {
-            TestReflectionHelpers.InvokeStatic(typeof(DataManager), "ResetForTests");
-            TestReflectionHelpers.InvokeStatic(typeof(DataManager), "SetTableTextProviderForTests", new[] { typeof(Func<string, string>) }, (Func<string, string>)GetTableCsv);
-            TestReflectionHelpers.InvokeStatic(typeof(ResourceManagement), "RegisterTables");
-            DataManager.RegisterSystemConstantsTable("SystemConstants");
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("CurrentWarningDuration.*86400"));
+            ResourceSnapshot snap = new ResourceSnapshot
+            {
+                CurrentGold = 100,
+                CurrentReputation = 0,
+                WarningState = BankruptcyWarningState.Normal,
+                BankruptcyWarningStartTime = 0,
+                WarningDurationSec = 0,
+                CurrentWarningDuration = 0,
+                CurrentBankruptcyThreshold = -100
+            };
 
-            GameObject go = new GameObject("DM_AC31");
-            DataManager dm = go.AddComponent<DataManager>();
-            dm.InitializeForTests();
-            var rows = dm.GetAll<BankruptcyThresholdData>();
-            Assert.Greater(rows.Count, 0);
-            UnityEngine.Object.DestroyImmediate(go);
+            _rm.RestoreSnapshot(snap);
+
+            Assert.AreEqual(86400, _rm.GetBankruptcyWarningDuration());
         }
 
         private string GetTableCsv(string tableName)
@@ -414,17 +445,6 @@ namespace Tests.EditMode.Gameplay.Resources
                        "GOLD_MAX,9999999,max\n" +
                        "REPUTATION_MIN,-100,min\n" +
                        "REPUTATION_MAX,100,max\n";
-            }
-
-            if (tableName == "BankruptcyThresholdTable")
-            {
-                return "id,reputationMin,reputationMax,warningDurationSec\n" +
-                       "1,-100,-1,86400\n" +
-                       "2,0,29,43200\n" +
-                       "3,30,59,172800\n" +
-                       "4,60,79,259200\n" +
-                       "5,80,99,604800\n" +
-                       "6,101,200,999\n";
             }
 
             return null;
