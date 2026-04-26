@@ -1,59 +1,69 @@
-# 【FT-01-DataSpecs】VeteranRankWeightTable
+# 【FT-01-DS】VeteranRankWeightTable
 
-老手招募候選池的階級加權隨機表。
+老手池階級加權隨機設定表，供 FT-01 `RollVeteranRank` 抽取老手候選冒險者的階級分布。
 
 ## 基本資訊
 
 - **檔案路徑**：`TheGuild-unity/Assets/Resources/Data/Tables/VeteranRankWeightTable.csv`
-- **解析方式**：`CsvParser.Parse`（column-based）
-- **註冊位置**：F-01 DataManager `Awake` 載入；FT-01 Adventurer Recruitment 透過 `DataManager.Get<VeteranRankWeightData>(rank)` 查詢
-- **讀取 API**：`DataManager.GetAll<VeteranRankWeightData>()` 取全表 + `DataManager.Get<VeteranRankWeightData>(rank)` 取單筆
+- **解析方式**：`CsvParser.Parse`（column-based / 轉置格式）
+- **註冊位置**：FT-01 AdventurerRecruitment 初始化流程（GDD 未明示 RegisterTables 具體位置；§6.1 依賴 F-01 DataManager 載入）
+- **資料類別**：`TheGuild.Gameplay.Recruitment.VeteranRankWeightData`
+- **讀取 API**：`DataManager.GetAll<VeteranRankWeightData>()`
 - **消費者**：
-  - FT-01 Adventurer Recruitment：§4.4 `RollVeteranRank(maxRecruitableRank)` 從本表取階級權重，過濾後做加權隨機
+  - FT-01 AdventurerRecruitment：`RollVeteranRank(maxRecruitableRank)` 中讀取全部記錄，過濾超過 `FT06.GetMaxRecruitableRank()` 上限的階級後加權隨機（§4.4）
 
 ## 欄位定義
 
 | 欄位 | 型別 | 必填 | 範圍 | 說明 |
 |---|---|---|---|---|
-| rank | string (PK) | ✓ | D / C / B / A / S | 冒險者階級（必須涵蓋全部 5 階） |
-| weight | int | ✓ | ≥ 0 | 加權隨機權重；0 = 該階級實質排除（保留欄位語意） |
+| `rank` | `string` (PK) | ✓ | D/C/B/A/S | 老手池可出現的冒險者階級符號；F/E 屬新手池，不納入此表 |
+| `weight` | `int` | ✓ | ≥ 1 | 加權隨機用整數權重；值越大該階級出現機率越高（§7.3） |
+
+> `rank` 為 string 型 PK，符合全專案「具顯示語義的等級符號維持 string」原則（[`.claude/rules/data-files.md`](../../.claude/rules/data-files.md)）。
 
 ## 約束 / 不變量
 
-- `rank` PK 必須涵蓋全部 5 階（D / C / B / A / S）；缺任一階拋 `VeteranRankWeightTableValidationException`
-- `weight` ≥ 0；負值視為 0 並 `Debug.LogError`
-- 全表 `weight` 加總必須 > 0（至少一階非零）；否則 FT-01 老手池無法生成,拋 validation 異常
-- 本表**不含**任務難度（F/E/SS/SSS）：F/E 屬新手池(`DAILY_FREE_REFRESH` 機制);SS/SSS 為任務難度上限,不對應冒險者階級
+- `rank` 取值限定於 D/C/B/A/S（GDD §3.4：老手池不生成 F/E 階）
+- 每個合法階級僅出現一次（PK 唯一性）
+- `weight ≥ 1`（GDD §7.3 安全範圍下限均 ≥ 1）
+- 所有 `weight` 加總 > 0（確保加權隨機可正規化；GDD §4.4 隱含）
+- 公會等級過濾後若剩餘記錄為空，FT-01 §4.4 以 D 階 fallback（`Debug.LogError`）；實務上公會 Lv1 `maxRecruitableRank = D`，D 權重 40 不會歸零
 
-## Cross-ref（對其他表的引用）
+## Cross-ref
 
-- 無（純權重表，不參照其他表）
+| 欄位 | 引用 | 引用方式 |
+|---|---|---|
+| `rank` | `AdventurerRankUtil.RankIndex`（共用 helper，F=0…S=6） | 弱約束（parser 不檢查；FT-01 §4.4 以 `RANK_INDEX(kvp.Key)` 做數值比較） |
 
 ## 變更注意事項
 
-- 修改 `weight` 即時生效（重啟遊戲後讀取）
-- 各階級權重相對比例決定老手池的階級分佈；過度偏向高階會破壞「S 階稀有感」的設計支柱
-- 新增階級（如未來 SS 階冒險者）需同步：(a) C-02 `AdventurerInstance.rank` 值域、(b) RecruitCostTable 補費用 + 聲望門檻、(c) FT-01 §4.4 過濾邏輯、(d) FT-02 SuccessRateTable 與 DeathRateTable、(e) RANK_INDEX 索引
+- DataManager 於啟動時載入 CSV；修改後需重啟或 domain reload 才生效
+- 調整 weight 分布時，需搭配 FT-06 `GetMaxRecruitableRank()` 上限評估玩家實際可見的階級比例（公會 Lv1 僅能出 D，Lv2 出 D/C，依此類推）
+- 新增階級（如 SS）：需確認 `AdventurerRankUtil.RankIndex` 支援該值，且 FT-01 §3.4 老手池規則需同步更新
+- 移除現有階級：確保 FT-01 §4.4 `fallback` 邏輯不依賴被移除的 rank 值；Data-Specs 與 GDD §3.4 需同步
 
-## 範例（對齊 game-concept §冒險者系統 老手邀請加權分布）
+## 範例
 
 ```csv
-# === 老手招募階級權重表 ===
-# FT-01 §4.4 RollVeteranRank 使用；對齊 game-concept Phase 1 legacy 加權分布
-# weight 為相對權重，加權隨機由 DataManager 自動正規化
+# === 老手池階級加權隨機設定 ===
+# 對齊 FT-01 §7.3 Jam 預設值；rank 為 string PK（階級符號）
 
 rank,D,C,B,A,S
 weight,40,30,18,9,3
 ```
 
-## 安全範圍與調參指引
+（欄位一列；5 筆記錄對應 D/C/B/A/S 五個老手階級；數值來自 GDD §7.3 Jam 預設；CSV 為 column-based / 轉置格式，規範見 [`.claude/rules/data-files.md`](../../.claude/rules/data-files.md)）
 
-| 階級 | Jam 預設 | 安全範圍 | 影響 |
+## 附錄
+
+### 安全範圍與調參指引
+
+| 階級（rank） | 預設 weight | 安全範圍 | 設計意圖（來源：GDD §7.3） |
 |---|---|---|---|
-| D | 40 | 30~50 | 中前期主力；過低讓玩家難以累積 D 階人手 |
-| C | 30 | 20~40 | 中期過渡階級 |
-| B | 18 | 10~25 | 中後期菁英 |
-| A | 9 | 5~15 | 過高會讓 A 階太容易取得，削弱稀缺感 |
-| S | 3 | 1~5 | 過高破壞 S 階的傳奇感；建議 ≤ 5 |
+| D | 40 | 30 ~ 50 | D 階為老手池基礎盤，權重最高確保早期玩家有穩定供給 |
+| C | 30 | 20 ~ 40 | 中階主力，與 D 階比例決定過渡期體感 |
+| B | 18 | 10 ~ 25 | 高階起點，開始有稀缺感 |
+| A | 9 | 5 ~ 15 | 過高會讓 A 階太容易取得，削弱高階冒險者的稀缺感 |
+| S | 3 | 1 ~ 5 | 過高破壞 S 階的傳奇感；建議保持個位數 |
 
-> 平衡指標：D + C 應佔總權重 70% 以上(40 + 30 = 70/100 = 70%);A + S 應 ≤ 15%(9 + 3 = 12/100 = 12%);中段 B 為策略階級,18%~25% 為合理區間。
+> 調整時驗算：`D/(D+C+B+A+S)` 為 D 階名義機率（公會開放全階級時）；加入公會等級過濾後有效比例會重新正規化。

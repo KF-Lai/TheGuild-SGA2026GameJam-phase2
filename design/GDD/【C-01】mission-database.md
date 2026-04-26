@@ -188,7 +188,7 @@ IsValidCombination(difficulty, typeID):
 | FT-02 Mission Dispatch | 取得任務難度與類型供成功率計算；查詢基礎死亡率（原 `DeathRateTable` 已合併入 `MissionDifficultyTable`） | `GetTemplate`, `GetBaseDeathRate` |
 | FT-04 Outcome Resolution | 結算時讀取 `missionDifficulty` / `missionTypeID` / `missionFactionID` 快照入 Outcome；讀取 `baseReward` 供 C-05 `on_success_gold_bonus` 計算 | `GetTemplate`, `GetBaseReward` |
 | FT-06 Guild Core | 觸發公會升等考驗任務 | `GetTemplatesByCategory(categoryId=2)` |
-| FT-09 Faction Story | 取得陣營劇情特殊任務、讀取 `factionID` 計分；查詢陣營加分權重（原 `MissionFactionScoreWeight` 已合併入 `MissionDifficultyTable`） | `GetTemplatesByCategory(categoryID=3)`, `GetTemplate`, `GetFactionScoreDelta` |
+| FT-09 Faction Story | `categoryID=3` 陣營劇情任務消費者（FT-09 §3.2 觸發條件）；讀取 `factionID` 供分數累積（FT-09 §3.3.2 Step 1 過濾）；查詢陣營加分權重（FT-09 §3.3.3 `GetFactionScoreDelta` 消費；原 `MissionFactionScoreWeight` 已合併入 `MissionDifficultyTable`） | `GetTemplatesByCategory(categoryID=3)`, `GetTemplate`, `GetFactionScoreDelta` |
 | FT-10 Save/Load | 驗證存檔中的 `missionID` 仍合法 | `GetTemplate` |
 | P-02 Main UI | 顯示委託板任務資訊（名稱、難度、類型、時長、報酬） | `GetTemplate`, `GetBaseReward`, `GetBaseDuration`, `GetMissionText`, `GetTypeName` |
 

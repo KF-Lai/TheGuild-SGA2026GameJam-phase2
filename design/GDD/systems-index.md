@@ -45,16 +45,17 @@ _狀態：草稿_
 | FT-05 | **Guild Gold Flow**        | 公會全金流統一執行：預收、結算、維護費、薪水；破產狀態轉移快照 | ✅ 已設計 | `SystemConstants`                         |
 | FT-06 | **Guild Core**             | 公會等級（Lv1~5）、聲望門檻、可接難度上限、Game Over 流程、公會基礎狀態 | ✅ 已設計 | `GuildLevelTable`                         |
 | FT-07 | **Guild Building System**  | 6 棟可升級建築、雙軌閘門（金幣+聲望）、效果值 API（名冊/並行任務/刷新間隔/破產倒數） | ✅ 已設計 | `BuildingTable`                           |
-| FT-08 | **Guild Staff System**     | 多池抽卡面試（A/B 池）、保底、保留、5 個 effect/UI flag 聚合 API、薪水管線(Phase 2 Jam 不發) | ✅ 已設計（Jam 版主結構 + Batch C §3.3~§3.13 全部完成;§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2 由 FT-05 統一接管薪水）| `StaffTable`, `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffTuning`, `StaffPlayerState` |
+| FT-08 | **Gacha System（面試系統）** | 多池抽卡面試（A/B 池）、保底、保留、垃圾物品；錄用後透過 `FT-12.HireStaff` 交棒 | ✅ 已設計（2026-04-26 從原 FT-08 拆分；聚焦 gacha） | `StaffGachaPoolTable`, `StaffRefreshCostTable`, `StaffRarityProbTable`, `TrashItemTable`, `StaffPlayerState`（owner） |
 | FT-09 | **Faction Story System**   | styleTag 累積、陣營路線、劇情階段、按難度加權累分     | ✅ 已設計 | `FactionRouteTable`, `StoryStageTable`（owner）；`factionScoreDelta` 消費 C-01 `MissionDifficultyTable` |
 | FT-10 | **Save/Load System**       | Unity 本地存檔(三軌寫入策略)、Bootstrap 順序協調、Backup rotation、Game Over 封存、離線計算交棒 F-02         | ✅ 已設計 | —                                         |
 | FT-11 | **Offline Resolver**       | 離線期間 NPC 自主接單追認、結算回補、金流批次補算              | 待設計（Jam 範疇外，佔位） | `SystemConstants`（`OFFLINE_MAX_SECONDS`） |
+| FT-12 | **Staff System（職員系統）** | StaffInstance 名冊管理、三態狀態機（Working/Reallocating/OnLeave）、Slot 指派、effect 聚合 API、薪水管線（Phase 2 Jam 不發）；接收 FT-08 錄用候選 | ✅ 已設計（2026-04-26 從原 FT-08 拆分；聚焦運營；§3.9 / §4.2 / §5.3 / §8.6 標 Phase 2 由 FT-05 統一接管薪水）| `StaffTable`（owner）, `StaffTuning` |
 
 ### Presentation 層（UI）
 
 | ID   | 系統                           | 說明                                   | GDD 狀態 | 對應資料表             |
 | ---- | ------------------------------ | -------------------------------------- | -------- | ---------------------- |
-| P-01 | **Desktop Transparent Window** | Windows API 透明視窗、點擊穿透、前置   | 待設計   | —                      |
+| P-01 | **Desktop Transparent Window** | Windows API 透明視窗、點擊穿透、前置；切換螢幕；解析度自適應 + 玩家縮放 | ✅ 已設計 | —                      |
 | P-02 | **Main UI Framework**          | 委託板、名冊、公會總覽、招募等畫面管理 | 待設計   | `UIText`               |
 | P-03 | **Notification System**        | 結算通知、事件提醒、桌面推播           | 待設計   | `NotificationTemplate` |
 
@@ -92,19 +93,21 @@ Feature 層
 │  FT-02 Dispatch ─────────► C-01, C-02, C-03, C-04, C-05 (計算成功率)                │
 │  FT-03 NPC Decision ────► FT-02 (讀取 willingness 計算結果)                         │
 │  FT-04 Outcome ──────────► FT-02, F-03 (結算 + 更新資源)                            │
-│  FT-05 Guild Gold Flow ──► FT-02, FT-04, F-03, FT-07, FT-08                         │
+│  FT-05 Guild Gold Flow ──► FT-02, FT-04, F-03, FT-07, FT-12                         │
 │                            (預收 + 結算 + 維護費 + 薪水，走 AddGoldAllowBankruptcy)   │
 │  FT-06 Guild Core ──────► F-03 (聲望門檻判定)                                       │
 │  FT-07 Guild Building ──► FT-06 (聲望閘), F-03 (金幣扣款)；提供容量 API 給 FT-01/FT-02 │
-│  FT-08 Guild Staff ─────► FT-06 (主閘 minGuildLevel), FT-07 (職員休息室 maxLevel=5  │
-│                            驅動自動刷新間隔)；發布 OnStaffSalaryDue → FT-05 扣款；   │
-│                            提供 GetRecruitRefreshReductionSec → FT-01 招募刷新       │
-│                            提供 GetStaffWillingnessBonus → FT-03                     │
-│                            提供 GetAccountantCommissionBonus / Penalty → FT-05       │
-│                            提供 GetSuccessRatePreviewFlag → P-02 委託板              │
+│  FT-08 Gacha System ────► FT-06 (主閘 minGuildLevel), FT-07 (職員休息室 L1 解鎖     │
+│                            ＋驅動自動刷新間隔), FT-12 (錄用呼叫 HireStaff)            │
 │  FT-09 Faction Story ───► FT-04, C-01 (結算觸發 + styleTag)                        │
 │  FT-10 Save/Load ───────► ALL (序列化所有系統狀態)                                   │
 │  FT-11 Offline Resolver ► F-02, FT-02, FT-03, FT-04, FT-05（未來 / Jam 範疇外）       │
+│  FT-12 Staff System ────► FT-06 (公會等級), FT-07 (IsStaffSystemUnlocked)；          │
+│                            發布 OnStaffSalaryDue → FT-05 扣款 (Phase 2)；           │
+│                            提供 GetStaffWillingnessBonus → FT-03                     │
+│                            提供 GetAccountantCommissionBonus / Penalty → FT-05       │
+│                            提供 GetRecruitRefreshReductionSec → FT-08 面試刷新加成   │
+│                            提供 IsSuccessRatePreviewEnabled → P-02 委託板            │
 │                                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────┘
       │
@@ -315,7 +318,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-09 Faction Story System      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-10 Save/Load System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜   | ⬜   |
-| P-01 Desktop Transparent Window | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | P-02 Main UI Framework          | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-01 Character Content DB       | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |

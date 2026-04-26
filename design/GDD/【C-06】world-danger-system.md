@@ -223,7 +223,7 @@ OnFactionScoreUpdated(newMaxScore):
 | F-03 Resource Management | **C-06 主動推送**：啟動（§4.3）與升階（§4.2）時呼叫 F-03 寫入 API；F-03 不主動查詢 C-06 | `F-03.SetBankruptcyThreshold(int)`（C-06 → F-03）|
 | FT-02 Mission Dispatch | 查詢任務池難度分布權重，生成委託時使用 | `GetPoolWeights()` |
 | FT-02 Mission Dispatch | 每次派遣成功後呼叫 C-06 計數，驅動危險度升級 | `OnMissionAccepted(difficulty)`（FT-02 §3.5 於發布 `OnCommissionAccepted` 後呼叫） |
-| FT-09 Faction Story System | 當任意陣營分數更新時推送至 C-06 | `OnFactionScoreUpdated(int newMaxScore)` |
+| FT-09 Faction Story System | FT-09 為 `OnFactionScoreUpdated` 的推送方：當任意陣營分數更新時（FT-09 §3.3.2 Step 4 / §3.5.2 Step 3），FT-09 呼叫 C-06 推送最新最高分；C-06 以 `_cachedMaxFactionScore` 快取後立即執行 `CheckLevelUp()`（§4.5）；C-06 不反向依賴 FT-09（觀察者模式，無循環依賴）。對應 FT-09 §6.2 下游登記 C-06。 | `OnFactionScoreUpdated(int newMaxScore)` |
 | P-02 Main UI | 顯示當前世界危險度名稱與說明；訂閱 `OnDangerLevelChanged` 即時更新 UI | `GetCurrentLevel()`、`GetDangerData()`、`OnDangerLevelChanged` |
 
 ---

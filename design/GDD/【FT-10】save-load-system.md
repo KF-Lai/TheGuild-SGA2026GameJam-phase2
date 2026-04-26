@@ -29,7 +29,8 @@ _系統 ID：FT-10_
   - `[FT-05] guild-gold-flow.md` — Jam 範疇外，未來擴充收支日誌時訂閱（FT-10 Jam 版不持久化結算歷史）
   - `[FT-06] guild-core.md` §3.1 / §3.2 / §3.5 — `GuildState` 全量序列化（`guildName` / `displayName` / `foundingTimestamp` / `currentLevel` / `gameOverState`）；訂閱 `OnGuildInitialized` 觸發首次存檔、訂閱 `OnGameOver` 封存存檔；`pendingLevelUpQueue` runtime-only 不序列化
   - `[FT-07] guild-building-system.md` §3.1 / §6 — `BuildingState[]` 全量序列化（6 棟建築 `currentLevel`）
-  - `[FT-08] guild-staff-system.md` §3.1 / §3.2.3 / §6 — `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]` 全量序列化；`reserveConsumedFlag` 永久化、`pityCounter` 跨會話累積、`lastAutoRefreshTimestamp` 全域單一計時器；驗證規則：`staffID > 0 → rolledRarity == StaffTable[staffID].rarity` / `staffID XOR trashItemID`，違規拋 `CandidateCardValidationException`
+  - `[FT-08] gacha-system.md` §3.1 / §6.7 — `StaffPlayerState` + `CandidateCard[]` 全量序列化；`reserveConsumedFlag` 永久化、`pityCounter` 跨會話累積、`lastAutoRefreshTimestamp` 全域單一計時器；驗證規則：`staffID > 0 → rolledRarity == StaffTable[staffID].rarity` / `staffID XOR trashItemID`，違規拋 `CandidateCardValidationException`
+  - `[FT-12] staff-system.md` §3.1 / §6.7 — `StaffInstance[]` + `_nextInstanceID` + `_lastSalaryTimestamp` 全量序列化；驗證 `StaffInstance.staffID` 透過 F-01 `Get<StaffData>` 確認合法,違規拋 `CriticalRestoreFailedException`
   - `[FT-09] faction-story-system.md` §3.7 / §5.10 — `FactionStorySaveData` 區塊（`factionScores: Dict<int,int>` / `unlockedStageIndices` / `pendingDialogueStages` / `routeCompletedFlags`）；EC-10 SaveData 反序列化異常不阻擋 Bootstrap
 - 全局規則：
   - `feedback_data_driven` — 一切由 CSV 驅動，零硬編碼
@@ -58,7 +59,7 @@ _系統 ID：FT-10_
 
 1. F-01 DataManager 完成 CSV 載入（前置條件，§3 指定 Script Execution Order）
 2. FT-10 嘗試讀取 `save.json` → 失敗依序嘗試 `save.bak1..bak{N}`（§5 損毀回退）；全失敗即新遊戲
-3. 各 owner 依**依賴拓撲順序**執行還原（F-03 → C-06 `currentDangerLevel` → C-02 名冊 → FT-06 → FT-07 → FT-02 `activeMissions` → FT-08 → FT-01 → FT-03 idle 時間戳 → FT-09），每階驗證 ID 合法性（透過 F-01 `GetAll<T>`）；驗證失敗的單筆資料依各 owner GDD 既定 EC 策略處理（FT-09 EC-10 靜默降級、FT-08 §3.2.3 fail-fast 拋 `CandidateCardValidationException` 等）
+3. 各 owner 依**依賴拓撲順序**執行還原（F-03 → C-06 `currentDangerLevel` → C-02 名冊 → FT-06 → FT-07 → FT-02 `activeMissions` → FT-08 → FT-12 → FT-01 → FT-03 idle 時間戳 → FT-09），每階驗證 ID 合法性（透過 F-01 `GetAll<T>`）；驗證失敗的單筆資料依各 owner GDD 既定 EC 策略處理（FT-09 EC-10 靜默降級、FT-08 §3.2.3 fail-fast 拋 `CandidateCardValidationException` 等）
 4. **離線計算交棒**：所有 owner 還原完成後，FT-10 呼叫 `F-02.Initialize(lastActiveTimestamp)` 觸發離線時間差計算；F-02 內部驅動任務推進、發布 `OnOfflineResolved`，由 FT-04 / P-02 接手結算與摘要畫面（FT-10 不參與結算）
 
 Bootstrap 流程**不阻擋核心循環**：可降級系統（FT-09 等）的反序列化異常**不傳遞至上層**；僅 F-01 / F-03 / C-02 等 critical 系統反序列化失敗才觸發整檔回退至下一份 backup。
@@ -237,7 +238,7 @@ FT-10 訂閱以下 owner 系統事件，事件回呼**僅執行 `_isDirty = true
 | FT-05 | `OnCommissionSettled` | 委託結算（金流落地） |
 | FT-01 | `OnRecruitSuccess` | 招募成功 |
 | FT-07 | `OnBuildingUpgraded` | 建築升級 |
-| FT-08 | `OnStaffHired` / `OnStaffSalaryDue` | 職員雇用 / 薪水扣款 |
+| FT-12 | `OnStaffHired` / `OnStaffSalaryDue` | 職員雇用 / 薪水扣款 |
 | FT-09 | `OnFactionStoryStageUnlocked` | 陣營劇情階段解鎖 |
 | C-06 | `OnDangerLevelChanged` | 危險度升階 |
 | F-03 | `OnGoldChanged` / `OnReputationChanged` | 金幣 / 聲望變動 |
@@ -313,7 +314,7 @@ Phase B: schemaMeta 解析
   └─ 解析成功              → 記錄 lastActiveTimestamp / gameOverState / loadedFromBackupIndex
 
 Phase C: per-owner 還原（依拓撲順序）
-  Order: F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-01 → FT-03 → FT-09
+  Order: F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-03 → FT-09
   每個 owner 內部包覆 try-catch，失敗策略依 §3.3.4 critical/degradable 分流
 
 Phase D: F-02 離線計算交棒
@@ -336,10 +337,13 @@ Phase E: 完成 / 首次遊玩
 | 4 | FT-06 Guild Core | `GuildState`（`guildName` / `displayName` / `foundingTimestamp` / `currentLevel` / `gameOverState`） | F-03（聲望門檻判定） |
 | 5 | FT-07 Buildings | `BuildingState[]`（6 棟 `currentLevel`） | FT-06（聲望閘） |
 | 6 | FT-02 Dispatch | `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`；`activeMissions` 還原即可立即被檢查，無需額外 API 呼叫 | C-01（驗證 missionID）/ C-02（驗證 adventurerID） |
-| 7 | FT-08 Staff | `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]`；驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` 違規拋 `CandidateCardValidationException`（critical） | F-01（驗證 staffID）/ FT-06（minGuildLevel 閘） |
-| 8 | FT-01 Recruitment | 候選池 / 刷新時間戳 / 免費刷新次數 | C-02（候選即將注入名冊） |
-| 9 | FT-03 NPC Decision | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 一併還原；本階段僅做訂閱重建 | C-02 |
-| 10 | FT-09 Faction Story | `factionScores` / `unlockedStageIndices` / `pendingDialogueStages` / `routeCompletedFlags` | F-01（驗證 factionID） |
+| 7 | FT-08 Gacha | `StaffPlayerState` + `CandidateCard[]`；驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` 違規拋 `CandidateCardValidationException`（critical） | F-01（驗證 staffID）/ FT-06（minGuildLevel 閘） |
+| 8 | FT-12 Staff | `StaffInstance[]` + `_nextInstanceID` + `_lastSalaryTimestamp`；驗證 `StaffInstance.staffID` 透過 F-01 `Get<StaffData>` 確認合法,違規拋 `CriticalRestoreFailedException`（critical） | F-01（驗證 staffID）/ FT-08（候選卡先還原以保持 instance 一致性）|
+| 9 | FT-01 Recruitment | 候選池 / 刷新時間戳 / 免費刷新次數 | C-02（候選即將注入名冊） |
+| 10 | FT-03 NPC Decision | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 一併還原；本階段僅做訂閱重建 | C-02 |
+| 11 | FT-09 Faction Story | `factionScores` / `unlockedStageIndices` / `pendingDialogueStages` / `routeCompletedFlags` | F-01（驗證 factionID） |
+
+**還原語意**：`RestoreFromSave` **直接套用儲存值**，**不重新驗證閘門條件**（如等級閘 / 聲望閘 / 升級條件——這些在寫入點時的閘門驗證已完成，還原時信任儲存值）；本表「依賴前置」欄列出的依賴僅指**還原順序**意義上的依賴（如 FT-07 在 FT-06 之後還原以確保 `currentLevel` 已就位供 `Awake` 後查詢使用）。
 
 **驗證契約**：每個 owner 在 `RestoreFromSave(json)` 內**必須**對 ID 欄位透過 F-01 `Get<T>` / `GetAll<T>` 驗證合法性；驗證失敗的 ID 處理策略由各 owner GDD 自定（FT-09 EC-10 過濾未知 factionID、FT-08 §3.2.3 fail-fast 拋例外等）。
 
@@ -367,7 +371,7 @@ foreach (var owner in restoreOrder) {
 | 分類 | 系統 | 失敗行為 |
 |---|---|---|
 | **Critical** | F-03、C-02、FT-06 | 拋例外 → 整檔回退至下一份 backup（§3.4.2） |
-| **Critical** | FT-08（`CandidateCardValidationException`） | 同上；FT-08 §3.2.3 既定 fail-fast |
+| **Critical** | FT-08 / FT-12（`CandidateCardValidationException` / staffID 驗證） | 同上；FT-08 §3.2.3 既定 fail-fast |
 | **Degradable** | C-06、FT-01、FT-02、FT-03、FT-07 | log warning + `InitializeAsNewGame()`；不阻擋其他 owner |
 | **Degradable** | FT-09 | 對齊 FT-09 EC-10「不阻擋 Bootstrap」既定決議 |
 
@@ -554,7 +558,7 @@ public void ResetToNewGame() {
 |---|---|---|
 | `Dictionary<K, V>` | 序列化前轉 `List<KvpPair>`，反序列化後重建 | FT-09 `_factionScores: Dict<int,int>` → `List<FactionScoreEntry>` |
 | `Queue<T>` | 序列化前 `ToList()`，反序列化後 `new Queue<T>(list)` | FT-09 `_pendingDialogueStages: Queue<int>` |
-| `HashSet<T>` | 序列化前 `ToList()`，反序列化後 `new HashSet<T>(list)` | FT-09 `_unlockedStageIndices: HashSet<int>` |
+| `HashSet<T>` | 序列化前 `ToList()`，反序列化後 `new HashSet<T>(list)` | FT-09 `_routeCompletedFlags: HashSet<int>`（對齊 FT-09 §3.7.4 真實型別；`_unlockedStageIndices` 為 `Dictionary<int,int>` 走前一列規則） |
 | `interface` / `abstract class` 集合 | JsonUtility **完全不支援多型**；Jam 範疇避免使用 | — |
 | Tuple `(A, B)` | 不支援；改用具名 struct/class 並標 `[Serializable]` | — |
 
@@ -569,6 +573,8 @@ public interface ISaveable {
     bool IsCritical { get; }              // §3.3.4 critical/degradable 分類
     string Serialize();                   // 回傳該 owner 的 JSON 字串
     void RestoreFromSave(string ownerJson); // 從 JSON 字串還原；ownerJson 可能為 null（首次遊玩 / 缺欄位）
+                                            // 實作端契約：若 ownerJson 為 null，必須立即呼叫
+                                            // InitializeAsNewGame() 並 return，不得繼續執行其餘還原邏輯
     void InitializeAsNewGame();           // 預設初始化，§3.3.4 degradable 還原失敗時呼叫
 }
 ```
@@ -611,11 +617,11 @@ string AssembleRootJson() {
 
 | 事件 | Payload | 發布時機 | 訂閱者 |
 |---|---|---|---|
-| `OnSaveCompleted` | `void` | 每次 `ExecuteSave` 成功完成（含三軌全部觸發點） | Debug 工具 / P-03 通知（可選） |
+| `OnSaveCompleted` | `void` | 每次 `ExecuteSave` 成功完成（含三軌全部觸發點） | Debug 工具 / P-03 通知（可選） **【→Log API待更新】** |
 | `OnSaveFailed` | `Exception ex` | `ExecuteSave` 拋例外時 | Debug；正式 UI **不顯示**（§3.4.3 隱性 fail-safe） |
 | `OnLoadCompleted` | `int loadedFromBackupIndex` | Bootstrap Phase C 全部 owner 還原完成（含全 backup 失敗的首次遊玩） | P-02（決定主畫面進入 / 啟動畫面分支） |
 | `OnLoadFailed` | `Exception ex` | 全部 backup 失敗時 | 同上；P-02 走首次遊玩路徑 |
-| `OnGameSealed` | `string gameoverFilePath, long sealedTimestamp` | §3.5.1 Step 3 | P-02 / P-03 |
+| `OnGameSealed` | `string gameoverFilePath, long sealedTimestamp` | §3.5.1 Step 3 | P-02 / P-03 **【→Log API待更新】** |
 | `OnGameReset` | `void` | §3.5.2 Step 4 | P-02（執行 scene reload） |
 
 #### 3.7.3 Runtime 狀態欄位
@@ -670,6 +676,8 @@ void Start() {
 ```
 
 **`SortByRestoreOrder`**：以靜態列表硬編 §3.3.3 順序；新增 owner 時必須同步更新此列表（compile-time 安全：未在列表內的 `ISaveable` 觸發 Debug.LogWarning）。
+
+> **Unity 6 API**：專案 Unity 版本 = `6000.4.2f1`（Unity 6），`FindObjectsOfType` 已標 obsolete；實作層應採 `Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).OfType<ISaveable>()` 等價形式。上方偽碼以舊 API 表達意圖，實作以新 API 為準。
 
 
 
@@ -870,7 +878,7 @@ maxDataLossSeconds(loadedFromIndex) = loadedFromIndex × SAVE_AUTO_INTERVAL_SEC
 
 ### 5.3 EC-3：Critical Owner 還原失敗
 
-- **觸發**：F-03 / C-02 / FT-06 / FT-08（critical 列表，§3.3.4）任一 `RestoreFromSave` 拋例外（如 ID 違反 F-01 驗證 / `CandidateCardValidationException`）
+- **觸發**：F-03 / C-02 / FT-06 / FT-08 / FT-12（critical 列表，§3.3.4）任一 `RestoreFromSave` 拋例外（如 ID 違反 F-01 驗證 / `CandidateCardValidationException`）
 - **行為**：
   1. Phase C 內 try-catch 捕獲 → 拋出 `CriticalRestoreFailedException(ownerName, innerEx)`
   2. 由外層 catch 觸發回退至下一份 backup（`loadedFromIndex++`）
@@ -1006,7 +1014,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 8 | FT-03 NPC Decision | `ISaveable` 實作（薄層；實際欄位由 C-02 一併處理） | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 已內嵌於 `AdventurerInstance`；FT-03 僅做訂閱重建 | §1 設計來源 + FT-03 §6 |
 | 9 | FT-06 Guild Core | `ISaveable` 實作 + `IsGameOver()` 查詢 + `OnGameOver` 事件 | 序列化 `GuildState` 全量；訂閱 `OnGameOver` 觸發 §3.5.1 封存流程 | §1 設計來源 + FT-06 §3.1 / §3.2 / §3.5 |
 | 10 | FT-07 Guild Building | `ISaveable` 實作 | 序列化 `BuildingState[]`（6 棟 `currentLevel`） | §1 設計來源 + FT-07 §3.1 / §6 |
-| 11 | FT-08 Guild Staff | `ISaveable` 實作 + `CandidateCardValidationException` 契約 | 序列化 `StaffPlayerState` + `StaffInstance[]` + `CandidateCard[]`；驗證違規時 FT-08 fail-fast 拋例外，被 FT-10 §3.3.4 critical 路徑捕獲 | §1 設計來源 + FT-08 §3.1 / §3.2.3 / §6 |
+| 11 | FT-08 Gacha | `ISaveable` 實作 + `CandidateCardValidationException` 契約 | 序列化 `StaffPlayerState` + `CandidateCard[]`；驗證違規時 FT-08 fail-fast 拋例外，被 FT-10 §3.3.4 critical 路徑捕獲 | §1 設計來源 + FT-08 §3.1 / §3.2.3 / §6 |
 | 12 | FT-09 Faction Story | `ISaveable` 實作 | 序列化 `FactionStorySaveData` 區塊；degradable 路徑 | §1 設計來源 + FT-09 §3.7 / §5.10 |
 
 **訂閱事件清單**（§3.2.1 已列）：訂閱關係列入此處不重複展開，請見 §3.2.1 事件來源表。
@@ -1028,7 +1036,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 2 | P-02 Main UI Framework | `ResetToNewGame()` 呼叫 + `OnGameReset` 訂閱 | 玩家點「開新公會」按鈕 → P-02 呼叫 `ResetToNewGame()` → 訂閱 `OnGameReset` 執行 scene reload（§3.5.2） | P-02 GDD（**待設計**） |
 | 3 | P-02 Main UI Framework | `OnGameSealed` 訂閱 | Game Over 後封存完成回呼，P-02 可選擇呈現「公會封存」UI | P-02 GDD（**待設計**） |
 | 4 | P-02 Main UI Framework | `OnLoadCompleted` / `OnLoadFailed` 訂閱 | Bootstrap 完成回呼，決定主畫面進入時機 | P-02 GDD（**待設計**） |
-| 5 | P-03 Notification System | `OnSaveCompleted` 訂閱（可選） | 桌面通知「進度已儲存」（Jam 版可隱藏，§2 設計原則「玩家不該意識到存檔」） | P-03 GDD（**待設計**） |
+| 5 | P-03 Notification System | `OnSaveCompleted` 訂閱（可選） **【→Log API待更新】** | 桌面通知「進度已儲存」（Jam 版可隱藏，§2 設計原則「玩家不該意識到存檔」） | P-03 GDD（**待設計**） |
 | 6 | 各 owner 系統（共 10 個） | `MarkDirty()` 呼叫（特殊事件用） | 一般情況走事件訂閱自動標記；特殊變動可主動呼叫 | 各 owner GDD §6 反向登記 |
 | 7 | F-02 Time System | 接受 FT-10 呼叫的 `Initialize(lastActiveTimestamp)` | 離線計算交棒；F-02 §6 已登記 FT-10 為呼叫方 | F-02 §6 line 210（已登記） |
 | 8 | FT-04 Outcome Resolution | 透過 F-02 `OnOfflineResolved` 接手結算（FT-10 不直接呼叫 FT-04） | 離線期間到期任務的結算由 F-02 觸發、FT-04 執行 | FT-04 §6 line 274（已登記 F-02 為觸發源） |
@@ -1043,7 +1051,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 4 | 入 | `OnCommissionSettled` | 訂閱者 | FT-05 發布 | §3.2.1 |
 | 5 | 入 | `OnRecruitSuccess` | 訂閱者 | FT-01 發布 | §3.2.1 |
 | 6 | 入 | `OnBuildingUpgraded` | 訂閱者 | FT-07 發布 | §3.2.1 |
-| 7 | 入 | `OnStaffHired` / `OnStaffSalaryDue` | 訂閱者 | FT-08 發布 | §3.2.1 |
+| 7 | 入 | `OnStaffHired` / `OnStaffSalaryDue` | 訂閱者 | FT-12 發布 | §3.2.1 |
 | 8 | 入 | `OnFactionStoryStageUnlocked` | 訂閱者 | FT-09 發布 | §3.2.1 |
 | 9 | 入 | `OnDangerLevelChanged` | 訂閱者 | C-06 發布 | §3.2.1 |
 | 10 | 入 | `OnGoldChanged` / `OnReputationChanged` | 訂閱者 | F-03 發布 | §3.2.1 |
@@ -1052,7 +1060,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 13 | 出 | `OnSaveFailed(Exception)` | 發布者 | Debug；正式 UI **不顯示** | §3.7.2 + §3.4.3 |
 | 14 | 出 | `OnLoadCompleted(int loadedFromBackupIndex)` | 發布者 | P-02 訂閱 | §3.7.2 |
 | 15 | 出 | `OnLoadFailed(Exception)` | 發布者 | P-02 訂閱（走首次遊玩） | §3.7.2 |
-| 16 | 出 | `OnGameSealed(string filePath, long timestamp)` | 發布者 | P-02 / P-03 訂閱 | §3.5.1 / §3.7.2 |
+| 16 | 出 | `OnGameSealed(string filePath, long timestamp)` | 發布者 | P-02 / P-03 訂閱 **【→Log API待更新】** | §3.5.1 / §3.7.2 |
 | 17 | 出 | `OnGameReset` | 發布者 | P-02 訂閱（執行 scene reload） | §3.5.2 / §3.7.2 |
 | 18 | 同步 API | `Initialize(long lastActiveTimestamp)` | 呼叫者 | F-02 接收 | §3.3.2 Phase D |
 | 19 | 同步 API | 各 owner 的 `Serialize()` / `RestoreFromSave(json)` / `InitializeAsNewGame()` | 呼叫者 | 各 owner 接收 | §3.6.2 ISaveable 介面 |
@@ -1076,7 +1084,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 10 | `[FT-05] guild-gold-flow.md` | 在 §6 補一行「Jam 版不持久化結算歷史；FT-10 §1 既定範疇外」的明示宣告（Post-Jam 擴充收支日誌時再修訂） | FT-05 §6 |
 | 11 | `[FT-06] guild-core.md` | 新增 §6 反向依賴：FT-10 訂閱 `OnGuildInitialized` / `OnGuildLevelChanged` / `OnGameOver`；透過 `ISaveable` 序列化 `GuildState`；提供 `IsGameOver()` 查詢給 FT-10 / P-02；明示 `pendingLevelUpQueue` runtime-only 不序列化 | FT-06 §3.1 / §3.2 / §3.5 / §6 |
 | 12 | `[FT-07] guild-building-system.md` | 新增 §6 反向依賴：FT-10 透過 `ISaveable` 序列化 `BuildingState[]`；補 `ISaveable` 實作要求 | FT-07 §3.1 / §6 |
-| 13 | `[FT-08] guild-staff-system.md` | 新增 §6 反向依賴：FT-10 透過 `ISaveable` 序列化三層狀態；明示 `CandidateCardValidationException` 為 FT-10 critical 路徑捕獲源 | FT-08 §3.1 / §3.2.3 / §6 |
+| 13 | `[FT-08] gacha-system.md` / `[FT-12] staff-system.md` | §6.7 反向依賴：FT-10 透過 `ISaveable` 各自序列化 (FT-08: StaffPlayerState+CandidateCard / FT-12: StaffInstance+_nextInstanceID+_lastSalaryTimestamp)；明示 `CandidateCardValidationException` 為 FT-10 critical 路徑捕獲源 | FT-08 §3.1 / §3.2.3 / §6 |
 | 14 | `[FT-09] faction-story-system.md` | §6 line 1551 / §5.10 EC-10 已對齊 FT-10 設計；補一行明示「FT-10 §3.3.4 將 FT-09 列為 degradable，反序列化異常不阻擋 Bootstrap」雙向確認 | FT-09 §6（已存在，校驗即可） |
 | 15 | `production/systems-index.md` line 50 / line 312 | 將 FT-10 GDD 狀態從「待設計」改為「已設計」；line 312 進度追蹤表將 GDD 欄位由 ⬜ 改為 ✅ | systems-index.md |
 
@@ -1098,7 +1106,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 
 | 表格 | 用途 | 理由 |
 |---|---|---|
-| `SystemConstants.csv` | 收錄 FT-10 全部可調參數（共 5 項） | FT-10 參數量少、無子系統規模；不另開獨立表（對比 FT-08 因子系統爆量另開 `StaffTuning.csv`） |
+| `SystemConstants.csv` | 收錄 FT-10 全部可調參數（共 5 項） | FT-10 參數量少、無子系統規模；不另開獨立表（對比 FT-08 / FT-12 因子系統爆量另開 `StaffTuning.csv`） |
 
 **不引入新表**：FT-10 §1 既定範疇外，不新增任何 CSV 表（無 `FactionRouteTable` 類比的內容資料表）。
 
@@ -1267,7 +1275,7 @@ void InitTuning() {
 |---|---|
 | **情境** | 存在合法 `save.json` 含全部 10 個 owner 子區塊 |
 | **操作** | Phase C 執行 |
-| **預期** | 還原順序為 F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-01 → FT-03 → FT-09 |
+| **預期** | 還原順序為 F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-03 → FT-09 |
 | **驗證方式** | 各 owner `RestoreFromSave` 開頭 Debug.Log 觀察順序 |
 
 #### AC-2.4：Critical owner 失敗觸發回退

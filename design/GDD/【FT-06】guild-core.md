@@ -313,7 +313,7 @@ ComposeDisplayName(guildName):
 |---|---|---|
 | `OnGuildInitialized` | 新遊戲初始化完成 | P-02（顯示公會名稱）、FT-10（觸發首次存檔） |
 | `OnGuildLoaded` | 讀檔完成 | P-02 |
-| `OnGuildLevelChanged` | 連跳 queue 每 frame 取出一級 | P-02（UI 動畫）、P-03（通知）、FT-01/FT-02（容量變更通知） |
+| `OnGuildLevelChanged` | 連跳 queue 每 frame 取出一級 | P-02（UI 動畫）、P-03（通知） **【→Log API待更新】**、FT-01/FT-02（容量變更通知） |
 | `OnGameOverPending` | 首次收到 F-03 Bankrupt 事件 | P-02（訃聞畫面） |
 | `OnGameOver` | 玩家於階段 1 確認 | P-02（結算畫面）、FT-10（封存存檔） |
 
@@ -592,12 +592,13 @@ Invariants:
 |---|---|---|
 | **FT-01 Adventurer Recruitment** | `GetMaxRecruitableRank()` | 老手邀請可招募最高階級（冒險者階級上限）；名冊上限改由 FT-07 `GetRosterCap()` 提供 |
 | **P-02 / FT-02 / C-06**（待採用） | `GetMaxMissionDifficulty()` | 常規任務難度上限，用於 P-02 委託板與 C-06 任務生成過濾（待相關系統正式採用） |
+| **FT-03 NPC Decision System** | `GetMaxMissionDifficulty()` | §3.3 自主接單候選任務過濾（難度 ≤ 公會可接最高任務難度） |
 | **FT-07 Guild Building System** | `GetCurrentLevel()` | 升級聲望閘門判定 |
 | **P-01 Intro / Main Menu** | `OnGuildInitialized` / 公會名稱輸入 API | 新遊戲流程 |
 | **P-02 HUD & Screens** | `OnGuildLevelChanged` / `OnGameOverPending` / `OnGameOver` | UI 更新、訃聞、結算畫面 |
 | **P-02 HUD & Screens** | `GetGuildDisplayName()` / `GetCurrentTitle()` | HUD 公會名 / 稱號顯示 |
 | **P-02 HUD & Screens** | `ConfirmGameOver()` | 玩家確認訃聞後呼叫 |
-| **P-03 Notification** | `OnGuildLevelChanged` | 升級通知 toast |
+| **P-03 Notification** | `OnGuildLevelChanged` | 升級通知 toast **【→Log API待更新】** |
 | **FT-10 Save/Load** | `OnGuildInitialized` / `OnGameOver` | 首次存檔 / 封存存檔 |
 | **FT-10 Save/Load** | `GuildState` 全量序列化 / 還原 | 存讀檔內容 |
 

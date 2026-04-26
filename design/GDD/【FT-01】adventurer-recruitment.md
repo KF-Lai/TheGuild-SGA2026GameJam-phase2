@@ -41,11 +41,13 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 | `cost` | `int` | 招募費用；新手池固定 `0`，老手池查 `RecruitCostTable` |
 | `reputationReq` | `int` | 聲望門檻；新手池固定 `0`，老手池查 `RecruitCostTable` |
 
+**內部 enum**：`RecruitSource { Rookie, Veteran }`，用於 §3.7 `OnRecruitSuccess` payload 區分招募來源。FT-01 內部宣告，無外部消費者寫入需求。
+
 ---
 
 ### 3.2 刷新機制（兩池共用）
 
-1. **自動刷新**：實際刷新間隔 = 招募廣告欄建設等級對應的 `FT07.GetRecruitRefreshInterval(): TimeSpan` − FT-08 公會櫃臺職員的 `GetRecruitRefreshReductionSec()` 加成,以 `MIN_RECRUIT_REFRESH_INTERVAL_SEC`(1h) 為下限(完整公式見 §4.1)。計時起點為上次刷新的 UTC timestamp(`_lastRefreshTimestamp`),由 F-02 Time System 驅動。到期時自動觸發刷新,兩個池子同時清空並重新生成
+1. **自動刷新**：實際刷新間隔 = 招募廣告欄建設等級對應的 `FT07.GetRecruitRefreshInterval(): TimeSpan` − FT-12 公會櫃臺職員的 `GetRecruitRefreshReductionSec()` 加成,以 `MIN_RECRUIT_REFRESH_INTERVAL_SEC`(1h) 為下限(完整公式見 §4.1)。計時起點為上次刷新的 UTC timestamp(`_lastRefreshTimestamp`),由 F-02 Time System 驅動。到期時自動觸發刷新,兩個池子同時清空並重新生成
 2. **手動刷新**：每日 00:00（`DAILY_RESET_HOUR`）重置 `_freeRefreshRemaining = DAILY_FREE_REFRESH`（1 次）。手動刷新時：
    - 若 `_freeRefreshRemaining > 0`：免費，消耗 1 次
    - 若 `_freeRefreshRemaining == 0`：需 `REFRESH_COST`（150g），呼叫 F-03 `CanAfford` → `AddGold(-REFRESH_COST)`
@@ -85,14 +87,14 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 > 各步驟「檢查 `IsRosterFull`」需顯式取得 rosterCap：`rosterCap = FT07.GetRosterCap()` → `C02.IsRosterFull(rosterCap)`(對應 §6.1 FT-07 上游依賴)。
 
 **新手接納：**
-1. 玩家選擇候選者 → 檢查 `C02.IsRosterFull(FT07.GetRosterCap())` → 呼叫 C-02 `AddAdventurer` → 從新手池移除該候選者 → 發布 `OnRecruitSuccess(adventurerInstanceID, source=Rookie)`(§3.7)
+1. 玩家選擇候選者 → 檢查 `C02.IsRosterFull(FT07.GetRosterCap())` → 呼叫 C-02 `AddAdventurer` → **僅在 `AddAdventurer` 回傳 `true` 時**從新手池移除該候選者 → 發布 `OnRecruitSuccess(adventurerInstanceID, source=Rookie)`(§3.7)。`AddAdventurer` 回傳 `false` 時的池清理策略由 §5.2 統一規範（滿員：保留候選者；isUnique 衝突：移除候選者並 `LogWarning`）。
 
 **老手邀請：**
 1. 玩家選擇候選者 → 檢查 `C02.IsRosterFull(FT07.GetRosterCap())`
 2. 檢查聲望:F-03 `GetReputation() >= candidate.reputationReq`
 3. 檢查金幣:F-03 `CanAfford(candidate.cost)`
 4. 扣款:F-03 `AddGold(-candidate.cost)`(走 `AddGold` 不允許進入負債,見 §5.2)
-5. 呼叫 C-02 `AddAdventurer` → 從老手池移除該候選者 → 發布 `OnRecruitSuccess(adventurerInstanceID, source=Veteran)`(§3.7)
+5. 呼叫 C-02 `AddAdventurer` → **僅在 `AddAdventurer` 回傳 `true` 時**從老手池移除該候選者 → 發布 `OnRecruitSuccess(adventurerInstanceID, source=Veteran)`(§3.7)。`AddAdventurer` 失敗時須**回滾 §3.5 step 4 的扣款**（呼叫 `F03.AddGold(+candidate.cost)`）並依 §5.2 處理池清理。
 
 ---
 
@@ -113,7 +115,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 | 事件 | Payload | 觸發時機 | 訂閱者 |
 |------|---------|---------|-------|
 | `OnPoolRefreshed` | `void`（無 payload；訂閱者透過 `GetRookiePool()` / `GetVeteranPool()` 自行取池） | 自動刷新（§3.2 rule 1）/ 手動刷新（§4.2）成功完成後 | P-02 Main UI（候選池 UI 重新整理） |
-| `OnRecruitSuccess` | `(int adventurerInstanceID, RecruitSource source)` 其中 `source ∈ {Rookie, Veteran}` | `RecruitRookie` / `RecruitVeteran` 成功完成後（C-02 `AddAdventurer` 已成功) | P-02 Main UI（名冊 UI 更新）、P-03 Notification(可選 toast)、FT-10 Save/Load(標記 dirty) |
+| `OnRecruitSuccess` | `(int adventurerInstanceID, RecruitSource source)` 其中 `source ∈ {Rookie, Veteran}` | `RecruitRookie` / `RecruitVeteran` 成功完成後（C-02 `AddAdventurer` 已成功) | P-02 Main UI（名冊 UI 更新）、P-03 Notification(可選 toast) **【→Log API待更新】**、FT-10 Save/Load(標記 dirty) |
 
 > 訂閱者責任:不修改傳入 payload;FT-01 為純執行者,不維護歷史紀錄。
 
@@ -125,7 +127,7 @@ FT-01 Adventurer Recruitment 負責冒險者招募的完整流程。系統維護
 CheckAutoRefresh():
     now = F-02 TimeSystem.NowUTC
     baseSec = (long)FT07.GetRecruitRefreshInterval().TotalSeconds  // 招募廣告欄建設等級決定
-    reductionSec = FT08.GetRecruitRefreshReductionSec()             // 公會櫃臺職員 slot effect；FT-08 缺席時為 0
+    reductionSec = FT12.GetRecruitRefreshReductionSec()             // 公會櫃臺職員 slot effect；FT-12 缺席時為 0
     intervalSec = max(baseSec - reductionSec, MIN_RECRUIT_REFRESH_INTERVAL_SEC)  // 強制下限避免刷新近乎即時
     if now >= _lastRefreshTimestamp + intervalSec:
         ExecuteRefresh()
@@ -134,7 +136,7 @@ CheckAutoRefresh():
 
 > 離線回補：重啟時呼叫一次 `CheckAutoRefresh()`，若已到期則刷新一次。不補算中間錯過的多次刷新。
 >
-> **FT-08 加成**：`FT08.GetRecruitRefreshReductionSec()` 為公會櫃臺指派職員的 `RecruitRefreshOnCounter` slot effect 加總（已套用 §3.6.3 cap，預設上限 14400 秒 / 4h）。FT-08 系統未解鎖（`IsStaffSystemUnlocked() == false`）時固定回 0，公式照常運作。`MIN_RECRUIT_REFRESH_INTERVAL_SEC` 建議 `3600`（1h），避免極端配置使刷新近乎即時失去等待感。
+> **FT-12 加成**：`FT12.GetRecruitRefreshReductionSec()` 為公會櫃臺指派職員的 `RecruitRefreshOnCounter` slot effect 加總（已套用 §3.6.3 cap，預設上限 14400 秒 / 4h）。職員系統未解鎖（`FT07.IsStaffSystemUnlocked() == false`，由 FT-07 `GetBuildingLevel(6) == 0` 判定）時 `FT12.GetRecruitRefreshReductionSec()` 固定回 0，公式照常運作。`MIN_RECRUIT_REFRESH_INTERVAL_SEC` 建議 `3600`（1h），避免極端配置使刷新近乎即時失去等待感。
 
 ---
 
@@ -175,6 +177,7 @@ RollVeteranRank(maxRecruitableRank):
     // 預期內容：{ D:40, C:30, B:18, A:9, S:3 }（Jam 預設，由 CSV 提供）
 
     // 過濾超過公會等級限制的階級（maxRecruitableRank 由 FT06.GetMaxRecruitableRank() 取得）
+    // RANK_INDEX 為專案共用 helper（AdventurerRankUtil.RankIndex(string)），固定映射 F=0, E=1, D=2, C=3, B=4, A=5, S=6
     filtered = allWeights.Where(kvp => RANK_INDEX(kvp.Key) <= RANK_INDEX(maxRecruitableRank))
 
     if filtered.IsEmpty() → Debug.LogError, return D    // 防禦性 fallback
@@ -205,10 +208,13 @@ GeneratePool(rankPool, poolSize):
     candidates = []
     usedTemplateIDs = []
 
+    // 預先快取名冊中所有 templateID（含 Dead 狀態）以便 isUnique 過濾
+    rosterTemplateIDs = C02.GetRoster().Select(a => a.templateID).ToHashSet()
+
     // Phase 1: 優先使用具名模板
     availableTemplates = AdventurerTemplate
         .Where(t => t.rank ∈ rankPool
-                  && ((t.isUnique == 1 && !C02.RosterContains(t.templateID)) || t.isUnique == 0))
+                  && ((t.isUnique == 1 && !rosterTemplateIDs.Contains(t.templateID)) || t.isUnique == 0))
         .Shuffle()
     // isUnique=1 且不在名冊中 → 可使用
     // isUnique=0 → 可重複出現（同批次仍透過 usedTemplateIDs 去重）
@@ -222,9 +228,14 @@ GeneratePool(rankPool, poolSize):
         candidates.Add(NewCandidate(instance, rankPool))
 
     // Phase 2: 隨機生成填滿剩餘位置
+    professions = C03.GetBaseProfessions()
+    if professions.IsEmpty():
+        Debug.LogError("FT-01 GeneratePool: GetBaseProfessions() empty, returning partial pool")
+        return candidates    // 早退避免無限迴圈；對齊 §5.1 row 4「池可能少於 poolSize」
+
     while candidates.Count < poolSize:
         rank = PickRank(rankPool)    // 新手池: 50/50 F/E；老手池: RollVeteranRank(FT06.GetMaxRecruitableRank())
-        professionID = RandomFrom(C03.GetBaseProfessions()).professionID
+        professionID = RandomFrom(professions).professionID
         raceID = C04.RollRace(professionID)
         traitIDs = C02.BuildTraitList([], C05.GetProfessionGroups(professionID))
         instance = C02.CreateRandomInstance(rank, professionID, raceID, traitIDs)  // 走 C-02 標準建立 API，正確分配 instanceID
@@ -232,6 +243,10 @@ GeneratePool(rankPool, poolSize):
 
     return candidates
 ```
+
+> **Phase 1 isUnique 過濾**：使用 `C02.GetRoster()` 的 `templateID` 快照（含 Dead 狀態）做雙保險過濾，避免重覆呼叫 `CreateFromTemplate` 才被 isUnique 攔截。最終 `CreateFromTemplate` 內部仍會做 isUnique 二次檢查（C-02 §4.3），回 `null` 時走 `continue` 跳過。
+>
+> **Phase 2 早退**：`C03.GetBaseProfessions()` 為空時直接 return，池可能少於 `poolSize`，對齊 §5.1 row 4 既定策略，避免無限迴圈。
 
 ## 5. 邊緣案例（Edge Cases）
 
@@ -256,7 +271,7 @@ GeneratePool(rankPool, poolSize):
 | 老手邀請時聲望不足 | 回傳 `false`，UI 顯示「聲望不足」；不扣款、不移除候選者 |
 | 老手邀請時 `CanAfford` 通過但 `AddGold` 失敗（重入防護等極端情況） | `Debug.LogError`，回傳 `false`，不加入名冊 |
 | 老手邀請扣款會跨過破產閾值 | 走 F-03 `AddGold(-cost)`（**非** `AddGoldAllowBankruptcy`），F-03 規則 2 會 reject；回傳 `false`，不扣款、不加入名冊。招募系統刻意不允許靠邀請把公會推入破產——與 FT-05 金流（維護費 / 薪水 / 委託結算）的語義區別。 |
-| 候選者的 `templateID` 在接納前已被其他途徑加入名冊（理論上不會，但防禦性） | C-02 `AddAdventurer` 內部的 isUnique 檢查攔截，回傳 `false`；FT-01 從池中移除該候選者，`Debug.LogWarning` |
+| 候選者的 `templateID` 在接納前已被其他途徑加入名冊（理論上不會，但防禦性） | C-02 `AddAdventurer` 內部的 isUnique 檢查攔截，回傳 `false`；FT-01 從池中移除該候選者，`Debug.LogWarning`；**若為老手邀請（已執行 §3.5 step 4 扣款）須呼叫 `F03.AddGold(+candidate.cost)` 回滾**，並回傳 `false` |
 | 接納/邀請後池中剩餘候選者不足 | 不自動補充，等待下次刷新 |
 
 ---
@@ -269,8 +284,8 @@ GeneratePool(rankPool, poolSize):
 | 離線超過多個刷新週期（如離線 72h，刷新間隔 24h） | 僅執行一次刷新，不補算中間錯過的週期 |
 | 離線跨越每日重置時間（00:00） | 重啟時由 F-02 觸發每日重置事件，`_freeRefreshRemaining` 重置為 1 |
 | 手動刷新與自動刷新幾乎同時觸發 | 手動刷新重置 `_lastRefreshTimestamp`，自動刷新的 `CheckAutoRefresh` 判定未到期，不會重複刷新 |
-| FT-08 未解鎖（職員系統未啟用）| `FT08.GetRecruitRefreshReductionSec()` 回 0；公式 `intervalSec = baseSec - 0 = baseSec`，與 FT-08 缺席時行為一致 |
-| FT-08 加成超過 `baseSec - MIN_RECRUIT_REFRESH_INTERVAL_SEC`（極端配置）| `intervalSec` 截斷為 `MIN_RECRUIT_REFRESH_INTERVAL_SEC`（1h 下限），不會出現負值或 0 間隔 |
+| 職員系統未解鎖（`FT07.IsStaffSystemUnlocked() == false`）| `FT12.GetRecruitRefreshReductionSec()` 回 0；公式 `intervalSec = baseSec - 0 = baseSec`，與 FT-12 缺席時行為一致 |
+| FT-12 加成超過 `baseSec - MIN_RECRUIT_REFRESH_INTERVAL_SEC`（極端配置）| `intervalSec` 截斷為 `MIN_RECRUIT_REFRESH_INTERVAL_SEC`（1h 下限），不會出現負值或 0 間隔 |
 
 ---
 
@@ -297,7 +312,7 @@ GeneratePool(rankPool, poolSize):
 | C-05 Trait System | 隨機生成冒險者時抽特質 | `GetProfessionGroups(professionID)`、`RollTraits(group)` |
 | FT-06 Guild Core | 可招募最高階級（老手邀請階級上限） | `GetMaxRecruitableRank()` |
 | FT-07 Guild Building System | 名冊容量上限、招募刷新間隔 | `GetRosterCap()`、`GetRecruitRefreshInterval()` |
-| FT-08 Guild Staff System | 公會櫃臺職員 slot effect：減少招募刷新秒數 | `GetRecruitRefreshReductionSec() : int`（系統未解鎖時回 0）|
+| FT-12 Staff System | 公會櫃臺職員 slot effect：減少招募刷新秒數 | `GetRecruitRefreshReductionSec() : int`（系統未解鎖時回 0）|
 
 ---
 
@@ -315,7 +330,7 @@ GeneratePool(rankPool, poolSize):
 - FT-01 依賴 C-02 建立實例與加入名冊，C-02 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 FT-06 查詢老手邀請階級上限，FT-06 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 FT-07 查詢名冊容量與刷新間隔，FT-07 不依賴 FT-01——**無循環依賴**
-- FT-01 依賴 FT-08 查詢櫃臺職員的招募刷新減量，FT-08 不依賴 FT-01——**無循環依賴**
+- FT-01 依賴 FT-12 查詢櫃臺職員的招募刷新減量，FT-12 不依賴 FT-01——**無循環依賴**
 - FT-01 依賴 F-03 扣款，F-03 不依賴 FT-01——**無循環依賴**
 
 ### 6.4 ISaveable 持久化契約
@@ -361,7 +376,7 @@ GeneratePool(rankPool, poolSize):
 | `RECRUIT_POOL_SIZE` | `4` | `3 ~ 6` | 每批候選池人數；過少選擇太窄，過多造成選擇困難且稀釋具名 NPC 出現率 |
 | `DAILY_FREE_REFRESH` | `1` | `1 ~ 3` | 每日免費手動刷新次數；過多削弱付費刷新的經濟壓力 |
 | `REFRESH_COST` | `150` | `50 ~ 300` | 額外手動刷新費用；應高於 F 級任務傭金（20g×20%=4g）但低於 D 級任務傭金（150g×20%=30g）的數倍，讓早期覺得昂貴、中期可承受 |
-| `MIN_RECRUIT_REFRESH_INTERVAL_SEC` | `3600`（1h） | `1800 ~ 7200` | §4.1 自動刷新間隔下限,避免 FT-08 公會櫃臺職員加成將間隔壓至近乎即時失去等待感 |
+| `MIN_RECRUIT_REFRESH_INTERVAL_SEC` | `3600`（1h） | `1800 ~ 7200` | §4.1 自動刷新間隔下限,避免 FT-12 公會櫃臺職員加成將間隔壓至近乎即時失去等待感 |
 
 ---
 
@@ -422,5 +437,5 @@ GeneratePool(rankPool, poolSize):
 | AC-AR-15 | `isUnique=1` 的模板已在名冊中（含 Dead），刷新時該模板不出現在候選池中 |
 | AC-AR-16 | 同一批次候選池內不出現重複的 `templateID` |
 | AC-AR-17 | `RollVeteranRank` 呼叫 1000 次（公會 Lv5，全階級開放），D 出現率約 40%、S 出現率約 3%（允許 ±5% 誤差） |
-| AC-AR-18 | FT-08 未解鎖（`FT07.IsStaffSystemUnlocked() == false`）時，`FT08.GetRecruitRefreshReductionSec()` 回 0，`intervalSec == FT07.GetRecruitRefreshInterval().TotalSeconds`（無減量套用） |
-| AC-AR-19 | FT-08 解鎖且 1 位櫃臺職員帶 `RecruitRefreshOnCounter = 7200`（2h）並指派至公會櫃臺，`baseSec = 86400` 時 `intervalSec = 86400 − 7200 = 79200`；移除指派或職員轉 OnLeave 後 `intervalSec` 回到 `86400` |
+| AC-AR-18 | 職員系統未解鎖（`FT07.IsStaffSystemUnlocked() == false`）時，`FT12.GetRecruitRefreshReductionSec()` 回 0，`intervalSec == FT07.GetRecruitRefreshInterval().TotalSeconds`（無減量套用） |
+| AC-AR-19 | FT-12 解鎖且 1 位櫃臺職員帶 `RecruitRefreshOnCounter = 7200`（2h）並指派至公會櫃臺，`baseSec = 86400` 時 `intervalSec = 86400 − 7200 = 79200`；移除指派或職員轉 OnLeave 後 `intervalSec` 回到 `86400` |

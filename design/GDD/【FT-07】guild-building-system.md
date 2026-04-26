@@ -8,9 +8,9 @@ _系統 ID：FT-07_
 
 ## 1. 概要（Overview）
 
-FT-07 Guild Building System 是公會建築升級的統一管理系統，負責 6 棟建築（委託板、招募廣告欄、公會大廳、公會櫃臺、預備金保險櫃、職員休息室）的等級狀態維護與效果值授權。每棟建築擁有獨立的升級等級，升級後永久擴充功能：委託板控制同時開放的委託槽數；招募廣告欄控制候選池刷新間隔；公會大廳控制冒險者名冊上限；公會櫃臺控制同時可進行中的任務數；預備金保險櫃控制破產觸發後的倒數緩衝時間；職員休息室為特殊建築，初始為「未建造」（Lv0），建造後才開通 FT-08 職員系統。升級採**雙軌閘門制**：Lv1→Lv2 僅需金幣（金幣軸，早期成長無阻礙），Lv3 及以上同時需要對應的公會聲望等級（聲望閘，確保中後期建築進度與公會整體成長同步）。本系統透過查詢 API 對外暴露建築效果值，下游系統（FT-01 招募、FT-02 派遣、F-03 破產警告、P-02 UI）統一從 FT-07 讀取，不自行維護建築狀態副本。
+FT-07 Guild Building System 是公會建築升級的統一管理系統，負責 6 棟建築（委託板、招募廣告欄、公會大廳、公會櫃臺、預備金保險櫃、職員休息室）的等級狀態維護與效果值授權。每棟建築擁有獨立的升級等級，升級後永久擴充功能：委託板控制同時開放的委託槽數；招募廣告欄控制候選池刷新間隔；公會大廳控制冒險者名冊上限；公會櫃臺控制同時可進行中的任務數；預備金保險櫃控制破產觸發後的倒數緩衝時間；職員休息室為特殊建築，初始為「未建造」（Lv0），建造後才開通 FT-08 面試系統與 FT-12 職員系統。升級採**雙軌閘門制**：Lv1→Lv2 僅需金幣（金幣軸，早期成長無阻礙），Lv3 及以上同時需要對應的公會聲望等級（聲望閘，確保中後期建築進度與公會整體成長同步）。本系統透過查詢 API 對外暴露建築效果值，下游系統（FT-01 招募、FT-02 派遣、F-03 破產警告、P-02 UI）統一從 FT-07 讀取，不自行維護建築狀態副本。
 
-**不負責**：建築的視覺呈現（P-02 負責）、職員招募邏輯（FT-08 負責）、破產倒數計時實作（F-03 負責，僅讀取 FT-07 的秒數配置）。
+**不負責**：建築的視覺呈現（P-02 負責）、面試 gacha（FT-08 負責）+ 職員運營（FT-12 負責）、破產倒數計時實作（F-03 負責，僅讀取 FT-07 的秒數配置）。
 
 ---
 
@@ -112,7 +112,7 @@ TryUpgradeBuilding(buildingID):
 | `GetRosterCap()` | `int` | FT-01（招募上限閘） |
 | `GetMaxConcurrentMissions()` | `int` | FT-02（派遣上限閘） |
 | `GetBankruptcyWarningSeconds()` | `int` | F-03（破產倒數設定）；同時透過啟動推送（`Start()`）與升級推送（`buildingID=5` 升級時）主動寫入 F-03 `_currentWarningDuration` |
-| `IsStaffSystemUnlocked()` | `bool` | FT-08、P-02 |
+| `IsStaffSystemUnlocked()` | `bool` | FT-08、FT-12、P-02 |
 
 所有 API 皆同步、即時讀 `BuildingTable` 對應等級行，**不快取**。
 
@@ -183,8 +183,8 @@ TryUpgradeBuilding(buildingID):
 
 | 事件 | Payload | 發布時機 | 訂閱者 |
 |---|---|---|---|
-| `OnBuildingUpgraded` | `buildingID, fromLevel, toLevel` | 升級成功 | P-02（UI 更新）、P-03（通知） |
-| `OnGuildMaintenanceDue` | `dueTimestamp, perBuildingCost, totalAmount` | 每日 UTC 00:00（`OnDailyReset`）**Phase 2，Jam 版不發布** | FT-05 Guild Gold Flow（扣款）、P-02（顯示明細）、P-03（通知） |
+| `OnBuildingUpgraded` | `buildingID, fromLevel, toLevel` | 升級成功 | P-02（UI 更新）、P-03（通知） **【→Log API待更新】** |
+| `OnGuildMaintenanceDue` | `dueTimestamp, perBuildingCost, totalAmount` | 每日 UTC 00:00（`OnDailyReset`）**Phase 2，Jam 版不發布** | FT-05 Guild Gold Flow（扣款）、P-02（顯示明細）、P-03（通知） **【→Log API待更新】** |
 
 ### 3.7 與 FT-06 的職責切割
 
@@ -404,12 +404,14 @@ AfterUpgrade(buildingID, newLevel):
 | **FT-01 Adventurer Recruitment** | `GetRecruitRefreshInterval()` | 候選池刷新計時 |
 | **FT-02 Mission Dispatch** | `GetMaxConcurrentMissions()` | 同時派遣上限閘門 |
 | **F-03 Resource Management** | `SetBankruptcyWarningDuration(int)` | FT-07 主動推送：啟動時（`Start()`）與保險櫃升級時，呼叫 `F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())` 寫入破產倒數秒數；F-03 被動接收，不查詢 FT-07 |
-| **FT-08 Guild Staff** | `IsStaffSystemUnlocked()` | 判斷職員系統是否可用 |
-| **FT-08 Guild Staff** | `GetBuildingLevel(6)` | 自動刷新間隔階梯（讀 `BuildingTable[6, level].effectValue`）|
-| **FT-08 Guild Staff** | `BuildingTable[buildingID].slotCount` | slot 指派 capacity（FT-08 §3.7 直接讀資料表，無需經 FT-07 API）|
+| **FT-08 Gacha System** | `IsStaffSystemUnlocked()` | 整體面試 gacha 啟停閘 |
+| **FT-08 Gacha System** | `GetBuildingLevel(6)` | 面試自動刷新間隔階梯（讀 `BuildingTable[6, level].effectValue`）|
+| **FT-12 Staff System** | `IsStaffSystemUnlocked()` | 整體職員運營啟停閘（與 FT-08 共用） |
+| **FT-12 Staff System** | `GetBuildingLevel(6)` | 名冊容量上限（讀 `BuildingTable[6, level].slotCount`）|
+| **FT-12 Staff System** | `BuildingTable[buildingID].slotCount` | slot 指派 capacity（FT-12 §3.5 直接讀資料表，無需經 FT-07 API）|
 | **P-02 Main UI** | `GetBuildingLevel(id)` / 所有效果 API | 建築管理 UI 呈現、升級按鈕狀態 |
 | **P-02 Main UI** | `GetMissionSlotCount()` | 委託板顯示槽數 |
-| **P-03 Notification** | `OnBuildingUpgraded` 事件 | 升級完成通知 |
+| **P-03 Notification** | `OnBuildingUpgraded` 事件 | 升級完成通知 **【→Log API待更新】** |
 | **FT-10 Save/Load** | `BuildingState[]` 全量序列化 / 還原 | 存讀檔內容 |
 
 ### 6.3 與 FT-06 的職責切割（補丁登記）
@@ -431,7 +433,7 @@ FT-02 GDD 需補丁：
 ### 6.4 開發順序
 
 ```
-F-01 → F-03 → FT-06 → FT-07 → FT-01 / FT-02 / F-03（破產秒數）/ FT-08 / P-02
+F-01 → F-03 → FT-06 → FT-07 → FT-01 / FT-02 / F-03（破產秒數）/ FT-08 / FT-12 / P-02
 ```
 
 FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等 FT-07 的 API 就緒。
@@ -494,7 +496,7 @@ FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等
 | `effectValue` | int | 該等級的效果值（槽數 / 秒數 / 人數 / 布林語意） |
 | `upgradeCost` | int | **升至本等級**所需金幣（每棟建築最小 level 行為初始態，固定為 0） |
 | `guildLevelReq` | int | **升至本等級**所需公會等級（最小 level 行與 level=2 固定為 0；level>=3 依設計填 3/4/5） |
-| `slotCount` | int | 該建築可同時容納的職員數量（FT-08 §3.7 讀取為 `staff.assignedBuildingID == buildingID` 的 capacity 上限）。Jam 版採「逐建築固定值、不隨 level 增長」原則：未提供職員位置的建築固定 0；提供職員位置的建築（委託板 / 公會櫃臺 / 預備金保險櫃）所有 level 皆為相同值。L0 行（職員休息室）固定 0 |
+| `slotCount` | int | 該建築可同時容納的職員數量（FT-12 §3.5 讀取為 `staff.assignedBuildingID == buildingID` 的 capacity 上限）。Jam 版採「逐建築固定值、不隨 level 增長」原則：未提供職員位置的建築固定 0；提供職員位置的建築（委託板 / 公會櫃臺 / 預備金保險櫃）所有 level 皆為相同值。L0 行（職員休息室）固定 0 |
 | `maintenanceCost` | int | **Phase 2**：每日維護費（金幣）；L1 與 L0 填 0（免費）；FT-07 `OnDailyReset` 讀取並計算 `perBuildingCost`，Jam 版不讀此欄 |
 
 > **複合主鍵**：`(buildingID, level)`，每棟建築的每個等級各佔一行。
@@ -535,7 +537,7 @@ FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等
 | 6 | 職員休息室 | 5 | 5 | 21600 | 15000 | 5 | 0 | 240 |
 
 > 招募廣告欄 `effectValue` 單位為秒（86400 = 24h，57600 = 16h，28800 = 8h）。預備金保險櫃同。職員休息室 `effectValue` 亦為秒，代表 FT-08 面試自動刷新間隔（L1=24h → L5=6h 階梯）；L0 時 `GetBuildingLevel(6) == 0`，`IsStaffSystemUnlocked()` 回 `false`，FT-08 降級不讀此欄。
-> `slotCount` 對應 FT-08 §3.7 slot 指派 capacity；Jam 版三個有 slot 的建築值為「委託板=3 / 公會櫃臺=2 / 預備金保險櫃=1」（FT-08 §3.6.3 `AccountantPenaltyOnVault` slot capacity = 1 自然封頂、§4.2 `RecruitRefreshOnCounter` 受 buildingID=4 slotCount 限制）。其他三棟（招募廣告欄 / 公會大廳 / 職員休息室）為 `0`，FT-08 `TryAssignStaff` 對 capacity=0 的 buildingID 一律拒絕指派。後續若調整槽數，FT-08 需重新 grep slotCount 引用點同步。
+> `slotCount` 對應 FT-12 §3.5 slot 指派 capacity；Jam 版三個有 slot 的建築值為「委託板=3 / 公會櫃臺=2 / 預備金保險櫃=1」（FT-12 §3.4.3 `AccountantPenaltyOnVault` slot capacity = 1 自然封頂、§4.2 `RecruitRefreshOnCounter` 受 buildingID=4 slotCount 限制）。其他三棟（招募廣告欄 / 公會大廳 / 職員休息室）為 `0`，FT-12 `TryAssignStaff` 對 capacity=0 的 buildingID 一律拒絕指派。後續若調整槽數，FT-12 需重新 grep slotCount 引用點同步。
 
 ### 7.2 調整指南
 
