@@ -51,9 +51,10 @@ C-04 Race System 是 Core 層的靜態資料查詢系統，負責：(1) 從 F-01
 | AC-RS-07 | `GetDeathDelta(4, 2)` == `0.05f`（魔族護送，正值） | EditMode 測試 |
 | AC-RS-08 | `GetRace(0)` 回傳 `null` 且出現 `LogWarning` | EditMode 測試（LogAssert） |
 | AC-RS-09 | `modifiers` JSON 格式錯誤時啟動出現 `LogError`，`GetSuccessDelta` 回傳 `0.0f` | EditMode 測試（LogAssert） |
-| AC-RS-10 | `RollRace(7)` 呼叫 1000 次，raceID=1 約 50%、raceID=3 約 30%、raceID=4 約 20%（±5%） | PlayMode 統計測試 |
+| AC-RS-10 | `RollRace(7)` 呼叫 1000 次，raceID=1 約 50%、raceID=3 約 30%、raceID=4 約 20%（±5%） | PlayMode 統計測試（測試前呼叫 `UnityEngine.Random.InitState(testSeed)` 確保結果可重現；FSD-Codex-Reoprts-260427 T1-C04） |
 | AC-RS-11 | `RollRace` 傳入不存在 professionID，回傳 `1` 且出現 `LogError` | EditMode 測試（LogAssert） |
-| AC-RS-12 | `raceIDs` 與 `raceWeights` 長度不一致時出現 `LogError`，`RollRace` 回傳 `1` | EditMode 測試（LogAssert） |
+| AC-RS-12 | **長度驗證主測試已轉移至 C-03**（C-03 Loader 不入字典；FSD-Codex-Reoprts-260427 T1-C04）；C-04 改測 defensive 行為：mock `IProfessionService.GetProfession` 回傳長度不一致的 ProfessionData，`RollRace` 觀察 `LogError` 並回傳 `1`（fallback raceID） | EditMode 測試（LogAssert） |
+| AC-RS-12b | `raceWeights` 含 `<= 0` 元素或 `totalWeight <= 0` 時 `RollRace` 觀察 `LogError`/`LogWarning` 並回傳 `1` | EditMode 測試（LogAssert） |
 | AC-RS-13 | 新增一筆 CSV 行，`GetAllRaces()` 回傳新數量，修正值查詢正確 | 手動：替換 CSV → play mode 驗證 |
 
 ---
@@ -82,6 +83,8 @@ C-04 Race System 是 Core 層的靜態資料查詢系統，負責：(1) 從 F-01
 | `【C-03-DS】profession-table.md` | `ProfessionTable.csv` | `raceIDs`、`raceWeights` | `RollRace` 時透過 `IProfessionService` 讀取（owner = C-03，C-04 為消費端） |
 
 ### 2.3 上游依賴系統
+
+> **介面命名規範**：本表中以 `IXxxService` / `IXxxSystem` 命名的介面僅為敘述方便（沿用 GDD 用語），實作契約以既有 concrete singleton 為準（`DataManager.Instance` / `TimeSystem.Instance` / `ResourceManagement.Instance` / static `EventBus`）。詳見 `FSD-index.md` §2.10。
 
 | 系統 | 依賴內容 | 介面 |
 | --- | --- | --- |
@@ -201,14 +204,26 @@ C-04 不發布也不訂閱任何事件。
 ### 5.3 資料結構
 
 ```csharp
-// RaceData（資料容器）
+// RaceData（資料容器；FSD-Codex-Reoprts-260427 T1-C04 補完）
 public class RaceData
 {
     public int raceID;
     public string name;
     public string description;
-    // 載入後由 RaceDatabaseLoader 建立快取，外部不直接存取
-    // _modifierCache : Dictionary<int, RaceModifierEntry>
+    public string modifiers;   // CSV 原始 JSON 字串（必填欄位，由 CSVParser 反射綁定）
+                                // 範例：[{"typeID":1,"successDelta":0.05,"deathDelta":-0.02}]
+
+    // RaceDatabaseLoader 完成解析後注入；外部僅透過 TryGetModifier 取值
+    private IReadOnlyDictionary<int, RaceModifierEntry> _modifierCache;
+
+    public void SetModifierCache(IReadOnlyDictionary<int, RaceModifierEntry> cache)
+        => _modifierCache = cache;
+
+    public bool TryGetModifier(int typeID, out RaceModifierEntry entry)
+    {
+        if (_modifierCache == null) { entry = default; return false; }
+        return _modifierCache.TryGetValue(typeID, out entry);
+    }
 }
 
 // RaceModifierEntry（modifiers JSON 解析結果，單一條目）
@@ -227,7 +242,15 @@ internal class RaceModifierListWrapper
 }
 ```
 
-**注意**：Unity `JsonUtility` 不支援直接解析 top-level JSON array。`RaceDatabaseLoader` 使用 `RaceModifierListWrapper` 包裝解析；若替換為 Newtonsoft.Json 則不需 wrapper，實作時二擇一並於 §8.2 登記。
+**注意**：Unity `JsonUtility` 不支援直接解析 top-level JSON array。`RaceDatabaseLoader` 使用 `RaceModifierListWrapper` 包裝解析；實作步驟（FSD-Codex-Reoprts-260427 T1-C04 明確化）：
+
+1. 取出 `RaceData.modifiers` 原始字串 `rawJson`。
+2. 若 `rawJson` 為空或 `"[]"` → 跳過解析（`_modifierCache = empty`）。
+3. 字串包裝：`string wrapped = "{\"modifiers\":" + rawJson + "}"`。
+4. `var listWrapper = JsonUtility.FromJson<RaceModifierListWrapper>(wrapped)`。
+5. 將 `listWrapper.modifiers` 投影為 `Dictionary<int, RaceModifierEntry>` 並 freeze 為 `IReadOnlyDictionary<>` 注入 `RaceData`。
+
+若替換為 Newtonsoft.Json 則不需 wrapper（直接 `JsonConvert.DeserializeObject<List<RaceModifierEntry>>(rawJson)`），實作時二擇一並於 §8.2 登記。
 
 ### 5.4 內部資料流
 
@@ -268,10 +291,16 @@ AdventurerFactory.Create(professionID)
       │   └─ 取得 profession.raceIDs、profession.raceWeights
       ├─ if raceIDs 為空 → Debug.LogError，return 1
       ├─ if raceIDs.Length != raceWeights.Length → Debug.LogError，return 1
+      │     // T1-C04 註：主驗證歸 C-03 Loader（已於 C-03 §5.4 補偽碼）；此處僅為 defensive 雙保險
       ├─ 過濾 raceIDs 中不存在於 RaceTable 的 ID → Debug.LogWarning，排除對應 weight
+      ├─ 過濾 raceWeights 中 weight <= 0 → Debug.LogWarning，排除對應 raceID
+      │     // T1-C04 補：raceWeights 非正值處理（C-03 Loader 已處理但 C-04 防衛）
       ├─ if 過濾後 raceIDs 為空 → Debug.LogError，return 1
       ├─ totalWeight = raceWeights.Sum()
-      ├─ roll = Random.Range(0, totalWeight)  // [0, totalWeight)
+      ├─ if totalWeight <= 0 → Debug.LogError，return 1
+      ├─ roll = _rng.Next(0, totalWeight)  // T1-C04 修正：使用注入的 IRandomProvider
+      │                                    //   或 UnityEngine.Random.Range(0, totalWeight)
+      │                                    //   AC-RS-10 測試需先呼叫 Random.InitState(seed) 鎖定統計
       ├─ 累積區間掃描 → return 第一個 cumulative > roll 的 raceID
       └─ 防禦性 fallback：return raceIDs.Last()
 ```
@@ -363,6 +392,14 @@ AdventurerFactory.Create(professionID)
 **B-02（已解決，2026-04-27 GDD P-004 patch）：fallback raceID=1 保留 ID 註記**
 
 原建議項描述「GDD 硬寫 `return 1` 作為 fallback，假設 raceID=1 永遠為人類；建議 CSV 規範中備註保留」。**已由 GDD P-004 patch 解決**：C-04 GDD §3.1 Game Jam 初始資料表後已新增 note「`raceID = 1`（人類）為 fallback 保留 ID」，明文「禁止新增種族時重排或覆寫此 ID」。本 FSD §3.3 API 規格與 §5 邊緣案例 fallback 行為均保持指定值 `1`，已對齊。
+
+**Prerequisite — 依賴未完成 FSD（FSD-Codex-Reoprts-260427 CT-10）**
+
+本 FSD 對以下系統的 API / 事件契約引用，目前**尚未經對方 FSD 雙向驗證**，視為 stub 契約：
+
+- P-02 Main UI（FSD 未存在）
+
+實作時須以 mock / stub 介面驗證；對方 FSD 完成後須回頭做雙向對齊複查。
 
 ### 8.4 給 GDD 的回註紀錄
 

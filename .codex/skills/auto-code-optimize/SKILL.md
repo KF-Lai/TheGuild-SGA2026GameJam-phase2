@@ -1,4 +1,4 @@
-﻿---
+---
 name: auto-code-optimize
 description: "Run a scoped Unity C# optimization workflow for The Guild. Use when Codex or GPT must plan, implement, review, and verify code improvements for one file, folder, or GDD-linked system while preserving project rules and avoiding unrelated refactors."
 ---

@@ -1,4 +1,4 @@
-﻿---
+---
 name: design-review
 description: "Review a game design document for completeness, consistency, implementability, dependency alignment, acceptance criteria, and adherence to the project eight-section GDD standard. Use before converting design into implementation work."
 ---

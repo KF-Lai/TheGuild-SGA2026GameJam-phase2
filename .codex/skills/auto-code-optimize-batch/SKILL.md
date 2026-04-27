@@ -1,4 +1,4 @@
-﻿---
+---
 name: auto-code-optimize-batch
 description: "Run multiple scoped Unity C# optimization groups with manifest-driven batching, progress tracking, failure isolation, and final reporting. Use when several files, folders, or GDD-linked systems need coordinated but separated optimization work."
 ---

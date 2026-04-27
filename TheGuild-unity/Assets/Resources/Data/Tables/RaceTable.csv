@@ -1,0 +1,8 @@
+# === RaceTable 種族定義表（Game Jam 4 種種族）===
+# typeID: 1=討伐 2=護送 3=採集 4=調查
+# modifiers 欄位為 JSON 字串；含逗號需以 "..." 包裹整個 cell
+# successDelta / deathDelta 安全範圍：±0.20 / ±0.10（C-04 DS §附錄）
+raceID,1,2,3,4
+name,人類,精靈,獸人,魔族
+description,適應力強均衡全能；護送任務穩健、採集效率高,敏銳善感；採集與調查能力超群,蠻勇無畏；討伐戰力強橫但難以駕馭,戰鬥本能強橫；討伐任務突出但護送任務風險較高
+modifiers,"[{""typeID"":2,""successDelta"":0.05,""deathDelta"":-0.05},{""typeID"":3,""successDelta"":0.08,""deathDelta"":0.0}]","[{""typeID"":3,""successDelta"":0.08,""deathDelta"":0.0},{""typeID"":4,""successDelta"":0.10,""deathDelta"":-0.05}]","[{""typeID"":1,""successDelta"":0.10,""deathDelta"":0.05},{""typeID"":4,""successDelta"":-0.08,""deathDelta"":0.0}]","[{""typeID"":1,""successDelta"":0.08,""deathDelta"":0.0},{""typeID"":2,""successDelta"":0.0,""deathDelta"":0.08}]"

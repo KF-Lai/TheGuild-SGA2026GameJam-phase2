@@ -1,4 +1,4 @@
-﻿---
+---
 name: brainstorm
 description: "Guide collaborative game concept ideation from an open theme or genre hint into a structured concept, player fantasy, pillars, loop, scope, and next design steps. Use for early creative exploration and game concept refinement."
 ---

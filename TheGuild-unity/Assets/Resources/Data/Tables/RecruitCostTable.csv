@@ -1,0 +1,7 @@
+# === RecruitCostTable 招募費用（7 階全覆蓋）===
+# 對應 Data-Specs：design/Data-Specs/【C-02-DS】recruit-cost-table.md
+# F/E 免費；D~S 費用由 F-03 扣除，聲望門檻由 FT-01 驗證（GDD §3.3）
+
+rank,F,E,D,C,B,A,S
+cost,0,0,100,250,500,1000,2000
+reputationReq,0,0,0,20,50,80,100

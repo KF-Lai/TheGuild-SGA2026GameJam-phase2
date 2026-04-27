@@ -1,4 +1,4 @@
-﻿---
+---
 name: design-ds
 description: "Generate Data-Specs from one or more GDD documents for The Guild, including CSV table contracts, schema rules, validation expectations, index updates, and implementation-ready data guidance. Use for DS authoring from GDD sources."
 ---

@@ -1,4 +1,4 @@
-﻿---
+---
 name: design-fsd
 description: "Generate Functional Specification Documents from one or more GDD documents for The Guild, including implementable rules, dependencies, APIs, edge cases, acceptance criteria, and FSD index updates. Use for FSD authoring from GDD sources."
 ---

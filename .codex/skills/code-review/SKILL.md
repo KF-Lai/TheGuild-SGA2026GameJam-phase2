@@ -1,4 +1,4 @@
-﻿---
+---
 name: code-review
 description: "Review code, diffs, or Codex output for Unity C# quality, architecture, SOLID compliance, project standards, implementation risk, and missing tests. Use when asked to review existing files, patches, or implementation results."
 ---

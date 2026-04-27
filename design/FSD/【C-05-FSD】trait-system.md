@@ -46,8 +46,9 @@ C-05 Trait System 負責：從 CSV 載入特質靜態資料（`TraitTable`、`Tr
 | AC-TS-03 | `GetTraitsByType("condition")` 只含 `effectType = "condition"` | EditMode test |
 | AC-TS-04 | `GetTrait(0)` 回傳 `null` 並出現 `LogWarning` | EditMode test：`LogAssert.Expect(LogType.Warning, ...)` |
 | AC-TS-05 | `effectTarget` 不合法的特質在啟動時出現 `LogError`，`GetAllTraits()` 不含該特質 | EditMode test：注入含非法 effectTarget 的 mock CSV |
-| AC-TS-06 | `RollTraits(uniform, pickCount=1, pool=5)` 呼叫 100 次，每次回傳 1 個 traitID，分布覆蓋全部 5 個 | EditMode test：HashSet 累計 100 次結果 |
-| AC-TS-07 | `RollTraits(pickCount=1, pool=1 有效 ID)` 回傳該 ID 並出現 `LogWarning` | EditMode test |
+| AC-TS-06 | `RollTraits(uniform, pickCount=1, pool=5)` 呼叫 100 次（先 `Random.InitState(testSeed)` 鎖 seed），每次回傳 1 個 traitID，分布覆蓋全部 5 個（FSD-Codex-Reoprts-260427 T1-C05：GDD 原 AC-TS-06 寫 `unique` 為 `uniform` 的 typo，FSD 採 `uniform` 為準；§8.5 已登記） | EditMode test：HashSet 累計 100 次結果 |
+| AC-TS-07 | `RollTraits(pickCount=1, pool=1 有效 ID)` 回傳該 ID，**不發 LogWarning**（FSD-Codex-Reoprts-260427 T1-C05 修正：`pool.Count == pickCount` 為合法等量，僅 `<` 才警告） | EditMode test：`LogAssert.NoUnexpectedReceived` |
+| AC-TS-07b | `RollTraits(pickCount=2, pool=1 有效 ID)` 回傳該唯一 ID 並發 1 次 `LogWarning(pickCount > pool.Count)` | EditMode test |
 | AC-TS-08 | `GetProfessionGroups(1)` 回傳戰士對應的 3 個群組（groupID = 1, 3, 4） | EditMode test：mock C-03 回傳 traitGroupIDs=[1,3,4] |
 | AC-TS-09~15 | 詳見 GDD §8 原文（效果套用測試由 FT-02/03/04 負責，此處不重複列舉） | FT-02/03/04 FSD 各自規劃 PlayMode test |
 
@@ -78,6 +79,8 @@ C-05 Trait System 負責：從 CSV 載入特質靜態資料（`TraitTable`、`Tr
 | `【C-03-DS】profession-table.md` | `ProfessionTable.csv` | `professionID`, `traitGroupIDs` | 消費端引用：runtime 透過 `IProfessionService` 取 traitGroupIDs，不直接讀 CSV |
 
 ### 2.3 上游依賴系統
+
+> **介面命名規範**：本表中以 `IXxxService` / `IXxxSystem` 命名的介面僅為敘述方便（沿用 GDD 用語），實作契約以既有 concrete singleton 為準（`DataManager.Instance` / `TimeSystem.Instance` / `ResourceManagement.Instance` / static `EventBus`）。詳見 `FSD-index.md` §2.10。
 
 | 系統 | 依賴內容 | 介面 |
 | --- | --- | --- |
@@ -253,18 +256,18 @@ Bootstrap（F-01 DataManager 初始化後觸發）
       └─ 標記 IsLoaded = true
 ```
 
-**流程 B — C-02 BuildTraitList 呼叫**
+**流程 B — C-02 AdventurerFactory 內部呼叫（FSD-Codex-Reoprts-260427 CT-05 對齊）**
+
+> 註：`BuildTraitList` 是 `C-02.AdventurerFactory` 內部 helper（不對外公開）。`ITraitService` 對外暴露的是 `GetProfessionGroups` + `RollTraits` 兩個查詢／抽樣 API；C-02 / FT-01 由 Factory 統籌組裝。
 
 ```
-C-02.AdventurerFactory.BuildTraitList(professionID)
-  → ITraitService.GetProfessionGroups(professionID)
-      ├─ IProfessionService.GetProfession(professionID) → ProfessionData
-      ├─ if ProfessionData == null || traitGroupIDs 為空 → LogWarning, 回傳 []
-      └─ foreach groupID in ProfessionData.traitGroupIDs：
-           ├─ GetTraitGroup(groupID)
-           └─ if null → LogWarning, skip（否則加入結果列表）
-
-  → foreach group in groups：
+C-02.AdventurerFactory.BuildTraitList(int[] fixedTraitIDs, int[] randomTraitGroupIDs)  // Factory 內部 helper
+  // 隨機冒險者路徑（FT-01）：呼叫者先用 ITraitService.GetProfessionGroups(professionID) 取群組
+  //                          再用 ITraitService.RollTraits(group) 抽特質後傳入 CreateRandomInstance
+  // 具名模板路徑：Factory 自行依 template.randomTraitGroupIDs 抽特質
+  → foreach groupID in randomTraitGroupIDs：
+      group = ITraitService.GetTraitGroup(groupID)
+      if null → LogWarning, skip
       ITraitService.RollTraits(group)
           ├─ pool = group.traitIDs.Filter(id != 0)
           ├─ if pool.Count < group.pickCount → LogWarning, return pool（全回傳）
@@ -333,7 +336,7 @@ FT-02.SuccessRateCalculator.Calculate(traitIDs, typeID)
 | 同一 traitID 在 CSV 中出現兩次 | `TraitDatabaseLoader.Load()`：後者覆蓋前者 + `Debug.LogWarning`（DataManager 標準行為） | `TraitDatabaseLoader` | EditMode test：注入重複 ID，斷言 dict count = 1，最後一筆值被採用 |
 | `GetTrait(0)` | `TraitService.GetTrait(0)`：回傳 `null` + `Debug.LogWarning` | `TraitService` | EditMode test：`LogAssert.Expect(Warning)`，斷言回傳 null |
 | `GetTraitGroup(0)` | `TraitService.GetTraitGroup(0)`：回傳 `null` + `Debug.LogWarning` | `TraitService` | EditMode test：同上 |
-| `ApplyConditionTraits` 中 effectTarget 為未知值（runtime 呼叫） | FT-04 執行套用邏輯時 `Debug.LogWarning`，跳過該特質，繼續處理其他特質（C-05 載入期已過濾，此為 FT-04 防衛層） | FT-04（C-05 不負責套用） | FT-04 FSD 規劃 |
+| `ApplyConditionTraits` 中 effectTarget 為未知值（runtime 呼叫） | FT-04 執行套用邏輯時 `Debug.LogWarning`，跳過該特質，繼續處理其他特質（C-05 載入期已過濾，此為 FT-04 防衛層）。**FSD-Codex-Reoprts-260427 CT-06 裁決：condition 套用責任歸屬 FT-04**；C-05 不暴露 `ApplyConditionTraits` API | FT-04（C-05 不負責套用） | FT-04 FSD §5.4 步驟 7 偽碼 |
 | traitIDs 列表中有重複 traitID | C-02 `BuildTraitList` 已對最終列表執行 `Distinct()`，此情況不傳入本系統 | C-02 | C-02 FSD §7 |
 | `on_death_survive` 與 `on_fail_survive` 同時存在 | 按 traitIDs 順序依次執行；先觸發者將 `isDead` 改 `false` 後，後者條件 `outcome.isDead` 為 false 自然跳過，無衝突（GDD §4.4 備註已說明） | FT-04（C-05 只提供資料） | FT-04 FSD 規劃 |
 
@@ -346,20 +349,28 @@ FT-02.SuccessRateCalculator.Calculate(traitIDs, typeID)
 | GDD §3 條目 | 對應 FSD 章節 | 是否對齊 | 備註 |
 | --- | --- | --- | --- |
 | §3.1 TraitTable 欄位定義（traitID/name/description/effectType/effectTarget/effectValue） | §5.3 TraitData 資料結構、§6.1 CSV 表 | 對齊 | 6 欄全部對應 |
-| §3.2 effectTarget 完整合法變數空間（stat 10 項 + behavior 8 項 + condition 5 項） | §7 邊緣案例（effectTarget 非法處理）、§6.3 嚴禁寫死清單 | 對齊 | 合法清單由 TraitDatabaseLoader 驗證；不寫死於程式碼，以 CSV effectTarget 為準 |
+| §3.2 effectTarget 完整合法變數空間（stat 10 項 + behavior 8 項 + condition 5 項） | §7 邊緣案例（effectTarget 非法處理）、§6.3 嚴禁寫死清單 | 對齊 | **合法清單為 GDD 業務規則常數**（FSD-Codex-Reoprts-260427 T1-C05 修正：原文「以 CSV effectTarget 為準」誤導），由 `TraitDatabaseLoader` 以 `HashSet<string>` 寫死 23 項；CSV 的 `effectTarget` 是被驗證對象、非合法清單來源 |
 | §3.3 TraitGroupTable 欄位定義與 Game Jam 初始群組 | §5.3 TraitGroupData 資料結構、§6.1 CSV 表 | 對齊 | pickMode "weighted" 預留，Game Jam 實作 fallback uniform |
 | §3.4 職業 → 特質群組（消費 C-03 ProfessionTable.traitGroupIDs） | §2.3 上游依賴、§4.5 類別關係、§5.4 資料流 B、§5.1 GetProfessionGroups API | 對齊 | C-05 透過 IProfessionService 橋接，不直接讀 ProfessionTable CSV |
 | §3.5 查詢 API 清單（GetTrait / GetAllTraits / GetTraitsByType / GetTraitGroup / RollTraits / GetProfessionGroups） | §5.1 公開 API、§4.4 ITraitService Script | 對齊 | 6 個 API 全部對應 |
 
 ### 8.2 公式對齊或替代說明
 
-- **GDD §4.1 RollTraits**：採用 GDD 原始偽碼規格。Fisher-Yates Shuffle 由 `TraitService` 自行實作（`System.Random` 實例化後對 `pool` 陣列原地 shuffle），不依賴外部套件，結果與 GDD 偽碼等價。`weighted` 模式預留方法體，Game Jam 期間 fallback uniform 並 `Debug.LogWarning`。
+- **GDD §4.1 RollTraits**：採用 GDD 原始偽碼規格。Fisher-Yates Shuffle 由 `TraitService` 自行實作。**RNG 注入策略**（FSD-Codex-Reoprts-260427 T1-C05）：`TraitService` 持有單例 `System.Random _rng`，建構時可注入測試 seed（建構子 `TraitService(System.Random rng = null)`，default `new System.Random()`）；EditMode test 注入固定 seed 確保 AC-TS-06 / AC-TS-07 可重現。`weighted` 模式：CSV `pickMode == "weighted"` 但 Game Jam 暫 fallback uniform 並發 `Debug.LogWarning`（合法但未實作）；CSV `pickMode` 非 {"uniform","weighted"} 為非法值，發 `Debug.LogError` 並 fallback uniform。**初始化順序**：`TraitDatabaseLoader.Load()` 須在 F-01 DataManager 完成 `Awake` 之後執行；`GetProfessionGroups(professionID)` 須等 C-03 `IProfessionService` ready（C-03 未 ready 時 `LogError` + 回空列表，Bootstrap DI 順序保證 C-05 不延遲查 C-03）。
 - **GDD §4.2~§4.4 效果套用偽碼**：這些公式屬 FT-02/FT-03/FT-04 的實作規格，C-05 FSD 不重複規劃；FT-02/03/04 各自 FSD 撰寫時對齊 GDD §4.2~§4.4 對應章節。
 
 ### 8.3 未能實現的規則與修改建議
 
 - **B-01（非阻礙項）**：`effectTarget` 合法清單在 `TraitDatabaseLoader` 中以 `HashSet<string>` 硬編碼驗證（GDD §3.2 清單共 23 項）。此清單本質上是業務規則常數，GDD 已是唯一真實來源，不適合額外用 CSV 維護。若未來 `effectTarget` 需要擴充，修改 `TraitDatabaseLoader` 的 HashSet 即可（屬 Small 工項），不涉及 FT-02/03/04 修改（新 effectTarget 需對應下游新增處理分支）。
 - **B-02（非阻礙項）**：GDD §3.3 `pickMode` 欄位描述 "weighted" 為「預留未來擴充」，Game Jam 不實作。`TraitService.RollTraits` 對 `pickMode = "weighted"` 輸出 `Debug.LogWarning` 並 fallback uniform，確保不崩潰。建議 `TraitGroupTable.csv` 備註此限制。
+
+**Prerequisite — 依賴未完成 FSD（FSD-Codex-Reoprts-260427 CT-10）**
+
+本 FSD 對以下系統的 API / 事件契約引用，目前**尚未經對方 FSD 雙向驗證**，視為 stub 契約：
+
+- P-02 Main UI（FSD 未存在）
+
+實作時須以 mock / stub 介面驗證；對方 FSD 完成後須回頭做雙向對齊複查。
 
 ### 8.4 給 GDD 的回註紀錄
 

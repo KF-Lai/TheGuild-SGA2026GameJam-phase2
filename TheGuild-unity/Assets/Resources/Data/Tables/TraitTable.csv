@@ -1,0 +1,16 @@
+# === TraitTable 特質定義表（Game Jam 25 個特質）===
+# effectTarget 合法清單來源：C-05 GDD §3.2（單一字串，不可多值）
+# effectValue 安全範圍：stat ±0.15 / behavior -0.30~+0.20 / condition機率 0.05~0.30 / condition固定值 -5~+5
+#
+# 群組分配規劃：
+#   groupID 1 = combat_stat      → traitID 1~5   (effectType=stat)
+#   groupID 2 = behavior_general → traitID 6~10  (effectType=behavior 通用)
+#   groupID 3 = behavior_combat  → traitID 11~15 (effectType=behavior 戰鬥傾向)
+#   groupID 4 = condition_luck   → traitID 16~20 (effectType=condition 幸運/厄運)
+#   groupID 5 = condition_survival → traitID 21~25 (effectType=condition 求生)
+traitID,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+name,勇猛,精準,韌性,敏捷,脆弱,熱忱,謹慎,職業道德,隨遇而安,貪財,好戰,膽小,護衛本能,探索慾,厭惡危險,幸運兒,倒楣鬼,吉祥物,烏鴉嘴,財迷,亡命徒,鋼鐵意志,戰鬥直覺,白旗,求生本能
+description,戰鬥時超常發揮；討伐任務成功率提升,精確計算每個動作；調查任務成功率提升,身體素質超群；所有任務死亡率降低,身手敏捷閃避危機；護送任務死亡率降低,體質虛弱容易受創；所有任務死亡率上升,對所有任務充滿熱情；整體意願提升,行事謹慎不輕易冒險；A難度以上任務意願下降,恪守公會紀律；採集任務意願提升,心態平穩不挑任務；通用任務意願小幅提升,眼裡只有錢；採集任務意願大幅提升,以戰鬥為樂；討伐任務意願大幅提升,遇強則弱；S難度任務會自動退縮,天生保護本能；護送任務意願大幅提升,對未知充滿好奇；調查任務意願提升,只想做輕鬆差事；F/E難度任務意願提升,總在最後關頭化險為夷；成功時有機率帶回額外財寶,失敗時往往帶來連鎖惡運；失敗額外扣減聲望,天生帶來好運；成功時額外提升聲望,走到哪裡哪裡倒楣；失敗時額外扣減更多聲望,成功後偶爾帶回意外收穫；成功後有機率獲得金幣獎勵,確定死亡時拼死一搏；不論成敗死亡時有機率倖存,越挫越勇；失敗時死亡判定有機率豁免,戰鬥直覺讓求生反應超快；討伐任務死亡時有機率倖存,越打越慫；遭遇失敗時求生意志崩潰，失敗死亡判定時觸發機率極低,危機爆發本能；失敗時死亡判定有機率豁免
+effectType,stat,stat,stat,stat,stat,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,condition,condition,condition,condition,condition,condition,condition,condition,condition,condition
+effectTarget,success_1,success_4,death_all,death_2,death_all,willingness_all,willingness_diff_A,willingness_type_3,willingness_all,willingness_type_3,willingness_type_1,willingness_diff_S,willingness_type_2,willingness_type_4,willingness_diff_low,on_success_gold_bonus,on_fail_reputation,on_success_reputation_bonus,on_fail_reputation,on_success_gold_bonus,on_death_survive,on_fail_survive,on_death_survive,on_fail_survive,on_fail_survive
+effectValue,0.10,0.08,-0.08,-0.10,0.10,0.15,-0.20,0.15,0.08,0.15,0.20,-0.25,0.18,0.15,0.15,0.20,-2.0,2.0,-4.0,0.25,0.20,0.25,0.15,0.05,0.18

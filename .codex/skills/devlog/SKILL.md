@@ -1,4 +1,4 @@
-﻿---
+---
 name: devlog
 description: "Summarize current development work into a dated project devlog entry by comparing recent changes, design artifacts, implementation work, and previous logs. Use when asked to create or update a development log."
 ---

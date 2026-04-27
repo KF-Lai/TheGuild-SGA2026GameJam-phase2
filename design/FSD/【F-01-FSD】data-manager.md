@@ -9,7 +9,7 @@
 | 撰寫者 | unity-specialist subagent |
 | Review 者 | unity-specialist subagent（自檢）；Claude Code 主體（§8.3 條目 3 裁決方案 A patch） |
 | 狀態 | 已完成 |
-| 最近更新 | 2026-04-26（裁決 §8.3 條目 3 採方案 A：已補 `GetString` / `GetBool` 實作至 `DataManager.cs`，並對 F-01 GDD §3.3 / §4.3 / §4.4 加 FSD 回註） |
+| 最近更新 | 2026-04-27（依 FSD-Codex-Reoprts-260427 CT-01 修正：§2.4 C-04 row 移除 `ProfessionRacePoolData` 改為 `GetAll<RaceData>`；C-06 row 改為單表 `GetAll<WorldDangerData>` + `RegisterTable`；FT-04 row 補 `ReputationDeltaData` 註冊；F-01 不新增 `GetTable<T>` API，下游一律以 `GetAll<T>` + 自建 dictionary 為準） |
 
 ---
 
@@ -89,12 +89,12 @@ DataManager 是遊戲的資料基礎設施（Foundation 層），統一處理 CS
 | C-01 Mission Database | `Get<MissionData>`、`GetAll<MissionData>`、`GetWhere<MissionData>` |
 | C-02 Adventurer Management | `Get<AdventurerTemplate>`、`PickRandom<T>` |
 | C-03 Profession System | `Get<ProfessionData>`、`GetAll<ProfessionData>` |
-| C-04 Race System | `Get<RaceData>`、`GetAll<ProfessionRacePoolData>` |
+| C-04 Race System | `Get<RaceData>`、`GetAll<RaceData>` |
 | C-05 Trait System | `Get<TraitData>`、`PickRandom<TraitData>`（透過 `RegisterGroupPoolTable<TraitGroupData>`） |
-| C-06 World Danger System | `Get<WorldDangerData>`、`GetAll<MissionPoolWeightData>`、`GetAll<DebtLimitData>` |
+| C-06 World Danger System | `RegisterTable<WorldDangerData>("WorldDangerTable")`、`GetAll<WorldDangerData>` |
 | FT-02 Mission Dispatch | `GetFloat`（`SuccessRateTable`、`DeathRateTable`） |
 | FT-03 NPC Decision | `GetFloat`（`ACCEPTANCE_THRESHOLD`、`WILLINGNESS_JITTER`、`DEATH_AVERSION` 等共用 willingness 常數） |
-| FT-04 Outcome Resolution | `GetFloat`（`ReputationDeltaTable`）、`GetInt` |
+| FT-04 Outcome Resolution | `RegisterTable<ReputationDeltaData>("ReputationDeltaTable")`、`GetAll<ReputationDeltaData>`；`GetFloat("DEATH_RATE_ON_SUCCESS_MULTIPLIER")` |
 | FT-05 Guild Gold Flow | `GetFloat`（`COMMISSION_RATE`、`PENALTY_RATE`） |
 | FT-06 Guild Core | `Get<GuildLevelData>` |
 | FT-07 Guild Building | `Get<BuildingData>`、`GetAll<BuildingData>` |

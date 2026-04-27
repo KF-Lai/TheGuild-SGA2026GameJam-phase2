@@ -1,4 +1,4 @@
-﻿---
+---
 name: scope-check
 description: "Analyze a feature, sprint, or work item for scope creep against the original plan, game jam constraints, core pillars, dependencies, and delivery risk. Use when deciding what to keep, defer, or cut."
 ---

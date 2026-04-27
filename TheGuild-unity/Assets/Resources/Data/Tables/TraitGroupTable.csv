@@ -1,0 +1,9 @@
+# === TraitGroupTable 特質群組定義（Game Jam 5 個群組）===
+# pickMode=uniform 表示無放回抽樣（Fisher-Yates）
+# pickCount=1：每個群組各抽 1 個特質；每位冒險者共抽 3 個（3 個 traitGroupIDs 各一次）
+# 每群組 5 個有效 traitID，超過 DS §7.2 建議最低值 4
+groupID,1,2,3,4,5
+groupName,combat_stat,behavior_general,behavior_combat,condition_luck,condition_survival
+memberIDs,1|2|3|4|5,6|7|8|9|10,11|12|13|14|15,16|17|18|19|20,21|22|23|24|25
+pickCount,1,1,1,1,1
+pickMode,uniform,uniform,uniform,uniform,uniform

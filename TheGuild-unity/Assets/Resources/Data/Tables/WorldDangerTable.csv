@@ -1,0 +1,18 @@
+# === WorldDangerTable 世界危險度（Game Jam 5 階）===
+# timeThreshold 單位為遊戲天數；maxDebt 為負值（金幣下限）
+# 對應 Data-Specs：design/Data-Specs/【C-06-DS】world-danger-table.md
+# 升級三閘：timeThreshold AND missionCountReq AND factionScoreReq 全達標才升階
+
+dangerLevel,E,D,C,B,A
+name,和平,動盪,暗湧,危局,末世
+timeThreshold,0,1,3,7,14
+missionCountReq,0,10,15,20,25
+minDifficulty,F,F,D,C,B
+factionScoreReq,0,0,5,12,20
+weightF_E,40,20,10,5,0
+weightD,30,35,20,10,5
+weightC,20,25,35,25,15
+weightB,8,15,25,35,30
+weightA,2,5,8,20,35
+weightS_SSS,0,0,2,5,15
+maxDebt,-100,-500,-1000,-2500,-5000

@@ -1,0 +1,14 @@
+# === ProfessionTable 職業定義表（Game Jam 7 種職業，全 tier=1）===
+# typeID: 1=討伐 2=護送 3=採集 4=調查
+# raceWeights 為相對比例，不需加總為 100（GDD §3.1）
+# 傭兵（professionID=7）維持 strongTypeIDs=0、weakTypeIDs=0 作為無修正基準線
+professionID,1,2,3,4,5,6,7
+name,戰士,法師,遊俠,斥侯,盾衛,治癒師,傭兵
+description,前線肉盾與近戰主力,遠程魔法輸出與調查,全地形採集與追蹤,機敏偵查與護送專家,護送任務首選的堅固盾牌,護送與治療全能支援,無固定專長的雇傭戰士
+strongTypeIDs,1,4,3,2|4,2,2,0
+weakTypeIDs,4,3,2,1,4,1,0
+tier,1,1,1,1,1,1,1
+baseProfessionID,0,0,0,0,0,0,0
+raceIDs,1|3,2|4,1|2,2|1,1|3,2|1,1|3|4
+raceWeights,60|40,55|45,50|50,60|40,70|30,60|40,50|30|20
+traitGroupIDs,1|3|4,1|2|4,1|2|5,1|2|4,1|3|5,1|2|5,2|4|5

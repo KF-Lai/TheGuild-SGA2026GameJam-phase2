@@ -1,4 +1,4 @@
-﻿---
+---
 name: design-system
 description: "Guide section-by-section GDD authoring for a single game system, gathering context, dependencies, mechanics, formulas, edge cases, UI feedback, acceptance criteria, and implementation notes. Use for new or revised system design."
 ---

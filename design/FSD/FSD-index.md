@@ -126,6 +126,24 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 - [ ] 附錄 A：Review 三項結果全填，登記 Review 者與日期
 - [ ] FSD-index：§6.1 三方映射、§7.1 撰寫進度、§7.2 自檢紀錄、§7.3 拆分回報（如有）皆同步更新
 
+### 2.10 Service 介面命名規範（Service Naming Convention，FSD-Codex-Reoprts-260427 CT-07 裁決）
+
+**裁決**：採方案 A — Game Jam 階段不新增 service interface 抽象層；下游 FSD 引用上游服務時，以既有 concrete singleton 為實作契約。
+
+**對映表（FSD 敘述形式 → 實作契約）**：
+
+| FSD 敘述（為文義方便保留） | 實作契約 | 來源 Script |
+| --- | --- | --- |
+| `IDataManager.X` | `DataManager.Instance.X` | `Assets/Scripts/Core/Data/DataManager.cs` |
+| `ITimeService.NowUTC` / `ITimeSystem.NowUTC` | `TimeSystem.Instance.NowUTC` | `Assets/Scripts/Core/Time/TimeSystem.cs` |
+| `IResourceService.X` | `ResourceManagement.Instance.X` | `Assets/Scripts/Gameplay/Resources/ResourceManagement.cs` |
+| `IEventBus.Subscribe<T>` / `Publish<T>` | static `EventBus.Subscribe<T>` / `EventBus.Publish<T>` | `Assets/Scripts/Core/Events/EventBus.cs` |
+
+**規範**：
+1. 撰寫者可在 FSD 敘述中保留 `IXxxService` 命名以維持可讀性；實作 PR 必須直接呼叫上述 concrete singleton，不新增 interface 包裝。
+2. 既有 FSD 不需大量改寫；本條規範作為共識基準，下游 FSD 在 §2.3「上游依賴系統」表內以一行註記引用本條即可。
+3. 未來若需要可測試性而引入 interface（例如 EditMode test mock），由 implementation PR 單獨評估，並回註本規範修訂。
+
 ---
 
 ## 三、FSD 標準章節格式（FSD Standard Sections）

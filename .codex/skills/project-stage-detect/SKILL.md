@@ -1,4 +1,4 @@
-﻿---
+---
 name: project-stage-detect
 description: "Analyze repository artifacts to detect current project stage, completeness, gaps, risks, and recommended next actions for designers, programmers, or production planning. Use for project status orientation."
 ---

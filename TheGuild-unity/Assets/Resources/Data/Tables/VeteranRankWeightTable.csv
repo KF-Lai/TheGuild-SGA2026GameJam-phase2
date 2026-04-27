@@ -1,0 +1,6 @@
+# === VeteranRankWeightTable 老手池階級加權隨機（Game Jam 預設）===
+# 對應 Data-Specs：design/Data-Specs/【FT-01-DS】veteran-rank-weight-table.md
+# rank 為 string PK；數值來源 GDD §7.3 Jam 預設
+
+rank,D,C,B,A,S
+weight,40,30,18,9,3

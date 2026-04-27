@@ -1,4 +1,4 @@
-﻿---
+---
 name: sprint-plan
 description: "Create or update sprint plans and sprint status reports from milestones, design docs, work items, bugs, and prior sprint artifacts. Use for planning The Guild work across design, implementation, review, and verification."
 ---

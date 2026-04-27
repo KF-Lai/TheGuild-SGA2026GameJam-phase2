@@ -1,4 +1,4 @@
-﻿---
+---
 name: bug-report
 description: "Create structured bug reports or analyze target code for likely defects, reproduction steps, severity, affected systems, likely files, and technical context. Use for gameplay, UI, economy, quest, save, and Unity bug triage."
 ---

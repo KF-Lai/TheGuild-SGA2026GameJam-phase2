@@ -1,4 +1,4 @@
-﻿---
+---
 name: map-systems
 description: "Decompose a game concept into systems, dependencies, priorities, design order, and a systems index. Use when mapping a project from concept into GDD/FSD planning structure or choosing the next system to design."
 ---
