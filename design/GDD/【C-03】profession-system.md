@@ -34,6 +34,8 @@ C-03 Profession System 定義遊戲中所有冒險者職業的靜態資料，以
 > **CSV null 規範**：所有 int 欄位無值時填 `0`，不得留白。`0` 為全專案統一的 null sentinel，DataManager 解析後由各系統判斷 `0` 的語義（忽略 / 視為無值）。
 >
 > **欄位來源**：原 `ProfessionRacePool.csv`（C-04 owner）與 `ProfessionTraitPool.csv`（C-05 owner）已於 2026-04-26 合併入此表（同 PK = professionID 自然 1:1 收斂）；C-04 / C-05 仍負責語意定義與調參，但讀取入口統一為 `C-03.GetProfession`。
+>
+> **跨欄位長度驗證**：`raceWeights` 必須與 `raceIDs` 長度一致。**載入時驗證歸 C-03 Loader 負責**（§5.1 row「raceWeights 長度不符」），違規則 `Debug.LogError` 並跳過該職業——避免 C-04 `RollRace` 每次呼叫時重複檢查。`traitGroupIDs` 為單值列表（無對應 weights 欄位），無需此類驗證。
 
 **Game Jam 初始資料（7 種職業，全為 tier=1）：**
 
@@ -122,6 +124,7 @@ IsWeakType(4, 1)   → true → -WEAK_TYPE_PENALTY
 | `tier≥2` 的職業 `baseProfessionID = 0` | `Debug.LogError`，跳過該職業 |
 | `baseProfessionID` 指向不存在的 professionID | `Debug.LogError`，跳過該職業 |
 | 多值欄位僅含 `0`（如 `strongTypeIDs = "0"`） | 解析為空列表，`IsStrongType` 永遠回傳 `false` |
+| `raceWeights` 與 `raceIDs` 長度不一致 | `Debug.LogError` 記錄 `professionID` 與兩欄位長度，**跳過該職業**（不入 ProfessionData 字典）；下游 C-04 `RollRace` 對此 professionID 將透過 `GetProfession == null` 路徑取 fallback `raceID=1`（C-04 §4.1 / §5.1 已對應） |
 | 同一 `professionID` 在 CSV 中出現兩次 | 後者覆蓋前者，`Debug.LogWarning`（DataManager 標準行為） |
 
 ### 5.2 查詢階段

@@ -19,6 +19,9 @@ P-02 Main UI Framework 是所有玩家可見介面的根容器與面板調度中
 
 ## §3 詳細規則（Detailed Rules）
 
+> **版面參考示意圖**：`design/IconInstructions.png`
+> 待使用者提供 UI 示意圖後繼續設計。
+
 [待設計]
 
 ---

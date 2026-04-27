@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Sprint Plan"
+  short_description: "Create or update sprint plans and status reports."
+  default_prompt: "Use $sprint-plan to create or update the current sprint plan."
+
+policy:
+  allow_implicit_invocation: true

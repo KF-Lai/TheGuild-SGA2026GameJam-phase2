@@ -12,7 +12,7 @@
 【<系統ID>-DS】<table-name>.md
 ```
 
-- `<系統ID>` 對映 GDD owner（與 `design/GDD/【<系統ID>】*.md` 一致），例：`F-01` / `C-02` / `FT-08`
+- `<系統ID>` 對映 GDD owner（與 `design/GDD/【<系統ID>】*.md` 一致），例：`F-01` / `C-02` / `FT-08` / `FT-12`
 - `<table-name>` 為 kebab-case，與實際 CSV 檔名（PascalCase）一一對映
 - 全形括號 `【】` 與 GDD 命名對齊；後綴一律 `-DS`（避免與舊有 `-Data` / `-DataSpecs` 混用）
 
@@ -77,16 +77,16 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | 表格名稱                            | GDD 來源                                                             | 系統分類                                  | DataSpec 狀態                                 | CSV 狀態 |
 | ------------------------------- | ------------------------------------------------------------------ | ------------------------------------- | ------------------------------------------- | ------ |
 | `VeteranRankWeightTable.csv`    | 【FT-01】adventurer-recruitment.md §4.4 + §7.3                       | Feature / FT-01 AdventurerRecruitment | ✅ `[FT-01-DS] veteran-rank-weight-table.md` | 📐     |
-| `SuccessRateTable.csv`          | 【FT-02】mission-dispatch.md §3.1 + §7.1                             | Feature / FT-02 MissionDispatch       | 📐                                          | 📐     |
-| `ReputationDeltaTable.csv`      | 【FT-04】outcome-resolution.md §3.6 + §7.2                           | Feature / FT-04 OutcomeResolution     | 📐                                          | 📐     |
+| `SuccessRateTable.csv`          | 【FT-02】mission-dispatch.md §3.1 + §7.1                             | Feature / FT-02 MissionDispatch       | ✅ `[FT-02-DS] success-rate-table.md`       | 📐     |
+| `ReputationDeltaTable.csv`      | 【FT-04】outcome-resolution.md §3.6 + §7.2                           | Feature / FT-04 OutcomeResolution     | ✅ `[FT-04-DS] reputation-delta-table.md`   | 📐     |
 | `GuildLevelTable.csv`           | 【FT-06】guild-core.md §3.5 + §7.1                                   | Feature / FT-06 GuildCore             | 📐                                          | 📐     |
 | `BuildingTable.csv`             | 【FT-07】guild-building-system.md §3 + §7.1                          | Feature / FT-07 GuildBuildingSystem   | 📐                                          | 📐     |
-| `StaffTable.csv`                | 【FT-08】guild-staff-system.md §3.2.1 + §7.1.1                       | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
-| `StaffGachaPoolTable.csv`       | 【FT-08】guild-staff-system.md §3.2.2 + §7.1.2                       | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
-| `StaffRefreshCostTable.csv`     | 【FT-08】guild-staff-system.md §4.1.2 + §7.1.3                       | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
-| `StaffRarityProbTable.csv`      | 【FT-08】guild-staff-system.md §4.1.5 + §7.1.4                       | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
-| `TrashItemTable.csv`            | 【FT-08】guild-staff-system.md §3.5.2 + §7.1.6                       | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
-| `StaffTuning.csv`               | 【FT-08】guild-staff-system.md §7.2（FT-08 專屬常數，與 SystemConstants 切分） | Feature / FT-08 GuildStaffSystem      | 📐                                          | 📐     |
+| `StaffTable.csv`                | 【FT-12】staff-system.md §3.2 + §7.1.1（2026-04-26 從原 FT-08 拆出，owner 移交 FT-12）| Feature / FT-12 StaffSystem           | ✅ `[FT-12-DS] staff-table.md`             | 📐     |
+| `StaffGachaPoolTable.csv`       | 【FT-08】gacha-system.md §3.2 + §7.1.3                              | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-gacha-pool-table.md`  | 📐     |
+| `StaffRefreshCostTable.csv`     | 【FT-08】gacha-system.md §3.3.6 + §7.1.1                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-refresh-cost-table.md` | 📐     |
+| `StaffRarityProbTable.csv`      | 【FT-08】gacha-system.md §4.1.5 + §7.1.2                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-rarity-prob-table.md` | 📐     |
+| `TrashItemTable.csv`            | 【FT-08】gacha-system.md §3.5.2 + §7.1.4                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] trash-item-table.md`        | 📐     |
+| `StaffTuning.csv`               | 【FT-12】staff-system.md §7.2 + 【FT-08】gacha-system.md §7.2（共用：EFFECT_MAX_* / cooldown 由 FT-12 owner，PITY_THRESHOLD 等 gacha 常數由 FT-08 owner，與 SystemConstants 切分） | Feature / FT-08 + FT-12（共用）       | ✅ `[FT-08-DS] staff-tuning.md`            | 📐     |
 | `FactionRouteTable.csv`         | 【FT-09】faction-story-system.md §3.2.1 + §7.2                       | Feature / FT-09 FactionStorySystem    | 📐                                          | 📐     |
 | `StoryStageTable.csv`           | 【FT-09】faction-story-system.md §3.2.2 + §7.2                       | Feature / FT-09 FactionStorySystem    | 📐                                          | 📐     |
 
@@ -131,9 +131,9 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 |---|---|---|---|
 | Foundation | 2 | 2 | 0 |
 | Core | 11 | 11 | 0 |
-| Feature | 14 | 1 | 0 |
+| Feature | 14 | 9 | 0 |
 | 文字表 | 6 | 0 | 0 |
-| **總計（active）** | **33** | **14** | **0** |
+| **總計（active）** | **33** | **22** | **0** |
 | 歸檔 | 9 | 1 | — |
 
 > 2026-04-26 合併批次：移除 7 張表（A1 + A2 + B1 + B2），BankruptcyThresholdTable 移到歸檔分區（原計入 Foundation）；總表數 40 → 33。
@@ -146,7 +146,9 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 1. **SystemConstants.csv** 為跨系統 key-value 表，schema 由 F-01 DataManager 定義 parser，但 key 由各消費者系統註冊；新增 key 時必須同步更新 `[F-01-DS] system-constants.md` §「已註冊 key 清單」。
 2. **RecruitCostTable.csv** 在 C-02 §3.3 定義 schema，FT-01 §7.2 從消費者角度引用；DataSpec 規格書應掛在 C-02 owner。
 3. **BankruptcyThresholdTable.csv** Phase 2 已 deprecated（移到歸檔分區），runtime 不查詢（`warningDurationSec` 改由 FT-07 預備金保險櫃推送）；保留 DataSpec 為設計參考。
-4. **StaffTuning.csv** 是 FT-08 專屬參數表（避免 SystemConstants 因子系統爆量），與 SystemConstants 同為 key-value 結構但載入流程獨立。
+4. **StaffTuning.csv** 為 FT-08 / FT-12 共用 key-value 表（2026-04-26 原職員系統拆分後維持單表）：FT-12 owner `EFFECT_MAX_*` / `BUILDING_SWITCH_COOLDOWN_SECONDS` / `REALLOCATING_AUTO_LEAVE_SECONDS` / `ROSTER_CAP`；FT-08 owner `PITY_THRESHOLD` / `TRASH_ROLL_RATE_AT_RARITY_1` 等 gacha 常數。避免 SystemConstants 因子系統爆量；新增 key 須註明 owner GDD。
+9. **StaffTable.csv**（FT-12 owner，2026-04-26 從原 FT-08 拆出）：schema 定義於 FT-12 §3.2；`minGuildLevel` 欄位由 FT-08 gacha 池於 candidate 過濾時消費，FT-12 自身不消費。
+10. **FT-08 gacha 專屬表組**（StaffGachaPoolTable / StaffRefreshCostTable / StaffRarityProbTable / TrashItemTable）owner 仍為 FT-08；2026-04-26 拆分後 FT-12 不消費這 4 張表。
 5. **ReputationLabelTable.csv** schema 定義於 F-03 §3.7（2026-04-26 補入）；DataSpec 見 `[F-03-DS] reputation-label-table.md`。`label` 欄位文字值 GDD 未指定（gdd-gap），由設計師填入 CSV。
 6. **MissionDifficultyTable.csv**（C-01 owner）為 2026-04-26 合併產出：跨 owner（C-01 / FT-02 / FT-09）共用，新增 / 調整欄位時須同步 C-01 §3.1 / FT-02 §3.2 / FT-09 §3.2.3 三處消費端說明。
 7. **ProfessionTable.csv**（C-03 owner）為 2026-04-26 擴充：跨 owner（C-03 / C-04 / C-05）共用，調整 `raceIDs` / `raceWeights` / `traitGroupIDs` 欄位時須與 C-04 / C-05 owner 同步意圖。

@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Project Stage Detect"
+  short_description: "Analyze project stage, gaps, risks, and next steps."
+  default_prompt: "Use $project-stage-detect to analyze the current project state."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Scope Check"
+  short_description: "Detect scope creep and delivery risk for jam work."
+  default_prompt: "Use $scope-check to evaluate this feature or sprint scope."
+
+policy:
+  allow_implicit_invocation: true

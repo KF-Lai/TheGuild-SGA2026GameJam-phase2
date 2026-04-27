@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Bug Report"
+  short_description: "Create bug reports or inspect code for likely defects."
+  default_prompt: "Use $bug-report to analyze this issue and produce a structured bug report."
+
+policy:
+  allow_implicit_invocation: true

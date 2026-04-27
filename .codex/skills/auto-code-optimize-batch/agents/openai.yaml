@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Auto Code Optimize Batch"
+  short_description: "Run grouped optimization batches with progress tracking."
+  default_prompt: "Use $auto-code-optimize-batch to optimize the manifest or grouped targets."
+
+policy:
+  allow_implicit_invocation: true

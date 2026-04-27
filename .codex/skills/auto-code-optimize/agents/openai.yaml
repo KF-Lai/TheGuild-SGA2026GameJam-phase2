@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Auto Code Optimize"
+  short_description: "Optimize scoped Unity C# code with review and verification."
+  default_prompt: "Use $auto-code-optimize to optimize the specified Unity C# file or folder."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Brainstorm"
+  short_description: "Develop game concepts, pillars, loops, and scope."
+  default_prompt: "Use $brainstorm to develop a structured game concept from this theme."
+
+policy:
+  allow_implicit_invocation: true

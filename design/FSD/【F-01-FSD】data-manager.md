@@ -98,7 +98,8 @@ DataManager 是遊戲的資料基礎設施（Foundation 層），統一處理 CS
 | FT-05 Guild Gold Flow | `GetFloat`（`COMMISSION_RATE`、`PENALTY_RATE`） |
 | FT-06 Guild Core | `Get<GuildLevelData>` |
 | FT-07 Guild Building | `Get<BuildingData>`、`GetAll<BuildingData>` |
-| FT-08 Guild Staff | `Get<StaffData>`、`GetAll<StaffData>` 等多表 |
+| FT-08 Gacha System | `Get<StaffGachaPoolData>` / `Get<StaffRefreshCostData>` / `Get<StaffRarityProbData>` / `Get<TrashItemData>`（4 個 FT-08 owner CSV）；`Get<StaffData>`（驗證 candidate.staffID）；`StaffTuning.csv` gacha 常數 |
+| FT-12 Staff System | `Get<StaffData>` / `GetAll<StaffData>`、`StaffTuning.csv` 系統常數（與 FT-08 共用 owner） |
 | FT-09 Faction Story | `Get<StoryNodeData>`、`GetWhere` |
 | FT-10 Save/Load | `GetAll<T>`（反序列化時驗證 ID） |
 | P-02 Main UI Framework | `GetAll`、`GetWhere`（UI 呈現） |

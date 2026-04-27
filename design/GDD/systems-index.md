@@ -13,7 +13,7 @@ _狀態：草稿_
 
 ---
 
-## 系統列舉（25 個系統，FT-11 為佔位）
+## 系統列舉（26 個系統，FT-11 為佔位；FT-08 / FT-12 為原職員系統 2026-04-26 拆分）
 
 ### Foundation 層（零依賴）
 
@@ -165,7 +165,11 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | WEAK_TYPE_PENALTY              | 0.15    | 弱點任務類型成功率懲罰                                        |
 | WOUNDED_RECOVERY_HOURS         | 6       | Wounded 冒險者的恢復等待時間（小時）                          |
 
-> **FT-08 Guild Staff 系統常數獨立分表**：FT-08 的 `EFFECT_MAX_*`（聚合上限：`EFFECT_MAX_WILLINGNESS_BONUS` / `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` / `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` / `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC`）、`PITY_THRESHOLD`、`REALLOCATING_AUTO_LEAVE_SECONDS`、`BUILDING_SWITCH_COOLDOWN_SECONDS`、`ROSTER_CAP`、`TRASH_ROLL_RATE_AT_RARITY_1` 等專屬常數**不在此表**，皆收錄於 `StaffTuning.csv`（見下節 § 參數表）。理由：避免 SystemConstants 因 FT-08 子系統爆量、保持核心常數表精簡可讀，並讓 FT-08 自帶可調表與 GDD §7.2 對齊。
+> **FT-08 / FT-12 系統常數獨立分表**（2026-04-26 拆分後共用）：
+> - FT-12 接管：`EFFECT_MAX_*`（聚合上限：`EFFECT_MAX_WILLINGNESS_BONUS` / `EFFECT_MAX_ACCOUNTANT_COMMISSION_BONUS` / `EFFECT_MAX_ACCOUNTANT_PENALTY_BONUS` / `EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC`）、`REALLOCATING_AUTO_LEAVE_SECONDS`、`BUILDING_SWITCH_COOLDOWN_SECONDS`、`ROSTER_CAP`（FT-12 §6.5 / §7.2）
+> - FT-08 接管：`PITY_THRESHOLD`、`TRASH_ROLL_RATE_AT_RARITY_1` 等 gacha 專屬常數
+>
+> 兩系統常數**不在此表**，皆收錄於 `StaffTuning.csv`（見下節 § 參數表）。理由：避免 SystemConstants 因子系統爆量、保持核心常數表精簡可讀，並讓 FT-08 / FT-12 自帶可調表與各自 GDD §7 對齊。
 
 ### 參數表（Per-System）
 
@@ -185,12 +189,12 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | `ReputationDeltaTable`     | difficulty       | successDelta, failDelta                                                                | —                                                         |
 | `GuildLevelTable`          | level            | title, reputationThreshold, maxDifficulty                                              | —                                                         |
 | `BuildingTable`            | (buildingID, level) | name, maxLevel, effectValue, upgradeCost, guildLevelReq                             | —                                                         |
-| `StaffTable`               | staffID (int)    | name, rarity, salary, severancePay, isFiller, factionID, effectIDs, effectValues, slotBuildingIDs, uiFlagIDs, uiFlagBuildingIDs（見 FT-08 §3.2.1） | buildingID, FactionRouteTable                             |
+| `StaffTable`               | staffID (int)    | name, rarity, salary, severancePay, isFiller, factionID, effectIDs, effectValues, slotBuildingIDs, uiFlagIDs, uiFlagBuildingIDs（見 FT-12 §3.2） | buildingID, FactionRouteTable                             |
 | `StaffGachaPoolTable`      | poolID (int)     | poolName, eligibleStaffIDs (CSV list), minGuildLevel, maxGuildLevel, reserveTimeLimitSec, 5 個預留閘欄位（見 FT-08 §3.2.2） | staffID, FT-06 guildLevel                                  |
 | `StaffRefreshCostTable`    | refreshCount     | manualRefreshCost（見 FT-08 §4.1.2） | —                                                         |
 | `StaffRarityProbTable`     | rarity (1~5)     | baseProbability（見 FT-08 §4.1.5） | —                                                         |
 | `TrashItemTable`           | trashItemID (int) | name, description, drawWeightTier1~5（見 FT-08 §3.5） | —                                                         |
-| `StaffTuning`              | key              | value（FT-08 專屬常數：EFFECT_MAX_*, PITY_THRESHOLD, REALLOCATING_AUTO_LEAVE_SECONDS, BUILDING_SWITCH_COOLDOWN_SECONDS, ROSTER_CAP；見 FT-08 §7.2） | —                                                         |
+| `StaffTuning`              | key              | value（FT-08 / FT-12 共用常數：EFFECT_MAX_*（FT-12 §4.1）、PITY_THRESHOLD（FT-08）、REALLOCATING_AUTO_LEAVE_SECONDS / BUILDING_SWITCH_COOLDOWN_SECONDS（FT-12 §6.5 / §7.2）、ROSTER_CAP（FT-12）） | —                                                         |
 | `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq, weightF_E, weightD, weightC, weightB, weightA, weightS_SSS, maxDebt（C-06 §3.1，整合升級閘 / 池權重 / 債務上限） | —                                                         |
 | `BankruptcyThresholdTable` | reputationMin    | reputationMax, warningDurationSec                                                      | —                                                         |
 | `FactionRouteTable`        | factionID (int)  | name, description                                                                      | —                                                         |
@@ -241,7 +245,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | 15   | C-06 World Danger System     | 全局壓力            |
 | 16   | FT-06 Guild Core             | 公會等級            |
 | 17   | FT-07 Guild Building System  | 建設升級            |
-| 18   | FT-08 Guild Staff System     | 職員面試            |
+| 18   | FT-08 Gacha System + FT-12 Staff System | 職員面試（gacha + 名冊管理；2026-04-26 拆分）|
 | 19   | FT-01 Adventurer Recruitment | 完整版（老手邀請）  |
 | 20   | D-01 Character Content DB    | 名字/背景故事池     |
 | 21   | D-02 Mission Content DB      | 任務名稱/描述池     |
@@ -277,7 +281,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | **5**  | Mission Dispatch + NPC Decision      | Mission DB, Adventurer    |
 | **6**  | Outcome Resolution + Guild Gold Flow | Dispatch                  |
 | **7**  | World Danger                         | Mission DB                |
-| **8**  | Guild Core + Building + Staff        | Resource Mgmt             |
+| **8**  | Guild Core + Building + Gacha (FT-08) + Staff (FT-12) | Resource Mgmt（FT-08 / FT-12 為原職員系統拆分）|
 | **9**  | Recruitment                          | Adventurer, Guild Core    |
 | **10** | Faction Story                        | Outcome, Mission DB       |
 | **11** | Save/Load                            | ALL                       |
@@ -314,12 +318,31 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-05 Guild Gold Flow           | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-06 Guild Core                | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-07 Guild Building System     | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-08 Guild Staff System        | ✅   | ✅(§3.11 / §4.3 / §5.4 / §8.7 標 Phase 2) | ⬜     | ⬜   | ⬜   |
+| FT-08 Gacha System              | ✅   | ✅（2026-04-26 從原職員系統拆出，聚焦 gacha）| ⬜     | ⬜   | ⬜   |
 | FT-09 Faction Story System      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-10 Save/Load System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ⬜     | ⬜   | ⬜   |
 | P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
 | P-02 Main UI Framework          | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-01 Character Content DB       | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-02 Mission Content DB         | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+
+---
+
+## GDD Patch 紀錄
+
+本章記錄 GDD 通過 `/design-review` 後主體執行的修正 patch（不含 GDD 內 §九 變更歷史的常規迭代）。每筆 patch 標明日期、影響 GDD、章節、修改摘要與來源。
+
+| 日期 | Patch ID | 影響 GDD | 章節 | 修改摘要 | 來源 |
+| --- | --- | --- | --- | --- | --- |
+| 2026-04-27 | P-001 | FT-05 Guild Gold Flow | §3.2、§3.9.1、§3.9.2、§6.3 | `OnCommissionAccepted` / `OnCommissionPrepaid` 事件 source 型別由 `CommissionSource` 改為 `DispatchSource`（修正與 FT-02 §3.6a enum 命名衝突）；§3.9.1 表格補防錯註記「不要與 `CommissionSource = {Regular, Static}` 混淆」 | `/design-review`（C-01~C-05、FT-01~FT-05 跨系統一致性） |
+| 2026-04-27 | P-002 | C-05 Trait System | §4.4 | `ApplyConditionTraits` 偽碼補上 `outcome.triggeredConditionTraits.Add(traitID)` 邏輯；表格後新增追加規則說明（機率類型僅在判定通過時追加；固定值類型命中即追加）。對齊 FT-04 §3.4「觸發成功的 traitID 由 C-05 追加」契約 | `/design-review`（FT-04 ↔ C-05 跨系統 inconsistency） |
+| 2026-04-27 | P-003 | C-03 Profession System、C-04 Race System | C-03 §3.1 / §5.1；C-04 §5.1 | C-03 §3.1 表格後新增「跨欄位長度驗證」note：`raceWeights` 與 `raceIDs` 長度一致驗證**歸 C-03 Loader 載入時負責**，違規跳過該職業；§5.1 邊緣案例補一行「raceWeights 長度不一致 → LogError + 跳過該職業」。C-04 §5.1 對應行改寫為「驗證歸 C-03 Loader 處理；C-04 RollRace 走 `profession == null` fallback 路徑，不重複驗證」 | `/design-review`（C-03 ↔ C-04 驗證歸屬不明） |
+| 2026-04-27 | P-004 | C-04 Race System | §3.1 | Game Jam 初始資料表後新增 note：「`raceID = 1`（人類）為 fallback 保留 ID」。`§4.1 RollRace` 多處錯誤路徑均 fallback 至 `raceID=1`，禁止新增種族時重排或覆寫此 ID | `/design-review`（C-04 fallback ID 假設未明文保護） |
+| 2026-04-27 | P-005 | C-06 World Danger System | §3.2 / §3.4 / §4.1 / §4.2 / §4.3 / §4.5 | `/design-review C-06` NEEDS REVISION 修正（6 子項）：(1) §4.1 `GetElapsedDays` 偽碼補 `gameStartTimestamp == 0` 防護分支（必修，原偽碼會讓時間閘恆滿足，違反 §5.2 row 2「視為未滿足」設計意圖）；(2) §4.2 `CheckLevelUp` 偽碼補缺漏階跳過分支（讓 §5.1 row 1 可被 Codex 直接照偽碼實作）；(3) §4.5 `OnFactionScoreUpdated` 偽碼加 A 階早退（對齊 §5.2 row 5）；(4) §4.3 Script Execution Order 補「實作方式」說明：用 `[DefaultExecutionOrder]` 屬性宣告、不依賴 Unity Editor 設定；(5) §3.4 表格末段補「API 呼叫機制」note：`OnMissionAccepted` / `OnFactionScoreUpdated` 為直接 API 呼叫不走 EventBus；(6) §3.2 `gameStartTimestamp` 寫入時機明確化：FT-10 `InitializeAsNewGame` 寫入 `NowUTC`、`RestoreFromSave` 還原；寫入時機在 C-06 `Awake` 之後、`Start` 之前 | `/design-review C-06`（NEEDS REVISION） |
+
+> **維護指引**：每次因 `/design-review` / `/scope-check` 等跨 GDD 審查產生的修正 patch 應在此登記。GDD 內 §九「變更歷史」僅記錄該 GDD 本身的版本演進；本表記錄跨 GDD 一致性修正，便於未來 audit 與回溯。
+>
+> **與 FSD-index §九 的區別**：FSD-index §九記錄 FSD-index 規範本身的變更；本表記錄 GDD 內容的跨系統 patch。FSD 因 GDD patch 需重新對齊時（如 FT-05 FSD 因 P-001 需更新 §5.3 enum 描述），於 FSD-index §7.2 自檢紀錄中追加 patch review 列。

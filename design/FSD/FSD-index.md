@@ -309,7 +309,7 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 | 情境 | 格式 | 範例 |
 | --- | --- | --- |
 | 一份 FSD 對應整個 GDD 系統 | `【系統ID-FSD】system-name.md` | `【F-02-FSD】time-system.md` |
-| 一份 GDD 拆分成多份 FSD | `【系統ID-FSD-X】sub-name.md`（X = A, B, C...） | `【FT-08-FSD-A】staff-pool.md`、`【FT-08-FSD-B】staff-gacha.md` |
+| 一份 GDD 拆分成多份 FSD | `【系統ID-FSD-X】sub-name.md`（X = A, B, C...） | `【某系統-FSD-A】sub-A.md`、`【某系統-FSD-B】sub-B.md`（範例為一般性慣例；FT-08 與 FT-12 雖原為同一系統拆分，但拆分發生在 GDD 層而非 FSD 層，各自走獨立 FSD） |
 
 - `系統ID` 對齊 GDD（F-01、C-03、FT-08 等）。
 - `sub-name` 為小寫連字號，描述子單元職責。
@@ -347,22 +347,23 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 | F-01 | DataManager | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md) | [【F-01-FSD】data-manager.md](【F-01-FSD】data-manager.md) | 未拆分 |
 | F-02 | Time System | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)（共用 `DAILY_RESET_HOUR`、`OFFLINE_MAX_SECONDS`） | [【F-02-FSD】time-system.md](【F-02-FSD】time-system.md) | 未拆分 |
 | F-03 | Resource Management | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)、[【F-03-DS】bankruptcy-threshold-table.md](../Data-Specs/【F-03-DS】bankruptcy-threshold-table.md) | [【F-03-FSD】resource-management.md](【F-03-FSD】resource-management.md) | 未拆分（方向 C：保留 636 行單檔 + §8.3 條目 D8 內部分區建議） |
-| C-01 | Mission Database | _待建（`MissionTemplate`、`MissionTypeTable`、`MissionCategoryTable`、`RewardTable`、`DurationTable`）_ | _待撰寫_ | — |
-| C-02 | Adventurer Management | _待建（`AdventurerTemplate`、`RecruitCostTable`）_ | _待撰寫_ | — |
-| C-03 | Profession System | _待建（`ProfessionTable`）_ | _待撰寫_ | — |
-| C-04 | Race System | _待建（`RaceTable`、`ProfessionRacePool`）_ | _待撰寫_ | — |
-| C-05 | Trait System | _待建（`TraitTable`、`TraitGroupTable`）_ | _待撰寫_ | — |
-| C-06 | World Danger System | _待建（`WorldDangerTable`、`MissionPoolWeights`、`DebtLimitTable`）_ | _待撰寫_ | — |
-| FT-01 | Adventurer Recruitment | [【FT-01-DS】veteran-rank-weight-table.md](../Data-Specs/【FT-01-DS】veteran-rank-weight-table.md)、_待建（`RecruitCostTable`）_ | _待撰寫_ | — |
-| FT-02 | Mission Dispatch | _待建（`SuccessRateTable`、`DeathRateTable`）_ | _待撰寫_ | — |
-| FT-03 | NPC Decision System | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)（共用 willingness 常數） | _待撰寫_ | — |
-| FT-04 | Outcome Resolution | _待建（`ReputationDeltaTable`）_ | _待撰寫_ | — |
-| FT-05 | Guild Gold Flow | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)（共用金流常數） | _待撰寫_ | — |
+| C-01 | Mission Database | [【C-01-DS】mission-template.md](../Data-Specs/【C-01-DS】mission-template.md)<br>[【C-01-DS】mission-type-table.md](../Data-Specs/【C-01-DS】mission-type-table.md)<br>[【C-01-DS】mission-category-table.md](../Data-Specs/【C-01-DS】mission-category-table.md)<br>[【C-01-DS】mission-difficulty-table.md](../Data-Specs/【C-01-DS】mission-difficulty-table.md) | [【C-01-FSD】mission-database.md](【C-01-FSD】mission-database.md) | 未拆分（單 FSD 對應 4 個 Script：MissionDatabaseLoader / MissionDatabaseService / EscortDurationCalculator / MissionTextFacade） |
+| C-02 | Adventurer Management | [`【C-02-DS】adventurer-template.md`](../Data-Specs/【C-02-DS】adventurer-template.md)<br>[`【C-02-DS】recruit-cost-table.md`](../Data-Specs/【C-02-DS】recruit-cost-table.md) | [`【C-02-FSD】adventurer-management.md`](【C-02-FSD】adventurer-management.md) | 未拆分 FSD，內含 4 個 Script（AdventurerTemplateLoader / AdventurerFactory / AdventurerRoster / AdventurerWoundedRecovery） |
+| C-03 | Profession System | [【C-03-DS】profession-table.md](../Data-Specs/【C-03-DS】profession-table.md) | [【C-03-FSD】profession-system.md](【C-03-FSD】profession-system.md) | 未拆分（單 FSD 對應 4 個 Script：ProfessionData / IProfessionService / ProfessionDatabaseLoader / ProfessionService） |
+| C-04 | Race System | [`【C-04-DS】race-table.md`](../Data-Specs/【C-04-DS】race-table.md)（`RaceTable`；`raceIDs` / `raceWeights` 已合併入 C-03 `ProfessionTable`，owner = C-03） | [`【C-04-FSD】race-system.md`](【C-04-FSD】race-system.md) | 未拆分（單 FSD 含 4 Script：RaceData / IRaceService / RaceDatabaseLoader / RaceService） |
+| C-05 | Trait System | [`【C-05-DS】trait-table.md`](../Data-Specs/【C-05-DS】trait-table.md)<br>[`【C-05-DS】trait-group-table.md`](../Data-Specs/【C-05-DS】trait-group-table.md) | [`【C-05-FSD】trait-system.md`](【C-05-FSD】trait-system.md) | 未拆分 FSD，內含 4 個 Script（TraitData / TraitGroupData / TraitDatabaseLoader / TraitService） |
+| C-06 | World Danger System | [【C-06-DS】world-danger-table.md](../Data-Specs/【C-06-DS】world-danger-table.md)（單表整合升級閘 / 任務池權重 / 債務上限；原 `MissionPoolWeights.csv` / `DebtLimitTable.csv` 已合併入此表） | [【C-06-FSD】world-danger-system.md](【C-06-FSD】world-danger-system.md) | 未拆分 FSD，內含 5 個 Script（WorldDangerData / MissionPoolWeights / IWorldDangerService / WorldDangerLoader / WorldDangerService） |
+| FT-01 | Adventurer Recruitment | [【FT-01-DS】veteran-rank-weight-table.md](../Data-Specs/【FT-01-DS】veteran-rank-weight-table.md)、[`【C-02-DS】recruit-cost-table.md`](../Data-Specs/【C-02-DS】recruit-cost-table.md)（FT-01 §7.2 消費端引用；owner = C-02） | [【FT-01-FSD】adventurer-recruitment.md](【FT-01-FSD】adventurer-recruitment.md) | 未拆分 FSD，內含 3 Script（RecruitmentTypes / RecruitmentPoolGenerator / RecruitmentService，預估合計 600~770 行） |
+| FT-02 | Mission Dispatch | `【FT-02-DS】success-rate-table.md`（_待建_；CSV: `SuccessRateTable.csv`，owner = FT-02）<br>`【C-01-DS】mission-difficulty-table.md`（消費端引用；`baseDeathRate` 欄位）<br>[`【F-01-DS】system-constants.md`](../Data-Specs/【F-01-DS】system-constants.md)（消費端引用；`STRONG_TYPE_BONUS`/`WEAK_TYPE_PENALTY`/`ESCORT_TYPE_ID`） | [【FT-02-FSD-A】mission-dispatch-core.md](【FT-02-FSD-A】mission-dispatch-core.md)<br>[【FT-02-FSD-B】commission-board.md](【FT-02-FSD-B】commission-board.md) | 拆 A/B（FSD-A：成功率計算+派遣+計時；FSD-B：委託板池管理；共 5 Script） |
+| FT-03 | NPC Decision System | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)（共用 `DEATH_AVERSION` / `ACCEPTANCE_THRESHOLD` / `WILLINGNESS_JITTER` / `AUTO_PICKUP_IDLE_MINUTES` / `AUTO_PICKUP_INTERVAL_MINUTES`） | [【FT-03-FSD】npc-decision-system.md](【FT-03-FSD】npc-decision-system.md) | 未拆分（3 Script：NpcDecisionTypes / INpcDecisionService / NpcDecisionService） |
+| FT-04 | Outcome Resolution | [`【FT-04-DS】reputation-delta-table.md`](../Data-Specs/【FT-04-DS】reputation-delta-table.md)（`ReputationDeltaTable.csv`）<br>[`【F-01-DS】system-constants.md`](../Data-Specs/【F-01-DS】system-constants.md)（消費端：`DEATH_RATE_ON_SUCCESS_MULTIPLIER`）<br>[`【C-01-DS】mission-difficulty-table.md`](../Data-Specs/【C-01-DS】mission-difficulty-table.md)（消費端：`baseReward`） | [`【FT-04-FSD】outcome-resolution.md`](【FT-04-FSD】outcome-resolution.md) | 未拆分（4 Script：OutcomeData / IOutcomeResolutionService / OutcomeResolutionService / OutcomeReputationCalculator） |
+| FT-05 | Guild Gold Flow | [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md)（共用金流常數：`COMMISSION_RATE` / `PENALTY_RATE`） | [【FT-05-FSD】guild-gold-flow.md](【FT-05-FSD】guild-gold-flow.md) | 未拆分（3 Script：GoldFlowTypes / IGoldFlowService / GoldFlowService） |
 | FT-06 | Guild Core | _待建（`GuildLevelTable`）_ | _待撰寫_ | — |
 | FT-07 | Guild Building System | _待建（`BuildingTable`）_ | _待撰寫_ | — |
-| FT-08 | Guild Staff System | _待建（`StaffTable`、`StaffGachaPoolTable`、`StaffRefreshCostTable`、`StaffRarityProbTable`、`TrashItemTable`、`StaffTuning`、`StaffPlayerState`）_ | _待撰寫_ | — |
+| FT-08 | Gacha System（面試系統） | _待建（`StaffGachaPoolTable`、`StaffRefreshCostTable`、`StaffRarityProbTable`、`TrashItemTable`、`StaffPlayerState`、`StaffTuning` 共用）_ | _待撰寫_ | 2026-04-26 從原職員系統拆出，聚焦 gacha 機制 |
 | FT-09 | Faction Story System | _待建（`FactionRouteTable`、`StoryStageTable`、`MissionFactionScoreWeight`）_ | _待撰寫_ | — |
 | FT-10 | Save/Load System | — | _待撰寫_ | — |
+| FT-12 | Staff System（職員系統） | _待建（`StaffTable`、`StaffTuning` 共用）_ | _待撰寫_ | 2026-04-26 從原職員系統拆出，聚焦運營（名冊管理 / effect 聚合 / 薪水管線 Phase 2） |
 
 > **維護指引**：新增 FSD 時將「_待撰寫_」替換為連結；新增 Data-Specs 時將「_待建_」替換為連結並對齊本表；FSD 拆分時於「拆分情形」標 `拆 A/B`。
 
@@ -372,9 +373,22 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 
 | Data-Specs 檔案 | 對應 CSV | 被引用的 GDD | 被引用的 FSD |
 | --- | --- | --- | --- |
-| [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md) | `SystemConstants.csv` | F-01、F-02、F-03、FT-03、FT-04、FT-05 | 【F-01-FSD】、【F-02-FSD】、【F-03-FSD】 |
+| `【FT-02-DS】success-rate-table.md`（_待建_） | `SuccessRateTable.csv` | FT-02 | [【FT-02-FSD-A】mission-dispatch-core.md](【FT-02-FSD-A】mission-dispatch-core.md) |
+| [`【FT-04-DS】reputation-delta-table.md`](../Data-Specs/【FT-04-DS】reputation-delta-table.md) | `ReputationDeltaTable.csv` | FT-04 | [`【FT-04-FSD】outcome-resolution.md`](【FT-04-FSD】outcome-resolution.md) |
+| [【F-01-DS】system-constants.md](../Data-Specs/【F-01-DS】system-constants.md) | `SystemConstants.csv` | F-01、F-02、F-03、FT-02、FT-03、FT-04、FT-05 | 【F-01-FSD】、【F-02-FSD】、【F-03-FSD】、【C-03-FSD】（`STRONG_TYPE_BONUS`/`WEAK_TYPE_PENALTY` 規格定義）、[【FT-02-FSD-A】mission-dispatch-core.md](【FT-02-FSD-A】mission-dispatch-core.md)（消費端：`STRONG_TYPE_BONUS`/`WEAK_TYPE_PENALTY`/`ESCORT_TYPE_ID`）、[【FT-03-FSD】npc-decision-system.md](【FT-03-FSD】npc-decision-system.md)（消費端：`DEATH_AVERSION`/`ACCEPTANCE_THRESHOLD`/`WILLINGNESS_JITTER`/`AUTO_PICKUP_IDLE_MINUTES`/`AUTO_PICKUP_INTERVAL_MINUTES`）、[【FT-04-FSD】outcome-resolution.md](【FT-04-FSD】outcome-resolution.md)（消費端：`DEATH_RATE_ON_SUCCESS_MULTIPLIER`）、[【FT-05-FSD】guild-gold-flow.md](【FT-05-FSD】guild-gold-flow.md)（消費端：`COMMISSION_RATE`/`PENALTY_RATE`） |
 | [【F-03-DS】bankruptcy-threshold-table.md](../Data-Specs/【F-03-DS】bankruptcy-threshold-table.md) | `BankruptcyThresholdTable.csv` | F-03 | 【F-03-FSD】 |
-| [【FT-01-DS】veteran-rank-weight-table.md](../Data-Specs/【FT-01-DS】veteran-rank-weight-table.md) | `VeteranRankWeightTable.csv` | FT-01 | _待引用_ |
+| [【FT-01-DS】veteran-rank-weight-table.md](../Data-Specs/【FT-01-DS】veteran-rank-weight-table.md) | `VeteranRankWeightTable.csv` | FT-01 | [【FT-01-FSD】adventurer-recruitment.md](【FT-01-FSD】adventurer-recruitment.md) |
+| [【C-01-DS】mission-template.md](../Data-Specs/【C-01-DS】mission-template.md) | `MissionTemplate.csv` | C-01 | [【C-01-FSD】mission-database.md](【C-01-FSD】mission-database.md) |
+| [【C-01-DS】mission-type-table.md](../Data-Specs/【C-01-DS】mission-type-table.md) | `MissionTypeTable.csv` | C-01 | [【C-01-FSD】mission-database.md](【C-01-FSD】mission-database.md) |
+| [【C-01-DS】mission-category-table.md](../Data-Specs/【C-01-DS】mission-category-table.md) | `MissionCategoryTable.csv` | C-01 | [【C-01-FSD】mission-database.md](【C-01-FSD】mission-database.md) |
+| [【C-01-DS】mission-difficulty-table.md](../Data-Specs/【C-01-DS】mission-difficulty-table.md) | `MissionDifficultyTable.csv` | C-01 | [【C-01-FSD】mission-database.md](【C-01-FSD】mission-database.md)、[【FT-02-FSD-A】mission-dispatch-core.md](【FT-02-FSD-A】mission-dispatch-core.md)（消費端：`baseDeathRate`）、[【FT-02-FSD-B】commission-board.md](【FT-02-FSD-B】commission-board.md)（消費端：`categoryID` 驗證）、[【FT-04-FSD】outcome-resolution.md](【FT-04-FSD】outcome-resolution.md)（消費端：`baseReward`） |
+| [【C-02-DS】adventurer-template.md](../Data-Specs/【C-02-DS】adventurer-template.md) | `AdventurerTemplate.csv` | C-02 | [【C-02-FSD】adventurer-management.md](【C-02-FSD】adventurer-management.md) |
+| [【C-02-DS】recruit-cost-table.md](../Data-Specs/【C-02-DS】recruit-cost-table.md) | `RecruitCostTable.csv` | C-02、FT-01（消費端引用 §7.2） | [【C-02-FSD】adventurer-management.md](【C-02-FSD】adventurer-management.md)、[【FT-01-FSD】adventurer-recruitment.md](【FT-01-FSD】adventurer-recruitment.md)（消費端） |
+| [【C-03-DS】profession-table.md](../Data-Specs/【C-03-DS】profession-table.md) | `ProfessionTable.csv` | C-03、C-04（消費 raceIDs/raceWeights）、C-05（消費 traitGroupIDs） | [【C-03-FSD】profession-system.md](【C-03-FSD】profession-system.md)、[【C-04-FSD】race-system.md](【C-04-FSD】race-system.md)（消費端 raceIDs/raceWeights）、[【C-05-FSD】trait-system.md](【C-05-FSD】trait-system.md)（消費端 traitGroupIDs） |
+| [【C-04-DS】race-table.md](../Data-Specs/【C-04-DS】race-table.md) | `RaceTable.csv` | C-04 | [【C-04-FSD】race-system.md](【C-04-FSD】race-system.md) |
+| [`【C-05-DS】trait-table.md`](../Data-Specs/【C-05-DS】trait-table.md) | `TraitTable.csv` | C-05 | [`【C-05-FSD】trait-system.md`](【C-05-FSD】trait-system.md) |
+| [`【C-05-DS】trait-group-table.md`](../Data-Specs/【C-05-DS】trait-group-table.md) | `TraitGroupTable.csv` | C-05 | [`【C-05-FSD】trait-system.md`](【C-05-FSD】trait-system.md) |
+| [`【C-06-DS】world-danger-table.md`](../Data-Specs/【C-06-DS】world-danger-table.md) | `WorldDangerTable.csv` | C-06（單表整合升級閘 / 任務池權重 / 債務上限） | [`【C-06-FSD】world-danger-system.md`](【C-06-FSD】world-danger-system.md) |
 
 > **維護指引**：每次有新 FSD 引用某 Data-Specs，於本表「被引用的 FSD」欄追加。每次新增 Data-Specs，於本表新增一列並同步 §6.1。
 
@@ -389,6 +403,18 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 | `【F-02-FSD】time-system.md` | F-02 | 已完成 | unity-specialist subagent | 2026-04-26 | 2026-04-26 | — |
 | `【F-01-FSD】data-manager.md` | F-01 | 已完成 | unity-specialist subagent；Claude Code 主體（裁決 patch） | 2026-04-26 | 2026-04-26 | 逆向 FSD：依既有 Script 反推；§8.3 條目 3 已裁決採方案 A（補實作 `GetString` / `GetBool`，GDD §3.3 / §4.3 / §4.4 加 FSD 回註）；其餘 8 項偏差待 F-03 FSD 完成後一次性回註 GDD |
 | `【F-03-FSD】resource-management.md` | F-03 | 已完成 | unity-specialist subagent；Claude Code 主體（D1+D2+D7 Codex 工項審查 + D3/D6 GDD 回註 patch） | 2026-04-26 | 2026-04-26 | 逆向 FSD（方向 C 保留 636 行單檔）；§8.3 8 項偏差處理結果：D1+D2+D7 已由 Codex Medium 工項落地（`SetBankruptcyWarningDuration` API 補上、deprecated 表查詢移除、Warning 維持分支重新鎖定移除）；D3/D6 已對 F-03 GDD 加 FSD 回註；D4 待 FT-10 FSD 對齊 ISaveable 介面後處理；D8 待 D1/D4 落地後再評估；D5 對齊 F-02 FSD 無偏差 |
+| `【C-01-FSD】mission-database.md` | C-01 | 審查中 | unity-specialist subagent；Claude Code 主體（P-01 覆核 patch） | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分，規劃 4 個 Script；§8.5 P-01「分鐘 Tech Debt」覆核：F-02 GDD §3.1.2 + FT-02 GDD line 112 已標 Tech Debt 共識，非衝突，FSD 沿用合規 |
+| `【C-02-FSD】adventurer-management.md` | C-02 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分（單 FSD 含 4 Script）；無衝突；建議項 B-01/B-02 不阻礙實作 |
+| `【C-03-FSD】profession-system.md` | C-03 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分（4 Script）；無衝突；建議項 B-01（raceWeights 長度驗證責任歸屬）不阻礙實作 |
+| `【C-04-FSD】race-system.md` | C-04 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分（4 Script）；無衝突；建議項 B-01（raceWeights 驗證責任已確認由 C-04 RaceService.RollRace 負責）；B-02（fallback raceID=1）不阻礙實作 |
+| `【C-05-FSD】trait-system.md` | C-05 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分（4 Script）；無衝突；建議項 B-01（effectTarget 合法清單以 HashSet 維護於 TraitDatabaseLoader）；B-02（weighted pickMode fallback uniform）不阻礙實作 |
+| `【FT-01-FSD】adventurer-recruitment.md` | FT-01 | 審查中 | unity-specialist subagent；Claude Code 主體（拆分情形誤標 patch） | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；**未拆分** FSD，內含 3 個 Script（RecruitmentTypes / RecruitmentPoolGenerator / RecruitmentService，預估合計 600~770 行）；subagent 初稿誤標「拆 A/B/C」已 patch（§7.3 紀錄已移除，FT-01 僅 1 份 FSD 檔案）；無真實衝突；建議項 B-01（P-03 待設計，不阻礙）；B-02（AdventurerRankUtil 歸屬建議 C-02 FSD 確認）；§4.2 OnPoolRefreshedEvent 發布點統一至 ExecuteRefresh()，GDD §4.2 已回註 |
+| `【FT-02-FSD-A】mission-dispatch-core.md` | FT-02 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Gameplay/Mission Script）；FSD 拆分 A/B（FSD-A = 成功率+派遣+計時，FSD-B = CommissionBoard）；偏差 D-01：MissionTimer.cs 位於 Core/Time，建議遷移至 Gameplay/Mission 或確認可移除；Tech Debt TD-01：duration 單位分鐘為 C-01/F-02/FT-02 共識，非衝突 |
+| `【FT-02-FSD-B】commission-board.md` | FT-02 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | FT-02 拆分子單元 B（CommissionBoard 池管理）；無衝突；建議項 B-01（categoryID 命名常數包裝）/B-02（GetAvailableCommissions 合集去重策略）不阻礙實作 |
+| `【FT-03-FSD】npc-decision-system.md` | FT-03 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Script）；FSD 未拆分（3 Script：NpcDecisionTypes / INpcDecisionService / NpcDecisionService）；無衝突；Tech Debt TD-01（AUTO_PICKUP_*_MINUTES 分鐘命名，載入時 ×60 換算秒）；建議項 B-01（MissionDifficultyUtil 歸屬）/B-02（P-03 Log API 待更新）不阻礙實作；待主體複核後轉「已完成」 |
+| `【FT-04-FSD】outcome-resolution.md` | FT-04 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 Outcome Script）；FSD 未拆分（4 Script：OutcomeData / IOutcomeResolutionService / OutcomeResolutionService / OutcomeReputationCalculator）；無真實衝突；建議項 B-01（Outcome 物件引用修改風險）/B-02（空介面層取捨）不阻礙實作；待主體複核後轉「已完成」 |
+| `【FT-05-FSD】guild-gold-flow.md` | FT-05 | 審查中 | unity-specialist subagent | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 GoldFlow Script）；FSD 未拆分（3 Script：GoldFlowTypes / IGoldFlowService / GoldFlowService，預估 350~420 行）；無真實衝突；建議項 B-01（F-03 GDD 需補「單次 netDelta 無雙重穿越零線」保證）/B-02（P-02 clamp 提示建議）/B-03（CommissionSource enum 與 FT-02 DispatchSource 重疊確認）皆不阻礙實作；待主體複核後轉「已完成」 |
+| `【C-06-FSD】world-danger-system.md` | C-06 | 審查中 | Claude Code 主體（直接撰寫，無 subagent） | 2026-04-27 | 2026-04-27 | 正向 FSD（無既有 WorldDanger Script）；FSD 未拆分（5 Script：WorldDangerData / MissionPoolWeights / IWorldDangerService / WorldDangerLoader / WorldDangerService，預估 410~530 行）；無真實衝突；建議項 B-01（DefaultExecutionOrder 屬性式實現 Script Execution Order）/B-02（OnFactionScoreUpdated A 階早退補強）/B-03（Loader 啟動時做完整 5 階存在性檢查）皆不阻礙實作；§8.4 兩條 GDD 回註意圖待主體覆核後寫入 GDD |
 
 **狀態定義與流轉規則**：
 
@@ -415,6 +441,23 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 | 2026-04-26 | `【F-03-FSD】resource-management.md` | 通過 | 通過 | 通過（含 8 項偏差登記） | 8 項逆向發現偏差列入 §8.3：(D1) 缺 `SetBankruptcyWarningDuration` / `GetBankruptcyWarningDuration` API 與 `_currentWarningDuration` 欄位（GDD §3.5 rule 8/9） (D2) `LookupWarningDuration` 仍主動查 deprecated `BankruptcyThresholdTable`（GDD §7.2 已宣告改 FT-07 推送） (D3) 事件 payload `OnBankruptcyStateChangedEvent(prev, current)` 為 GDD `(newState)` 的 superset (D4) 未實作 ISaveable 介面，目前以 `CreateSnapshot` / `RestoreSnapshot` 替代（GDD §6.4 規範 7 欄位序列化） (D5) 事件名稱對齊 F-02 FSD（無偏差） (D6) `CanAfford` 多 `amount<=0` 短路（語義等價） (D7) `EvaluateWarningState` 在 Warning 維持分支多一條 `_warningDurationSec = LookupWarningDuration(...)`（與 D1/D2 連動） (D8) 主檔 636 行超 500 拆分門檻 | D1/D2/D7 已由 Codex Medium 工項落地（2026-04-26，Unity Editor 編譯通過）；D3/D6 已對 F-03 GDD §3.4/§4.3 加 FSD 回註；D4 待 FT-10 FSD 對齊 ISaveable；D8 待 D1/D4 落地後再評估 |
 | 2026-04-26 | `【F-03-FSD】resource-management.md`（D1+D2+D7 落地 + D3/D6 回註 patch 後重 review） | 通過 | 通過 | 通過 | 無 | §0 狀態轉「已完成」；§8.3 D1/D2/D7 標已落地；§8.4 補 3 筆回註（含 DataSpec deprecated 落地紀錄）；§8.6 新增重大實作變更紀錄；附錄 A 補 patch review 列 |
 | 2026-04-26 | `【F-01-FSD】data-manager.md`（剩餘 7 項偏差 GDD 回註 patch 後重 review） | 通過 | 通過 | 通過 | 無 | §8.4 補 7 筆 GDD 回註紀錄（D1+D9 / D4 / D2 / D5 / D6 / D8 / D9 共 7 條 FSD 回註已對 F-01 GDD §3.1 / §3.2 / §3.3 / §3.4 / §5.1 / §5.3 / §6.4 落地）|
+| 2026-04-27 | `【C-01-FSD】mission-database.md` | 通過 | 通過 | 通過（含 3 項待裁決／建議事項） | (P-01) baseDuration 單位為分鐘，與全域「禁用分鐘」規則衝突，待使用者裁決；(P-02) 護送允許難度集合 {D,C,B,A} 目前為硬規則，無對應 CSV 欄位，建議未來表格化；(P-03) D-02 MissionNamePool DS 尚未建立，MissionTextFacade 實作待確認欄位對齊 | P-01 為阻礙「已完成」的衝突，待裁決；P-02/P-03 為建議項，不阻礙實作啟動 |
+| 2026-04-27 | `【C-01-FSD】mission-database.md`（主體覆核 patch） | 通過 | 通過 | 通過 | 無 | P-01「分鐘 Tech Debt」覆核：F-02 GDD §3.1.2 已明定「任務時長分→秒（× 60）」；FT-02 GDD §3.5 line 112 已標「C-01 + FT-02 + F-02 三系統共識 Tech Debt」。subagent 初稿過度敏感，主體覆核判定**非衝突**；C-01 沿用 GDD 既有共識為合規處理。§8.3 P-01 / §8.5 / 附錄 A 已 patch；FSD 仍維「審查中」待後續主體統一最終轉「已完成」 |
+| 2026-04-27 | `【C-02-FSD】adventurer-management.md` | 通過 | 通過 | 通過 | 建議項 B-01（`lastAutoPickupTimestamp` 在 GDD §3.4 缺乏顯式的「不受狀態轉移影響」說明，建議 FT-03 FSD 撰寫時回註）；B-02（`GetRecruitCost` 歸屬 `IAdventurerRoster`，未來可考慮移至 `IAdventurerTemplateLoader`）——兩項皆不阻礙實作啟動 | B-01/B-02 登記於 FSD §8.3；無衝突；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【C-03-FSD】profession-system.md` | 通過 | 通過 | 通過 | 建議項 B-01（`raceWeights` 長度與 `raceIDs` 長度一致性驗證責任歸屬，建議 C-04 FSD 撰寫時確認；或由 C-03 Loader 統一處理）——不阻礙實作啟動 | B-01 登記於 FSD §8.3；無衝突；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【C-04-FSD】race-system.md` | 通過 | 通過 | 通過 | 建議項 B-01（`raceWeights` 長度驗證責任已確認由 `RaceService.RollRace`（C-04）負責；C-03 Loader 不重複驗證）；B-02（fallback raceID=1 在 Game Jam 範圍內安全，建議 CSV 備註保留）——兩項皆不阻礙實作啟動 | B-01/B-02 登記於 FSD §8.3；無衝突；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【C-05-FSD】trait-system.md` | 通過 | 通過 | 通過 | 建議項 B-01（effectTarget 合法清單 23 項以 HashSet 維護，非寫死業務邏輯，符合 Game Jam 範疇）；B-02（weighted pickMode Game Jam 預留 fallback uniform）——兩項皆不阻礙實作啟動 | B-01/B-02 登記於 FSD §8.3；無衝突；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-01-FSD】adventurer-recruitment.md` | 通過 | 通過 | 通過 | 建議項 B-01（P-03 Notification 待設計，OnRecruitSuccess 已透過 EventBus 發布，無需修改 FT-01）；B-02（AdventurerRankUtil 歸屬建議 C-02 FSD 撰寫時確認）——兩項皆不阻礙實作啟動；§4.2 OnPoolRefreshedEvent 發布點統一至 ExecuteRefresh()，GDD §4.2 已加回註 | B-01/B-02 登記於 FSD §8.3；無真實衝突；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-02-FSD-A】mission-dispatch-core.md` | 通過 | 通過 | 通過 | 偏差 D-01（MissionTimer.cs 位置偏差）登記 §8.3；Tech Debt TD-01（分鐘單位）確認為 C-01/F-02/FT-02 三系統共識，非衝突；CommissionSource enum 定義移至 FT-02-B，FT-02-A 只需 DispatchSource；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-02-FSD-B】commission-board.md` | 通過 | 通過 | 通過 | 建議項 B-01（categoryID 命名常數）/B-02（合集去重策略）不阻礙實作；ISaveable 共用 OwnerKey 協調方式 §5.3 明確說明；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-03-FSD】npc-decision-system.md` | 通過 | 通過 | 通過 | 無衝突；Tech Debt TD-01（AUTO_PICKUP_*_MINUTES 分鐘命名，載入時 ×60）已標注為三系統共識，非衝突；建議項 B-01（MissionDifficultyUtil 歸屬確認）/B-02（P-03 Log API 待更新）不阻礙實作；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-04-FSD】outcome-resolution.md` | 通過 | 通過 | 通過 | 正向 FSD（無既有 Outcome Script）；FSD 未拆分（4 Script）；無真實衝突；GDD §3.1 ~ §3.9 全部「對齊」；建議項 B-01（Outcome 物件引用修改風險，Game Jam 訂閱者自律）/B-02（空介面層取捨）不阻礙實作；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-05-FSD】guild-gold-flow.md` | 通過 | 通過 | 通過 | 正向 FSD（無既有 GoldFlow Script）；未拆分（3 Script）；GDD §3.1~§3.10 全部「對齊」；GDD §4 公式直接採用；邊緣案例 §5.1~§5.6 全 22 案例皆有對策；無真實衝突；建議項 B-01（F-03 GDD 補「單次 netDelta 無雙重穿越零線」保證）/B-02（P-02 clamp 提示）/B-03（CommissionSource vs DispatchSource enum 重疊確認）不阻礙實作；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【FT-05-FSD】guild-gold-flow.md`（GDD P-001 對齊 patch） | 通過 | 通過 | 通過 | B-03 已解決（GDD P-001）：FT-05 GDD §3.2 / §3.9.1 / §3.9.2 / §6.3 source 型別 `CommissionSource` → `DispatchSource`（對齊 FT-02 §3.6a）；本 FSD §2.5 / §4.2 / §4.4 / §5.2 / §5.3 / §8.3 同步；`GoldFlowTypes.cs` 移除自定 enum，從 FT-02 FSD-A 引用 |
+| 2026-04-27 | `【C-03-FSD】profession-system.md`（GDD P-003 對齊 patch） | 通過 | 通過 | 通過 | B-01 已解決（GDD P-003）：C-03 GDD §3.1 + §5.1 已將 raceWeights/raceIDs 長度驗證歸屬明文於 C-03 Loader；本 FSD §8.3 標「已解決」；C-04 FSD 同步 |
+| 2026-04-27 | `【C-04-FSD】race-system.md`（GDD P-003 + P-004 對齊 patch） | 通過 | 通過 | 通過 | B-01 重新決議：GDD P-003 將驗證歸屬反轉為 C-03 Loader，本 FSD §8.3 B-01 重寫、§8.4 GDD 回註撤銷（不再寫入 GDD）；§5 偽碼 length 檢查保留為 defensive 雙保險。B-02 已解決：GDD P-004 已於 §3.1 新增 `raceID=1` 保留 ID note，本 FSD §3.3 / §5 fallback 對齊。 |
+| 2026-04-27 | `【C-06-FSD】world-danger-system.md` | 通過 | 通過 | 通過 | 正向 FSD；GDD §3.1~§3.4 / §4.1~§4.5 全對齊；GDD §5 共 10 條邊緣案例全有對策；無真實衝突；建議項 B-01（DefaultExecutionOrder）/B-02（A 階早退）/B-03（Loader 5 階完整性檢查）皆不阻礙實作；§8.4 兩條 GDD 回註意圖（§3.2/§4.3 + §4.5）待主體覆核後寫入 GDD；待主體複核後轉「已完成」 |
+| 2026-04-27 | `【C-06-FSD】world-danger-system.md`（GDD P-005 對齊 patch） | 通過 | 通過 | 通過 | 對應 `/design-review C-06` NEEDS REVISION 全修：GDD P-005（6 子項）已落地。B-01 / B-02 已解決（GDD §4.3 / §4.5 直接補入）；§8.4 兩條 FSD 回註意圖撤銷（GDD 直接落地）；§8.3 補「FSD 受惠項目」記錄 GDD P-005 另 4 項補強（§4.1 防護 / §4.2 缺漏階 / §3.4 API 機制 / §3.2 寫入時機）對 FSD 的正面影響。B-03 Loader 5 階完整性檢查保留為實作期建議。 |
 
 **檢核結果記法**：`通過` / `未通過`（未通過時於「未對齊摘要」欄填入問題與後續處理計畫）。
 
@@ -424,7 +467,7 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 
 | 日期 | GDD ID | 原系統 | 拆分為 | 拆分理由 |
 | --- | --- | --- | --- | --- |
-| _尚無_ | — | — | — | — |
+| 2026-04-27 | FT-02 | Mission Dispatch | 【FT-02-FSD-A】mission-dispatch-core.md（MissionRateCalculator + MissionDispatchService，成功率計算+派遣+計時）／【FT-02-FSD-B】commission-board.md（CommissionBoardService，委託板池管理），共 5 Script | GDD §3.4（成功率計算）、§3.5（派遣序列）、§3.7（計時）與 §3.9（CommissionBoard 池管理）三大職責分區明顯；預估合計 > 700 行；FSD-A 持有 `_activeMissions` 核心狀態，FSD-B 持有兩池狀態，職責邊界清晰；符合 §2.4 拆分標準 |
 
 ---
 
@@ -590,3 +633,5 @@ FSD 草稿完成後，必須執行下列三項檢核並於「附錄 A — Review
 | --- | --- | --- |
 | 2026-04-26 | 建立 FSD-index.md 初版：規範、索引、狀態記錄、模板 | Claude Code |
 | 2026-04-26 | F-02 FSD 撰寫測試後升級：(1) §六 升級為 GDD-DataSpecs-FSD 三方映射並新增 §6.2 Data-Specs 索引；(2) 新增 §2.7 既有 Script 偏差檢查、§2.8 Subagent 撰寫紀律、§2.9 完成前 Checklist；(3) §7.1 補狀態流轉規則；(4) §5 新增 §5.4 Script 路徑慣例、§5.5 Data-Specs 引用慣例；(5) §0 / §2.2 / §4.4 / §5.4 / §6.1 / §6.3 / §8.1 章節指引補強；(6) §八 模板同步更新含完成前 Checklist | Claude Code |
+| 2026-04-27 | 同步原職員系統拆分（FT-08 + FT-12，2026-04-26 GDD 層完成）：(1) §5.2 拆分範例註記改為一般性慣例；(2) §6.1 FT-08 row 改為 Gacha System、新增 FT-12 row（Staff System）；(3) StaffTable owner 移交 FT-12，StaffTuning 標記 FT-08 / FT-12 共用 | Claude Code |
+| 2026-04-27 | FT-02 FSD 撰寫完成（拆分 A/B）：(1) §6.1 FT-02 row 更新 Data-Specs + FSD 連結 + 拆分情形；(2) §6.2 C-01-DS mission-difficulty-table 追加 FT-02-FSD-A/B 消費端；F-01-DS system-constants 追加 FT-02-FSD-A；新增 FT-02-DS success-rate-table 待建登記；(3) §7.1 新增 FT-02-FSD-A/B 兩列；(4) §7.2 新增 FT-02-FSD-A/B review 紀錄；(5) §7.3 新增 FT-02 拆分回報 | unity-specialist subagent |

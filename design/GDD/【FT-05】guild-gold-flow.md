@@ -133,7 +133,7 @@ FT-05 發布三類金流事件，各自攜帶獨立的 Breakdown 結構。皆為
 
 ### 3.2 預收管線（Prepayment Pipeline）
 
-FT-05 在 `OnEnable` 訂閱 `OnCommissionAccepted(int missionID, int baseReward, CommissionSource source)`。
+FT-05 在 `OnEnable` 訂閱 `OnCommissionAccepted(int missionID, int baseReward, DispatchSource source)`。
 
 ```
 OnCommissionAccepted(missionID, baseReward, source):
@@ -342,7 +342,7 @@ ExecuteGoldFlow(breakdown):                              // breakdown 為 Commis
 
 #### 3.9.1 上游事件（Consumer Contracts — FT-05 訂閱）
 
-**`OnCommissionAccepted(int missionID, int baseReward, CommissionSource source)`**
+**`OnCommissionAccepted(int missionID, int baseReward, DispatchSource source)`**
 
 由 FT-05 定義契約，上游依此實作。
 
@@ -350,7 +350,7 @@ ExecuteGoldFlow(breakdown):                              // breakdown 為 Commis
 |------|------|------|
 | `missionID` | `int` | FK → C-01 MissionTemplate |
 | `baseReward` | `int` | 快照自 `C01.GetBaseReward(difficulty)`；上游負責取得，FT-05 不重查 |
-| `source` | `CommissionSource` enum | `PlayerManual` / `NpcAutoPick` / `OfflineAutoPick`（與 FT-02 § 3.5 `Dispatch` source 對齊） |
+| `source` | `DispatchSource` enum | `PlayerManual` / `NpcAutoPick` / `OfflineAutoPick`（FT-02 § 3.6a 定義；對應 `Dispatch` 派遣來源，不要與 `CommissionSource = {Regular, Static}` 混淆——後者是 FT-02 委託板池注入事件 `OnCommissionPosted` 用） |
 
 | 發布場景 | 發布者 | source |
 |---------|--------|--------|
@@ -388,7 +388,7 @@ ExecuteGoldFlow(breakdown):                              // breakdown 為 Commis
 
 #### 3.9.2 下游事件（Publisher Contracts — FT-05 發布）
 
-**`OnCommissionPrepaid(int missionID, int prepaidAmount, CommissionSource source)`**
+**`OnCommissionPrepaid(int missionID, int prepaidAmount, DispatchSource source)`**
 
 | 訂閱者 | 行為 |
 |--------|------|
@@ -774,11 +774,11 @@ Input:    OnStaffSalaryDue(totalAmount = 90)
 
 | 事件 | 方向 | Payload | 定義位置 |
 |------|------|---------|---------|
-| `OnCommissionAccepted` | In | `(int missionID, int baseReward, CommissionSource source)` | §3.9.1（**FT-05 定義契約**，上游實作） |
+| `OnCommissionAccepted` | In | `(int missionID, int baseReward, DispatchSource source)` | §3.9.1（**FT-05 定義契約**，上游實作） |
 | `OnMissionResolved` | In | `Outcome` | FT-04 §3.8 |
 | `OnGuildMaintenanceDue` | In | `(long dueTimestamp, Dict<int,int> perBuildingCost, int totalAmount)` | §3.9.1（**FT-05 定義契約**，FT-07 實作） |
 | `OnStaffSalaryDue` | In | `(long dueTimestamp, Dict<int,int> perStaffSalary, int totalAmount)` | §3.9.1（**FT-05 定義契約**，FT-12 實作） |
-| `OnCommissionPrepaid` | Out | `(int missionID, int prepaidAmount, CommissionSource source)` | §3.9.2 |
+| `OnCommissionPrepaid` | Out | `(int missionID, int prepaidAmount, DispatchSource source)` | §3.9.2 |
 | `OnCommissionSettled` | Out | `CommissionBreakdown` | §3.9.2 / §3.1.1 |
 | `OnMaintenanceCharged` | Out | `MaintenanceBreakdown` | §3.9.2 / §3.1.2 |
 | `OnSalaryCharged` | Out | `SalaryBreakdown` | §3.9.2 / §3.1.3 |

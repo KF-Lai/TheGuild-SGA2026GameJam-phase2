@@ -50,6 +50,8 @@ C-04 Race System 定義遊戲中所有冒險者種族的靜態資料，以 `Race
 | 3 | 獸人 | 討伐死亡率 -8%、調查成功率 -5% |
 | 4 | 魔族 | 討伐成功率 +10%、護送死亡率 +5% |
 
+> **`raceID = 1`（人類）為 fallback 保留 ID**：`§4.1 RollRace` 在 profession 查無、raceIDs/raceWeights 異常等多種錯誤路徑均 fallback 回傳 `1`（人類）。新增種族時**不可重排或覆寫 `raceID=1`**；若移除人類為基礎種族的設計，需同步修改 §4.1 偽碼的 fallback 值與全部相關 EC 文字。
+
 ---
 
 ### 3.2 職業 → 種族隨機池欄位（消費 C-03.ProfessionTable）
@@ -157,7 +159,7 @@ ApplyRaceModifier(baseSuccessRate, baseDeathRate, raceID, typeID):
 | `modifiers` JSON 欄位為空字串或 `[]` | 解析為空列表，`GetSuccessDelta` / `GetDeathDelta` 全回傳 `0.0`，不報錯 |
 | `modifiers` JSON 格式錯誤（無法解析） | `Debug.LogError` 記錄 `raceID`，該種族的修正視為空列表 |
 | `modifiers` 中的 `typeID` 不存在於 MissionTypeTable | `Debug.LogWarning` 記錄 `raceID` 與違規 `typeID`，過濾該條目，其餘正常載入 |
-| C-03 `ProfessionTable` 的 `raceIDs` 與 `raceWeights` 長度不一致 | `Debug.LogError`，該職業的隨機池視為無效，`RollRace` 對此職業回傳 fallback `raceID=1` |
+| C-03 `ProfessionTable` 的 `raceIDs` 與 `raceWeights` 長度不一致 | **驗證歸 C-03 Loader 負責**（C-03 §3.1 / §5.1，2026-04-27 patch）：載入時跳過該違規職業，`GetProfession(professionID)` 回 `null`；C-04 `RollRace` 走 §4.1 line 92-93 的 `profession == null → return 1` fallback 路徑，不重複驗證 |
 | C-03 `ProfessionTable` 的 `raceIDs` 包含不存在於 RaceTable 的 raceID | `Debug.LogWarning`，過濾該 raceID 與對應 weight，其餘正常抽取 |
 | C-03 `ProfessionTable` 該職業 `raceIDs` 為空（含過濾後） | `Debug.LogError`，`RollRace` 回傳 fallback `raceID=1` |
 | 某職業在 C-03 `ProfessionTable` 中無對應行 | `Debug.LogError`，`RollRace` 回傳 fallback `raceID=1`（同 `GetProfession == null`） |

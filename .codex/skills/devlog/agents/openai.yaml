@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Devlog"
+  short_description: "Create a dated development log from recent work."
+  default_prompt: "Use $devlog to summarize the current development work."
+
+policy:
+  allow_implicit_invocation: true

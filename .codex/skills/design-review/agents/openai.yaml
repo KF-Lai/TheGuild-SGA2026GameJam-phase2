@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Design Review"
+  short_description: "Review GDD quality, consistency, and implementability."
+  default_prompt: "Use $design-review to review this design document."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Design FSD"
+  short_description: "Generate Functional Specs from GDD source documents."
+  default_prompt: "Use $design-fsd to generate FSDs for the specified GDD IDs."
+
+policy:
+  allow_implicit_invocation: true

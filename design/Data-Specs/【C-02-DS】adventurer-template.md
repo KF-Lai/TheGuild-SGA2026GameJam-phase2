@@ -29,7 +29,7 @@
 | `factionID` | `int` | ✓ | ≥ 0 | 陣營歸屬；`0` = neutral |
 | `isUnique` | `int` | ✓ | 0 或 1 | `1` = 唯一角色（全局只能實例化一次，含 Dead 狀態）；`0` = 可重複招募（GDD §3.2） |
 
-> **特質生成規則**：實例化時，先將 `fixedTraitIDs` 全部加入；再對每個 `randomTraitGroupIDs` 群組依 C-05 `pickCount` / `pickMode` 抽取後加入；最終 `traitIDs` = 固定 ∪ 隨機（去重）（GDD §3.2 尾注）。
+> **特質生成規則**：實例化時，先將 `fixedTraitIDs` 全部加入；再對每個 `randomTraitGroupIDs` 群組依 C-05 `pickCount` / `pickMode` 抽取後加入；最終 `traitIDs` = 固定 ∪ 隨機（去重）（GDD C-02 §3.2；實例化偽代碼見 GDD C-02 §4.3）。
 
 ## 約束 / 不變量
 

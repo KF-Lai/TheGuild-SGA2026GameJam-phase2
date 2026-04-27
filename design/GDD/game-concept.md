@@ -488,7 +488,7 @@ if effectiveScore < ACCEPTANCE_THRESHOLD(0.25) → 拒絕
 
 > 詳細設計待 `/design-system guild-staff` 補完。
 >
-> **實作更新（2026-04-24）**：本節 3 種具名職員的設計已於 FT-08 GDD 改為 **gacha + tag 聚合**架構——職員面試系統採隨機招募池，職能以 `StaffTable.tags`（CSV list）表達，對外仍暴露同名加成 API（`GetStaffWillingnessBonus` / `GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus`）。本節表格保留為**設計意圖參考**；最新規格以 `[FT-08] guild-staff-system.md` 為準。
+> **實作更新（2026-04-24 / 2026-04-26 拆分）**：本節 3 種具名職員的設計已改為 **gacha + effect 聚合**架構——職員面試系統採隨機招募池，職能以 `StaffTable.effectIDs / effectValues`（CSV list；原 `tags`）表達，對外仍暴露同名加成 API（`GetStaffWillingnessBonus` / `GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus`）。**2026-04-26 拆分**：原職員系統拆為 `[FT-08] gacha-system.md`（面試 gacha）與 `[FT-12] staff-system.md`（職員運營），加成 API 由 FT-12 提供、面試 gacha 由 FT-08 主管。本節表格保留為**設計意圖參考**；最新規格以 FT-08 / FT-12 GDD 為準。
 
 **Post-Jam 擴充構想：人事系統（Human Resources System）**
 

@@ -105,7 +105,8 @@ Resource Management 是金幣與聲望的唯一管理者，提供原子性的資
 | FT-05 Guild Gold Flow | 預收／退還／結算入帳／賠償／維護費／薪水扣款；預收回滾使用 Snapshot | `AddGoldAllowBankruptcy` / `CanAfford` / `CreateSnapshot` / `RestoreSnapshot` |
 | FT-06 Guild Core | 訂閱 `OnBankruptcyStateChangedEvent`（CurrentState == Bankrupt）進入 Game Over 終態流程；讀聲望判定升等 | `OnBankruptcyStateChangedEvent` / `GetReputation` |
 | FT-07 Guild Building | 建設前 `CanAfford`、建設後 `AddGold`；GDD 規範另需主動呼叫 `SetBankruptcyWarningDuration`（**實作未提供此 API**，見 §8.3 條目 D1） | `CanAfford` / `AddGold` |
-| FT-08 Guild Staff | 招募前 `CanAfford`、招募後 `AddGold` | `CanAfford` / `AddGold` |
+| FT-08 Gacha System | 面試手動刷新費扣款（gacha 入口） | `CanAfford` / `AddGold` |
+| FT-12 Staff System | 解雇資遣費透過 FT-05 中介 `AddGoldAllowBankruptcy`；薪水扣款 Phase 2 | `AddGoldAllowBankruptcy`（FT-05 中介）|
 | FT-01 Adventurer Recruitment | 老手邀請費用支出 | `CanAfford` / `AddGold` |
 | FT-10 Save/Load | GDD §6.4 規範 ISaveable 序列化 7 欄位（**實作未實作 ISaveable**，目前以 `CreateSnapshot` / `RestoreSnapshot` 替代，見 §8.3 條目 D4） | `CreateSnapshot` / `RestoreSnapshot`（暫代）；GDD 規範 `ISaveable.Serialize` / `RestoreFromSave` / `InitializeAsNewGame` |
 | P-02 Main UI | 訂閱 3 個事件即時更新顯示；查詢剩餘秒數顯示倒數 | `OnGoldChangedEvent` / `OnReputationChangedEvent` / `OnBankruptcyStateChangedEvent` / `GetBankruptcyWarningRemainingSeconds` |

@@ -221,31 +221,38 @@ ApplyConditionTraits(outcome, traitIDs):
                 if outcome.isSuccess:
                     if Random.value < trait.effectValue:
                         outcome.conditionGoldBonus += outcome.baseReward × 0.5
+                        outcome.triggeredConditionTraits.Add(traitID)
 
             "on_fail_reputation":
                 if !outcome.isSuccess:
                     outcome.reputationDelta += trait.effectValue  // 負數
+                    outcome.triggeredConditionTraits.Add(traitID)  // 固定值，無機率判定，命中即追加
 
             "on_success_reputation_bonus":
                 if outcome.isSuccess:
                     outcome.reputationDelta += trait.effectValue  // 正數
+                    outcome.triggeredConditionTraits.Add(traitID)  // 固定值，無機率判定，命中即追加
 
             "on_death_survive":
                 if outcome.isDead:
                     if Random.value < trait.effectValue:
                         outcome.isDead = false
                         outcome.isWounded = true
+                        outcome.triggeredConditionTraits.Add(traitID)
 
             "on_fail_survive":
                 if !outcome.isSuccess and outcome.isDead:
                     if Random.value < trait.effectValue:
                         outcome.isDead = false
                         outcome.isWounded = true
+                        outcome.triggeredConditionTraits.Add(traitID)
 
     return outcome
 ```
 
 > condition 特質按 `traitIDs` 順序依次執行。`on_death_survive` 與 `on_fail_survive` 若同時存在，先觸發者將 `isDead` 改為 `false` 後，後者條件不成立自然跳過，無衝突。
+>
+> **`triggeredConditionTraits` 追加規則**：機率類型（`on_success_gold_bonus` / `on_death_survive` / `on_fail_survive`）僅在 `Random.value < effectValue` 通過時追加；固定值類型（`on_fail_reputation` / `on_success_reputation_bonus`）只要 `effectType` 條件命中即追加。對齊 FT-04 §3.4「觸發成功的 traitID 由 C-05 追加至 outcome.triggeredConditionTraits」契約。
 
 ## 5. 邊緣案例（Edge Cases）
 

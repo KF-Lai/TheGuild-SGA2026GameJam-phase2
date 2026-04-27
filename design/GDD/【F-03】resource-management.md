@@ -402,7 +402,8 @@ GetBankruptcyWarningDuration():
 | FT-05 Guild Gold Flow | 預收傭金、退還、結算入帳、賠償、維護費與薪水扣款 | `AddGoldAllowBankruptcy`, `CanAfford` |
 | FT-06 Guild Core | 讀取聲望判定公會升等；訂閱 `OnBankruptcyWarningStateChanged(Bankrupt)` 進入 Game Over 終態流程（見 FT-06 §4.5、§5），Game Over 為終態，**不**呼叫 `ResetBankruptcyState()` | `GetReputation`, `OnBankruptcyWarningStateChanged` |
 | FT-07 Guild Building | 建設前檢查能否支出、建設後扣款 | `CanAfford`, `AddGold` |
-| FT-08 Guild Staff | 招募前檢查能否支出、招募後扣款 | `CanAfford`, `AddGold` |
+| FT-08 Gacha System | 面試手動刷新費扣款（gacha 入口）| `CanAfford`, `AddGold` |
+| FT-12 Staff System | 解雇資遣費扣款（透過 FT-05 中介 `AddGoldAllowBankruptcy`）；薪水扣款 Phase 2 | `AddGoldAllowBankruptcy`（FT-05 中介）|
 | FT-01 Adventurer Recruitment | 老手邀請費用支出 | `CanAfford`, `AddGold` |
 | FT-10 Save/Load | 序列化 `currentGold`、`currentReputation`、`_warningState`、`_bankruptcyWarningStartTime`、`_warningDurationSec`、`_currentBankruptcyThreshold` | `GetGold`, `GetReputation`, `GetBankruptcyWarningState` |
 | P-02 Main UI | 訂閱資源變動事件與破產警告狀態事件，即時更新顯示 | `OnGoldChanged`, `OnReputationChanged`, `OnBankruptcyWarningStateChanged`, `GetBankruptcyWarningRemainingSeconds` |

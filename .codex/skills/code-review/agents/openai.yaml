@@ -1,0 +1,7 @@
+﻿interface:
+  display_name: "Code Review"
+  short_description: "Review Unity C# code, diffs, and Codex output."
+  default_prompt: "Use $code-review to review this patch or target file."
+
+policy:
+  allow_implicit_invocation: true

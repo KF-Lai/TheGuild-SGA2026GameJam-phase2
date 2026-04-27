@@ -207,6 +207,7 @@ displayMins    = displayMinutes % 60   （取整）
 | FT-03 NPC Decision           | 訂閱每分鐘 tick 驅動自主接單檢查                                                                | `TimeSystem.OnMinuteTick`                                 |
 | FT-04 Outcome Resolution     | 不直接依賴 F-02；計時完成由 FT-02 §3.7 `TickCompletionCheck` 驅動 `OnMissionCompleted` 發布後，FT-04 訂閱該事件執行結算 | —                                                         |
 | FT-06 Guild Core             | Game Over 階段 2（玩家確認訃聞後）呼叫暫停 Tick；讀取當前 UTC 作為 Game Over 時間戳             | `TimeSystem.PauseTick()`, `TimeSystem.NowUTC`             |
+| FT-12 Staff System           | 訂閱每日重置事件驅動薪水管線（**Phase 2**，Jam 不訂閱）；訂閱每分鐘事件並以 `_lastAutoLeaveScanTimestamp` 自節流為每 3600s 掃一次驅動 `CheckReallocatingAutoLeave`（F-02 無 OnHourTick） | `TimeSystem.OnDailyReset`（Phase 2）、`TimeSystem.OnMinuteTick` |
 
 ### 6.3 EventBus 事件定義
 
