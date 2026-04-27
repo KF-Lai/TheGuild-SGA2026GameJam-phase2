@@ -1,11 +1,11 @@
 # Faction Story System 系統設計文件
 
 _建立時間：2026-04-25_
-_狀態：草稿（8 節全完成，待 design-review）_
-_最後更新：2026-04-26_
+_狀態：設計完成（已通過 2026-04-27 /design-review，修正 C1 / C2 / I1 / I2 / I3）_
+_最後更新：2026-04-27_
 _系統 ID：FT-09_
 
-**🔖 全 8 節完成**：§1 ~ §8 全部寫入。下一步：(a) 執行 `/design-review FT-09`；(b) 通過後處理 §6.4 反向依賴 9 個 GDD 更新；(c) 進入 Codex 實作階段。
+**狀態**：§1 ~ §8 全部寫入並通過 design-review。下一步：(a) §6.4 反向依賴中 P-02 / P-03 待登記項由各自 GDD 設計時自行登記；(b) 進入 Codex 實作階段（建議拆為 5 個次模組）。
 
 ---
 
@@ -239,7 +239,7 @@ Jam 版**不支援 runtime 熱切換**：`_isEnabled` 在 Bootstrap 後不再變
 | `stageIndex` | int | 該陣營路線中的階段序號（從 `1` 開始連號） |
 | `scoreThreshold` | int | 觸發此階段所需的陣營分數門檻（解鎖判定為 `currentScore >= scoreThreshold`，§3.4） |
 | `missionID` | int (FK → `MissionTemplate`) | 注入委託板的劇情委託 ID；**該 `MissionTemplate.categoryID` 必須 == `3`（faction_story）** |
-| `dialogueKey` | string (FK → `DialogueTable`) | 對話內容鍵（P-02 對話視窗讀取） |
+| `dialogueKey` | string (FK → `DialogueTable`，**owner 待定**) | 對話內容鍵（P-02 對話視窗讀取）；見下方註記 |
 
 **驗證規則**（DataManager 載入時）：
 
@@ -259,6 +259,12 @@ Jam 版**不支援 runtime 熱切換**：`_isEnabled` 在 Bootstrap 後不再變
 | 1003 | 1 | 3 | 60 | 9003 | `story.order.stage3` |
 
 > 範例 threshold（10 / 30 / 60）對應「中前期 B+ 任務 7~10 單後解鎖第一階段」的節奏（依 §3.2.3 權重表，B 任務一單 +5 分）；最終值由 §7 與 playtest 校準。`missionID 9001~9003` 假設由 C-01 Mission Database 在內容階段提供（`categoryID=3`）。
+
+**`DialogueTable` owner 待定（Jam 範疇處理）**：
+
+- `DialogueTable.csv` 的 owner 系統 **Jam 版尚未指派**（candidate：P-02 Main UI Framework 或新建 dialogue 子系統 GDD）；FT-09 不擁有此表。
+- **Jam 簡化**：若 P-02 / dialogue owner GDD 在 FT-09 實作前仍未定案，FT-09 可將 `dialogueKey` 直接視為**字串字面值**（runtime 由 P-02 對話視窗以 key 為標題、內文以 placeholder 文本呈現），不阻擋 FT-09 進入實作；本表 §3.2.2 的「`dialogueKey` 在 `DialogueTable` 找不到 → `LogWarning` + fallback 空對話」規則自動降級為「永遠 fallback」直到 owner 定案。
+- **Post-decision**：dialogueKey 對應的真實文本由 owner GDD 規範後，writer agent 透過 gemini_generate_narrative 補齊。
 
 ---
 
@@ -282,7 +288,14 @@ FT-09 不再獨立持有 `MissionFactionScoreWeight` 表；陣營加分欄位 `f
 
 > 設計意圖：權重按難度近似指數遞增，讓 S+ 高難度任務在陣營推進中具備壓倒性貢獻——對應原設計「dark 路線主要透過 S 級任務累積」的精神，同時讓中低難度也能緩慢推進，避免新手玩家完全無進度體感。
 
-**降級觸發**：C-01 `MissionDifficultyTable` 載入失敗（包含 `factionScoreDelta` 行缺失）時，C-01 自身回傳 `0` 並 `LogError`；FT-09 收到全 0 權重後分數無法累積，等同 §3.1.1 的「閘關閉」效果，但 FT-09 本身不額外進入降級狀態（C-01 EC 由 C-01 owner 負責）。
+**降級觸發**（對齊 §3.1.1 第三條啟用條件）：
+
+| C-01 `MissionDifficultyTable` 狀態 | FT-09 處理 |
+|---|---|
+| 完整載入且涵蓋全部 9 種難度（F~SSS）的 `factionScoreDelta`（≥ 0）| 啟用條件滿足 |
+| 載入失敗 / 缺檔 / 任一難度行缺失 / 任一 `factionScoreDelta < 0` | §3.1.1 啟用條件未滿足 → `_isEnabled = false`，FT-09 進入降級模式（§3.1.3）|
+
+C-01 自身對缺失難度行的 fallback（`GetFactionScoreDelta` 回 `0` + `LogError`）由 C-01 owner 負責；FT-09 在 Bootstrap §3.1.2 Step B 主動驗證 9 行齊全，**不依賴 runtime fallback 維持啟用**——避免「分數永遠加不上去但系統仍訂閱事件」的曖昧半啟用狀態。
 
 > 調整 `factionScoreDelta` 直接改 C-01 `MissionDifficultyTable.csv`，FT-09 不需重新編譯，亦不需新增 `MissionFactionScoreWeight.csv`。
 
@@ -562,7 +575,11 @@ ConfirmDialogue(int stageID) -> ConfirmDialogueResult:
 
     Step 3: 取階段資料
         stage = StoryStageTable.Get(stageID)
-        // stage 必存在（§3.4.2 入隊時已驗證）；若資料表 runtime 變動則例外
+        IF stage == null:
+            // CSV 為 Resources 內嵌資源（§3.7.6），Jam 範疇內 runtime 不熱更新；此分支理論不會發生
+            // 防禦行為：視為 INVALID_STAGE_ID（不出隊，不呼叫 FT-02），LogError 但不拋例外
+            Debug.LogError("ConfirmDialogue: stageID={id} 入隊時存在但 runtime 取不到 → 資料表異動或實作 bug")
+            return INVALID_STAGE_ID
 
     Step 4: 注入委託板
         result = FT-02.InjectStaticMission(stage.missionID)
@@ -659,7 +676,9 @@ T9  完成 / 結算（FT-04）→ §3.6 階段推進規則處理結局
 
 ---
 
-#### 3.5.6 P-02 訂閱契約（資訊性）
+#### 3.5.6 P-02 訂閱契約（資訊性，雙軌呈現最小事件集）
+
+> **範圍**：本節僅列出**雙軌呈現流程（對話 → 委託）**所需的最小事件集；P-02 的完整訂閱清單（含 epilogue / 路線完結 / 分數變化等共 5 個 FT-09 發布事件）見 §3.7.2 與 §6.2.2。
 
 P-02 須訂閱兩個事件以實作雙軌呈現（反向依賴於 §6 登記）：
 
@@ -1239,6 +1258,8 @@ FT-09 在 runtime 訂閱 / 呼叫以下系統：
 
 對應 FT-10 §3.3.3 拓撲順序 row 10、§3.3.4 Degradable 分類（EC-10）、§6.1 #17（FT-10 設計來源清單）。
 
+> FT-10 §3.3.4 將 FT-09 列為 degradable；反序列化異常不阻擋 Bootstrap（對齊 EC-10 既定決議，見 §6.5 `IsCritical = false`）。
+
 ---
 
 ## 7. 可調參數（Tuning Knobs）
@@ -1510,7 +1531,7 @@ Step 5: 重 playtest 驗證；若 ≥ 3 輪未收斂則重檢 §1 範疇與目�
 | AC-EC-6 | 玩家忽略所有劇情委託 | 連續加分跨完所有階段，不點任何確認 | 所有事件已發；queue 含所有 stageID；委託板無劇情委託（未確認前不注入） | queue 大小 + FT-02 mock 呼叫次數 = 0 |
 | AC-EC-7 | InjectStaticMission 失敗 → 不出隊 | mock FT-02 回 BOARD_DISABLED | `ConfirmDialogue` 回 INJECT_FAILED；queue 不變 | 回傳值 + queue 大小斷言 |
 | AC-EC-8 | P-02 順序錯誤 | 隊首為 1001，呼叫 `ConfirmDialogue(1002)` | 回 INVALID_STAGE_ID；不出隊；不呼叫 FT-02 | 回傳值 + mock FT-02 呼叫數 |
-| AC-EC-9 | 劇情委託計分跨下階段 | 階段 N 解鎖 → 結算 stage N 委託（其 delta 大於 buffer） | 同 frame 內依序：StageResolved(N) → StageUnlocked(N+1) | EventBus 序列斷言 |
+| AC-EC-9 | 劇情委託計分跨下階段 | 階段 N 解鎖 → 結算 stage N 委託（其 delta 大於 buffer） | 同 frame 內依 §3.7.2 順序：`OnFactionScoreChanged` → `OnFactionStoryStageUnlocked(N+1)` → `OnFactionStoryStageResolved(N)`（→ `OnFactionRouteCompleted` 若 N+1 為最末階段且也成功結算過） | EventBus 序列斷言（依事件抵達順序） |
 | AC-EC-10 | SaveData 異常 → 不阻擋 Bootstrap | (a) 缺整區塊 (b) null 欄位 (c) JSON 損壞 (d) 未知 factionID (e) stageIndex 超範圍 | (a)(b)(c) 等同首次遊玩；(d) 過濾未知 key；(e) 夾擠至 maxStageIndex | runtime 狀態斷言 + console warning |
 | AC-EC-11 | 路線完結後計分仍跑 | `_routeCompletedFlags={1}`；觸發 factionID=1 結算 | 分數仍累積；C-06 仍推送；不重發 RouteCompleted；不發 StageResolved（無 categoryID=3 任務存在） | 分數查詢 + EventBus 計數 |
 | AC-EC-12 | Bootstrap 時序失準 | (a) 在 Bootstrap 前呼叫 API；(b) DataManager 未就緒 | (a) 走降級路徑（不拋例外）；(b) `_isEnabled=false` + LogError | API 回傳值 + console error |

@@ -285,6 +285,8 @@ OnFactionScoreUpdated(newMaxScore):
 
 對應 FT-10 §3.3.3 拓撲順序 row 2、§3.3.4 Degradable 分類、§6.1 #5（FT-10 設計來源清單）。
 
+> FT-10 透過本 `ISaveable` 契約還原 `currentDangerLevel` 與 `gameStartTimestamp`；還原時機在 C-06 `Awake` 之後、`Start` 之前（FT-10 Bootstrap 流程保證）。
+
 ## 7. 可調參數（Tuning Knobs）
 
 > 時間閘、進度閘、陣營閘、任務池權重、債務上限的所有閾值均集中於 `WorldDangerTable.csv`，修改平衡值直接改表格，程式碼無需改動。

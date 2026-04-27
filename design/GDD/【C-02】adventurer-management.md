@@ -342,6 +342,8 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 
 對應 FT-10 §3.3.3 拓撲順序 row 3、§3.3.4 Critical 分類、§6.1 #4（FT-10 設計來源清單）。
 
+> FT-10 透過本 `ISaveable` 契約序列化/還原整個 `AdventurerInstance` 名冊（含 FT-03 idle 時間戳）；此為 C-02 在 FT-10 Bootstrap 路徑的唯一持久化介面。
+
 ## 7. 可調參數（Tuning Knobs）
 
 ### 7.1 SystemConstants.csv

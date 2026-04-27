@@ -108,7 +108,7 @@ GuildState {                       // ↓ 持久化欄位（FT-10 序列化）
 
 // Runtime-only 狀態（不序列化，見 § 5.2.3）：
 //   pendingLevelUpQueue : Queue<LevelUpPayload>
-//   _tickPausedRequested : bool（內部旗標，§ 3.8 使用）
+//   _levelUpFrameCounter : int（連跳發送節流計數，§ 3.4 使用）
 ```
 
 - `guildName` 最大長度 **8 個全型字（= 16 個半型字元）**；超過截斷
@@ -141,6 +141,8 @@ GuildState {                       // ↓ 持久化欄位（FT-10 序列化）
 
 ```
 OnReputationChanged(newValue, delta):
+    // 守衛：Pending/Over 態凍結等級判定（對齊 §4.5 不變式、AC-12、§5.3.4）
+    IF gameOverState != Active: return
     // delta 供其他訂閱者使用，FT-06 僅以 newValue（= F-03 當下聲望）為判定依據
     targetLevel = 查 GuildLevelTable，找出最高符合 newValue >= reputationThreshold 的 level
     IF targetLevel > currentLevel:
@@ -164,11 +166,24 @@ OnReputationChanged(newValue, delta):
         isMultiJump 旗標
 
 MonoBehaviour.Update()（或 Coroutine 單步）:
-    IF pendingLevelUpQueue 非空:
-        取出最前一項
-        currentLevel = toLv
-        發布 OnGuildLevelChanged(payload)
-        // 一 frame 發一級，留空間給 P-02/P-03 做動畫
+    IF pendingLevelUpQueue 為空:
+        _levelUpFrameCounter = 0
+        return
+    IF gameOverState != Active:
+        // §5.2.2：Game Over 優先級高於升級動畫，清空 queue
+        pendingLevelUpQueue.Clear()
+        _levelUpFrameCounter = 0
+        return
+    _levelUpFrameCounter += 1
+    IF _levelUpFrameCounter < LEVEL_UP_QUEUE_INTERVAL_FRAMES:
+        return
+    _levelUpFrameCounter = 0
+    取出最前一項
+    currentLevel = toLv
+    payload.upgradeTimestamp = F02.NowUTC   // 取出 queue 發送時才 stamp（§4.3 注意事項）
+    發布 OnGuildLevelChanged(payload)
+    // 預設 LEVEL_UP_QUEUE_INTERVAL_FRAMES = 1 ⇒ 每 frame 發一級
+    // 設為 N (>1) ⇒ 每 N frame 發一級，預留更多時間給 P-02/P-03 動畫
 ```
 
 **連跳順序**：按等級低→高依序發（Lv1→2→3→4）。
@@ -295,25 +310,47 @@ ConfirmGameOver():
 **組合規則**：
 ```
 ComposeDisplayName(guildName):
-    trimmed = guildName.Trim()
-    IF string.IsNullOrEmpty(trimmed):
-        return "公會"
+    stripped  = StripControlChars(guildName)             // 移除 Unicode Cc 類別字元（\r \n \t \0 …）
+    trimmed   = stripped.Trim()                          // 去除前後空白
+    truncated = TruncateToFullwidthLimit(trimmed,
+                    GUILD_NAME_MAX_FULLWIDTH)            // 8 全型字上限，超過則截斷
+    IF string.IsNullOrEmpty(truncated):
+        return DEFAULT_GUILD_NAME                        // 預設「公會」
     ELSE:
-        return trimmed + "公會"
+        return truncated + GUILD_NAME_SUFFIX             // 「{name}公會」
+
+StripControlChars(s):
+    // 過濾所有 Unicode 一般類別 Cc（控制字元）
+    return string( c for c in s if char.GetUnicodeCategory(c) != UnicodeCategory.Control )
+
+TruncateToFullwidthLimit(s, maxFullwidth):
+    // 依 §4.4 CountDisplayChars 邏輯逐字元累加，達上限即截斷
+    accum = 0.0
+    builder = []
+    FOR each char c in s:
+        weight = (IsFullWidth(c) ? 1.0 : 0.5)
+        IF Ceil(accum + weight) > maxFullwidth: break
+        accum += weight
+        builder.append(c)
+    return string(builder)
 ```
 
 **示例**：
 - 輸入「約翰的」 → `displayName = "約翰的公會"`
 - 輸入「」 → `displayName = "公會"`
 - 輸入「諾爾村」 → `displayName = "諾爾村公會"`
+- 輸入「我的冒險者公會管理員」（10 全型字）→ 截斷至前 8 全型字 → `displayName = "我的冒險者公會管公會"`
+- 輸入「約翰\n的」 → strip `\n` → `displayName = "約翰的公會"`
 
 ### 3.10 事件發布契約
+
+> 本表僅列**事件訂閱者**（push）。同步查詢 API（pull）的消費者見 §3.6 / §6.2，例如 FT-03 透過 `GetMaxMissionDifficulty()` 過濾候選任務，並非事件訂閱者。
 
 | 事件 | 觸發時機 | 訂閱者 |
 |---|---|---|
 | `OnGuildInitialized` | 新遊戲初始化完成 | P-02（顯示公會名稱）、FT-10（觸發首次存檔） |
 | `OnGuildLoaded` | 讀檔完成 | P-02 |
-| `OnGuildLevelChanged` | 連跳 queue 每 frame 取出一級 | P-02（UI 動畫）、P-03（通知） **【→Log API待更新】**、FT-01/FT-02（容量變更通知） |
+| `OnGuildLevelChanged` | 連跳 queue 每 frame 取出一級 | P-02（UI 動畫）、P-03（通知）、FT-01/FT-02（容量變更通知） |
 | `OnGameOverPending` | 首次收到 F-03 Bankrupt 事件 | P-02（訃聞畫面） |
 | `OnGameOver` | 玩家於階段 1 確認 | P-02（結算畫面）、FT-10（封存存檔） |
 
@@ -340,7 +377,7 @@ targetLevel = max { L ∈ {1, 2, 3, 4, 5}  |  GuildLevelTable[L].reputationThres
 ```
 
 **說明**：
-- 表必須按 `reputationThreshold` 升冪排列（Lv1=0, Lv2=100, ...）
+- 表必須按 `reputationThreshold` 升冪排列（Jam 版預設 Lv1=0, Lv2=30, Lv3=80, Lv4=200, Lv5=400；以 §3.5 / §7.1 為準）
 - 若 `rep >= GuildLevelTable[5].reputationThreshold`，則 `targetLevel = 5`（頂級）
 - `rep < 0` 為正常情境（F-03 聲望下限 `-100`），`targetLevel = 1`，因不降級原則忽略
 
@@ -383,7 +420,7 @@ FOR k = 1 TO (T - C):
     }
 ```
 
-**範例**（C=1, T=4, rep=700）：
+**範例**（C=1, T=4, rep=250；rep 落於 Lv4 區間 [200, 400)，故 T=4）：
 
 | k | fromLv | toLv | fromTitle | toTitle | isMultiJump | finalTargetLv |
 |---|---|---|---|---|---|---|
@@ -395,11 +432,14 @@ FOR k = 1 TO (T - C):
 
 ### 4.4 公會名稱長度驗證
 
+> `IsValidGuildName` 為 P-01 即時驗證之輔助回傳；**FT-06 防禦性處理改用 §3.9 `ComposeDisplayName` 內的 strip + truncate 流程**（不丟錯，靜默截斷）。
+
 ```
 IsValidGuildName(input):
-    trimmed = input.Trim()
+    stripped = StripControlChars(input)
+    trimmed  = stripped.Trim()
     charCount = CountDisplayChars(trimmed)   // 全型字記 1，半型字記 0.5，向上取整
-    return charCount <= 8
+    return charCount <= GUILD_NAME_MAX_FULLWIDTH
 ```
 
 **`CountDisplayChars` 定義**：
@@ -452,8 +492,8 @@ Invariants:
 ### 5.1 等級判定異常
 
 **Case 5.1.1 — 聲望回跌（F-03 以 AddReputation(負值) 扣除）**
-- 情境：`currentLevel = 3`（對應 rep ≥ 300），F-03 扣聲望至 rep = 250
-- 行為：FT-06 收到 `OnReputationChanged(250, delta)`，計算 `targetLevel = 2`，因 `targetLevel < currentLevel`，**忽略**，`currentLevel` 維持 3
+- 情境：`currentLevel = 3`（對應 rep ≥ 80），F-03 扣聲望至 rep = 50
+- 行為：FT-06 收到 `OnReputationChanged(50, delta)`，計算 `targetLevel = 2`，因 `targetLevel < currentLevel`，**忽略**，`currentLevel` 維持 3
 - 文件標註：與 Section 3.3「不降級原則」一致
 
 **Case 5.1.2 — 聲望為負數**
@@ -529,27 +569,22 @@ Invariants:
 
 **Case 5.4.3 — 玩家輸入特殊字元（emoji、控制字元、Unity Rich Text）**
 
-| 字元類型 | 處理 | 計入字數？ |
+| 字元類型 | Jam 版處理 | 計入字數？ |
 |---|---|---|
-| Emoji（全型字範圍） | 允許 | 是（1.0 / 字元） |
-| 控制字元（`\n`、`\r`、`\t`、`\0` 等 Unicode `Cc` 類別） | **拒絕**（UI 輸入層 strip，FT-06 防禦性檢查時亦 strip） | — |
-| Unity Rich Text **完整標籤對**（`<b>...</b>`、`<color=#RRGGBB>...</color>`、`<size=N>...</size>`、`<i>`、`<material=N>`、`<sprite=N>` 等） | 允許，視為文字效果 | **否**（標籤本身不計；內部文字照常計） |
-| Unity Rich Text **不完整 / 落單標籤**（如只有 `<b>` 無 `</b>`） | 視為一般字元 | 是 |
-| HTML/XML 一般標籤（非 Unity Rich Text 支援者） | 視為一般字元 | 是 |
+| Emoji（含全型字範圍 surrogate pair） | 允許 | 是（每 code point 視為 1 全型字） |
+| 控制字元（`\n`、`\r`、`\t`、`\0` 等 Unicode `Cc` 類別） | **strip**（UI 輸入層即時 strip；FT-06 `ComposeDisplayName` 防禦性 strip） | — |
+| Unity Rich Text 標籤 / HTML / XML 標籤 | **Jam 版視為一般字元**（不解析、不剝離），`<`、`>`、屬性等所有字元逐字計入 | 是 |
 
-**完整標籤判定規則**：
-- 開始標籤（`<tag>` 或 `<tag=value>`）與對應關閉標籤（`</tag>`）必須在字串內成對出現
-- 支援的標籤白名單遵循 Unity TextMeshPro Rich Text 官方列表（`b`、`i`、`u`、`s`、`color`、`size`、`material`、`sprite`、`line-height`、`align`、`cspace`、`mspace`、`indent`、`margin`、`nobr`、`link`、`lowercase`、`uppercase`、`smallcaps`、`style`、`pos`、`space`、`voffset`、`page` 等）
-- 不在白名單內的標籤視為一般字元
+**範例（Jam 版）**：
+- 輸入「`<b>約翰的</b>`」→ `<b>` (3 半型) + 約翰的 (3 全型) + `</b>` (4 半型) = 3 全型 + 7 半型 → CountDisplayChars = 6.5 → Ceil 7 → 通過，顯示為字面量「`<b>約翰的</b>公會`」
+- 輸入「血紅傳說」→ 4 全型 → 通過
+- 輸入「約翰\n的」→ strip `\n` → 「約翰的」3 全型 → 通過
 
-**範例**：
-- 輸入「`<b>約翰的</b>`」→ 實際字元計算：「約翰的」= 3 全型字 → 通過
-- 輸入「`<color=#ff0000>血紅</color>傳說`」→ 計算：「血紅傳說」= 4 全型字 → 通過
-- 輸入「`<b>約翰的`」（缺關閉）→ 視為一般字元 `<b>約翰的` = 3 全型 + 3 半型 = 4.5 → Ceil = 5 → 通過（但顯示會是字面量）
+**Phase 3 升級路徑**：未來若 P-01 需支援 TextMeshPro Rich Text 標籤對偵測（成對標籤不計入長度、內部文字照常計），於 Core 層提供 `RichTextLengthCalculator` 工具方法並擴充本表；Jam 版**不實作**，避免解析複雜度與標籤白名單維護負擔。
 
 **實作責任**：
-- UI 層（P-01）：輸入時即時驗證 + 顯示預覽
-- FT-06：防禦性檢查時執行同一演算法（工具方法統一由 Core 提供 `RichTextLengthCalculator`）
+- UI 層（P-01）：輸入時即時 strip 控制字元、即時驗證長度、顯示預覽（含「公會」後綴）
+- FT-06：`ComposeDisplayName` 防禦性 strip + truncate（§3.9），不解析任何標籤語意
 
 **Case 5.4.4 — 玩家輸入「公會」作為名稱**
 - 輸入：「公會」
@@ -598,9 +633,10 @@ Invariants:
 | **P-02 HUD & Screens** | `OnGuildLevelChanged` / `OnGameOverPending` / `OnGameOver` | UI 更新、訃聞、結算畫面 |
 | **P-02 HUD & Screens** | `GetGuildDisplayName()` / `GetCurrentTitle()` | HUD 公會名 / 稱號顯示 |
 | **P-02 HUD & Screens** | `ConfirmGameOver()` | 玩家確認訃聞後呼叫 |
-| **P-03 Notification** | `OnGuildLevelChanged` | 升級通知 toast **【→Log API待更新】** |
+| **P-03 Notification** | `OnGuildLevelChanged` | 升級通知 toast |
 | **FT-10 Save/Load** | `OnGuildInitialized` / `OnGameOver` | 首次存檔 / 封存存檔 |
 | **FT-10 Save/Load** | `GuildState` 全量序列化 / 還原 | 存讀檔內容 |
+| **FT-08 Gacha System** | `GetCurrentLevel()` | StaffGachaPoolTable.minGuildLevel 過濾、StaffRefreshCostTable[guildLevel] 索引 |
 
 ### 6.3 事件契約矩陣
 
@@ -676,6 +712,8 @@ FT-06 GDD 完成後，以下 GDD 的 §6.2（下游）需補登 FT-06 為下游�
 1. 反序列化上述 5 個欄位。
 2. 驗證 `currentLevel` ∈ `[1, 5]`、`gameOverState` ∈ `{"Active", "Pending", "Over"}`；違規拋例外（觸發整檔回退）。
 3. 還原完成後發布 `OnGuildLoaded(displayName, currentLevel)` 事件（對齊 §3.2 / AC-13；不補發 `OnGuildLevelChanged` 連跳事件）。
+4. **Pending / Over 態還原**：FT-06 **不重發** `OnGameOverPending` / `OnGameOver`；P-02 於收到 `OnGuildLoaded` 後主動查詢 `IsGameOverPending()` / `IsGameOver()` 決定畫面（對齊 §3.2 Step 5 與 §3.8 末段）。
+5. **Over 態還原後行為**：`gameOverState == Over` 時 FT-06 不再處理 F-03 事件（守衛同 §3.3 / §4.5）；F-02 tick 由 P-02 / FT-10 載入流程決定是否暫停（FT-06 在還原階段**不主動**呼叫 `PauseTick()`）。
 
 **`InitializeAsNewGame()` 預設值**：
 
@@ -688,6 +726,8 @@ FT-06 GDD 完成後，以下 GDD 的 §6.2（下游）需補登 FT-06 為下游�
 | `gameOverState` | `"Active"` |
 
 對應 FT-10 §3.3.3 拓撲順序 row 4、§3.3.4 Critical 分類、§6.1 #14（FT-10 設計來源清單）。
+
+> FT-10 透過本 `ISaveable` 契約序列化 `GuildState`（5 欄位），並訂閱 `OnGameOver` 執行封存存檔（`pendingLevelUpQueue` 為 runtime-only，不序列化）。
 
 ---
 
@@ -723,6 +763,8 @@ FT-06 GDD 完成後，以下 GDD 的 §6.2（下游）需補登 FT-06 為下游�
 - 難度軸：`maxRecruitableRank` 值域限制為 D~S（冒險者最高階級 S）；`maxMissionDifficulty` 值域可到 SS/SSS；若 C-01 難度軸改變（如改為數字），本表需同步調整
 - `maxDifficulty`（legacy）：不再調整；僅保留向後相容，應保持與 `maxRecruitableRank` 相同值（避免混淆）
 - `maxRecruitableRank` 與 `maxMissionDifficulty` 必須單調不降（每級 >= 前級）
+- **Lv5 SS 任務平衡假設**：Lv5 開放 SS 難度任務但只能招 S 階冒險者，刻意設計為「需 S 階多人組隊」場景；SS 任務的成功率與隊伍配置依 FT-04 結算公式決定。Jam 版調整時不應令 SS 任務在「單人 S 階」下穩定通過——否則回頭調 `maxMissionDifficulty` 或 FT-04 公式
+- **Jam 進度終點**：Lv3 (80) 為 Jam 3h 主流程設計終點；Lv4 (200) / Lv5 (400) 為 stretch goal，非全體玩家必達。若 Lv4/Lv5 達成率異常偏低且玩家回饋無感，可調降 Lv5 threshold 或在外部活動加速聲望累積
 
 ### 7.2 程式碼常數（Constants）
 
@@ -772,7 +814,7 @@ FT-06 GDD 完成後，以下 GDD 的 §6.2（下游）需補登 FT-06 為下游�
 
 ### 8.2 等級系統
 
-- **AC-4**：F-03 發 `OnReputationChanged(newValue=100, delta=100)`（從 rep=0）後，**下一 frame** 發出 `OnGuildLevelChanged(fromLv=1, toLv=2)`
+- **AC-4**：F-03 發 `OnReputationChanged(newValue=30, delta=30)`（從 rep=0）後，**下一 frame** 發出 `OnGuildLevelChanged(fromLv=1, toLv=2)`，payload 的 `isMultiJump == false`、`finalTargetLv == 2`，該事件發送後 `pendingLevelUpQueue` 為空
 - **AC-5**：F-03 發 `OnReputationChanged(newValue=1500, delta=1500)`（從 rep=0）後，連發 4 次 `OnGuildLevelChanged`（Lv1→2、2→3、3→4、4→5），每次間隔 1 frame，所有 payload 的 `isMultiJump == true` 且 `finalTargetLv == 5`
 - **AC-6**：聲望回跌（rep 從 700 降到 250）後，`OnGuildLevelChanged` **不發送**、`GetCurrentLevel()` 維持升過最高值
 - **AC-7**：已在 Lv5 時再收到 rep 增加事件，不發 `OnGuildLevelChanged`
@@ -795,7 +837,8 @@ FT-06 GDD 完成後，以下 GDD 的 §6.2（下游）需補登 FT-06 為下游�
 ### 8.6 公會名稱驗證
 
 - **AC-14**：輸入超過 8 全型字的字串（如「我的冒險者公會管理員」= 10 全型字），FT-06 截斷至前 8 全型字後組合 `displayName`
-- **AC-15**：輸入含控制字元（`\n`、`\t`）的字串，`displayName` 中不含這些字元；輸入完整 Rich Text 標籤對（如 `<b>約翰的</b>`）時，標籤保留、長度僅計內部文字 3 字
+- **AC-15**：輸入含控制字元（`\n`、`\t`、`\r`）的字串，`displayName` 中不含這些字元（已 strip）
+- **AC-15b**：輸入含 Rich Text / HTML 標籤字串（如 `<b>約翰的</b>`），Jam 版視為一般字元逐字計入長度，`displayName` 保留標籤字元（不解析、不剝離），且總長度未超過 8 全型字上限
 
 ---
 

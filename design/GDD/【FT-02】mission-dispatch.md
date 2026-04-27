@@ -511,6 +511,8 @@ CalcCompletionTimestamp(dispatchTimestamp, durationMinutes):
 
 對應 FT-10 §3.3.3 拓撲順序 row 6、§3.3.4 Degradable 分類、§6.1 #10（FT-10 設計來源清單）。
 
+> FT-10 透過本 `ISaveable` 契約序列化 `activeMissions`（進行中任務列表）與任務池；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick`。
+
 ## 7. 可調參數（Tuning Knobs）
 
 ### 7.1 SuccessRateTable.csv

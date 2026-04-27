@@ -597,7 +597,7 @@ PK: `difficulty`（F / E / D / C / B / A / S / SS / SSS）
 
 **調整準則**：
 
-- **平衡指標**：`successDelta + failDelta` 的算術平均應維持**接近 0 或略負**。目前 Game Jam 初始值的平均為 `-1.2`（略偏失敗懲罰），若玩家覺得聲望成長過難可微調至 `0` 附近
+- **平衡指標**：`successDelta + failDelta` 的算術平均應維持**接近 0 或略負**。目前 Game Jam 初始值的算術平均約為 `+0.1`（F~B 階淨值 `+2` × 5 + A~SS 階淨值 `-2` × 3 + SSS 階淨值 `-3`，總和 `+1`，9 階平均 `≈ +0.11`，接近中性偏正向）；若 playtest 證實聲望累積過快、玩家輕易達成高公會等級，可調整為平均 `-1` 附近強化失敗懲罰（例：將 SSS `failDelta` 調整為 `-18`、A `failDelta` 調整為 `-10`）
 - **跨難度差距**：相鄰難度的 `successDelta` 差距建議 1~2 點（例：B=+4, A=+6）；`failDelta` 差距建議 2~3 點（例：B=-6, A=-8）。差距過小會讓難度抉擇無意義，差距過大會讓低難度無回報
 - **觸發聲望門檻**：F-03 `AddReputation` 會觸發破產警告（依 `BankruptcyThresholdTable`）、FT-06 公會等級解鎖（依 `GuildLevelTable`）。調整本表時需連動檢查這兩個下游表的門檻是否仍合理
 

@@ -1,11 +1,11 @@
 # Save/Load System 系統設計文件
 
 _建立時間：2026-04-26_
-_狀態：草稿（8 節全完成，待 design-review）_
-_最後更新：2026-04-26_
+_狀態：設計完成（已通過 2026-04-27 /design-review，修正 C1~C4 / I1 / I2）_
+_最後更新：2026-04-27_
 _系統 ID：FT-10_
 
-**🔖 全 8 節完成**：§1 ~ §8 全部寫入。下一步：(a) 執行 `/design-review FT-10`；(b) 通過後處理 §6.4 反向依賴 15 個 GDD 更新；(c) 進入 Codex 工項書建立階段。
+**狀態**：§1 ~ §8 全部寫入並通過 design-review。下一步：(a) §6.4 反向依賴 15 個 GDD 由使用者統一安排批次更新；(b) 進入 Codex 工項書建立階段。
 
 ---
 
@@ -195,6 +195,7 @@ FT-10 在玩家層面幾乎是隱形系統——好的存讀檔體驗是「**讓
   "ft06Guild": { ... },
   "ft07Buildings": { ... },
   "ft08Staff": { ... },
+  "ft12Staff": { ... },
   "factionStorySaveData": { ... }
 }
 ```
@@ -314,7 +315,7 @@ Phase B: schemaMeta 解析
   └─ 解析成功              → 記錄 lastActiveTimestamp / gameOverState / loadedFromBackupIndex
 
 Phase C: per-owner 還原（依拓撲順序）
-  Order: F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-03 → FT-09
+  Order: F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-09 → FT-03
   每個 owner 內部包覆 try-catch，失敗策略依 §3.3.4 critical/degradable 分流
 
 Phase D: F-02 離線計算交棒
@@ -322,9 +323,17 @@ Phase D: F-02 離線計算交棒
   → F-02 內部驅動任務推進、發布 OnOfflineResolved
   → FT-04 / P-02 接手結算與摘要畫面（FT-10 不參與）
 
-Phase E: 完成 / 首次遊玩
-  ├─ 首次遊玩：發布 OnGameReset 等價事件，各 owner 走預設初始化
-  └─ 載入完成：發布 OnLoadCompleted（payload 含 loadedFromBackupIndex）
+Phase E: Bootstrap 完成（統一以 OnLoadCompleted / OnLoadFailed 收尾）
+  ├─ 無 save file（首次遊玩）：各 owner 透過 InitializeAsNewGame() 預設初始化
+  │                            → 發布 OnLoadCompleted(loadedFromBackupIndex = -1)
+  ├─ 全部 backup 失敗：先發布 OnLoadFailed(ex)
+  │                    → 各 owner 透過 InitializeAsNewGame() 預設初始化
+  │                    → 再發布 OnLoadCompleted(loadedFromBackupIndex = -1)
+  └─ 任一 candidate 載入成功：發布 OnLoadCompleted(loadedFromBackupIndex ∈ [0, N])
+
+注意：OnGameReset 事件**僅由 §3.5.2 ResetToNewGame() 路徑發布**，不在 Bootstrap Phase E 發布。
+P-02 訂閱契約：以 OnLoadCompleted 作為「Bootstrap 完成、可進主畫面」的單一信號；
+              OnLoadFailed 為診斷用（可選訂閱），不替代 OnLoadCompleted 作為流程驅動。
 ```
 
 #### 3.3.3 Owner 還原拓撲順序
@@ -337,11 +346,11 @@ Phase E: 完成 / 首次遊玩
 | 4 | FT-06 Guild Core | `GuildState`（`guildName` / `displayName` / `foundingTimestamp` / `currentLevel` / `gameOverState`） | F-03（聲望門檻判定） |
 | 5 | FT-07 Buildings | `BuildingState[]`（6 棟 `currentLevel`） | FT-06（聲望閘） |
 | 6 | FT-02 Dispatch | `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`；`activeMissions` 還原即可立即被檢查，無需額外 API 呼叫 | C-01（驗證 missionID）/ C-02（驗證 adventurerID） |
-| 7 | FT-08 Gacha | `StaffPlayerState` + `CandidateCard[]`；驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` 違規拋 `CandidateCardValidationException`（critical） | F-01（驗證 staffID）/ FT-06（minGuildLevel 閘） |
+| 7 | FT-08 Gacha | `StaffPlayerState` + `CandidateCard[]`；驗證 `staffID > 0 → rolledRarity == StaffTable[staffID].rarity` 違規拋 `CandidateCardValidationException`（critical） | F-01（驗證 staffID + 比對 rolledRarity） |
 | 8 | FT-12 Staff | `StaffInstance[]` + `_nextInstanceID` + `_lastSalaryTimestamp`；驗證 `StaffInstance.staffID` 透過 F-01 `Get<StaffData>` 確認合法,違規拋 `CriticalRestoreFailedException`（critical） | F-01（驗證 staffID）/ FT-08（候選卡先還原以保持 instance 一致性）|
 | 9 | FT-01 Recruitment | 候選池 / 刷新時間戳 / 免費刷新次數 | C-02（候選即將注入名冊） |
-| 10 | FT-03 NPC Decision | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 一併還原；本階段僅做訂閱重建 | C-02 |
-| 11 | FT-09 Faction Story | `factionScores` / `unlockedStageIndices` / `pendingDialogueStages` / `routeCompletedFlags` | F-01（驗證 factionID） |
+| 10 | FT-09 Faction Story | `factionScores` / `unlockedStageIndices` / `pendingDialogueStages` / `routeCompletedFlags` | F-01（驗證 factionID） |
+| 11 | FT-03 NPC Decision | `idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 一併還原；本階段僅做訂閱重建（薄層 ISaveable，無實質還原工作，置於最末） | C-02 |
 
 **還原語意**：`RestoreFromSave` **直接套用儲存值**，**不重新驗證閘門條件**（如等級閘 / 聲望閘 / 升級條件——這些在寫入點時的閘門驗證已完成，還原時信任儲存值）；本表「依賴前置」欄列出的依賴僅指**還原順序**意義上的依賴（如 FT-07 在 FT-06 之後還原以確保 `currentLevel` 已就位供 `Awake` 後查詢使用）。
 
@@ -392,19 +401,22 @@ void ExecuteSave() {
         // 2. 寫入中介檔
         File.WriteAllText(savePath + ".tmp", rootJson, Encoding.UTF8);
 
-        // 3. 原子替換 + 自動 rotation（Windows API File.Replace 內建支援）
+        // 3. 先 rotate 較舊的 backup（bak{N-1} → bak{N}、…、bak1 → bak2）
+        //    必須在 File.Replace 之前執行：File.Replace 會用舊 save.json 覆寫 bak1，
+        //    若先 File.Replace 再 rotate，bak1 內容會在第 4 步被推到 bak2 卻已遺失原本 bak1 的舊值。
+        RotateOlderBackups();
+
+        // 4. 原子替換：save.tmp → save.json，舊 save.json → save.bak1
+        //    bak1 在第 3 步已被 rotate 騰空（內容已搬到 bak2），可放心覆蓋
         if (File.Exists(savePath)) {
             File.Replace(
                 sourceFileName: savePath + ".tmp",
                 destinationFileName: savePath,        // save.json
-                destinationBackupFileName: bakPaths[0] // save.bak1
+                destinationBackupFileName: bakPaths[0] // save.bak1（接收舊 save.json）
             );
         } else {
             File.Move(savePath + ".tmp", savePath);   // 首次寫入無 backup 來源
         }
-
-        // 4. 手動 rotate bak2..bak{N}（File.Replace 僅處理 bak1，深層 rotation 自實作）
-        RotateOlderBackups();
 
         // 5. 清旗
         _isDirty = false;
@@ -420,7 +432,9 @@ void ExecuteSave() {
 }
 
 void RotateOlderBackups() {
-    // 從最舊往最新移：bak3 ← bak2 ← bak1（File.Replace 已生成 bak1，本步驟處理 bak2/bak3）
+    // 從最舊往最新移：bak{N} ← bak{N-1}、…、bak2 ← bak1
+    // 例（N=3）：bak3 ← bak2、bak2 ← bak1；之後 bak1 為空，由後續 File.Replace 寫入
+    // 必須由最舊端起 move，否則會覆寫掉尚未搬移的 bak{i+1}
     for (int i = SAVE_BACKUP_COUNT - 1; i >= 1; i--) {
         string from = bakPaths[i - 1];   // bak{i}
         string to   = bakPaths[i];       // bak{i+1}
@@ -430,6 +444,17 @@ void RotateOlderBackups() {
     }
 }
 ```
+
+**順序保證 trace 範例**（N=3，gen-3 → gen-4 寫入）：
+
+| 步驟 | save.json | bak1 | bak2 | bak3 |
+|---|---|---|---|---|
+| 寫入前 | gen-3 | gen-2 | gen-1 | — |
+| Step 2（save.tmp 寫入）| gen-3 | gen-2 | gen-1 | — |
+| Step 3（RotateOlderBackups）| gen-3 | （空）| gen-2 | gen-1 |
+| Step 4（File.Replace）| **gen-4** | gen-3 | gen-2 | gen-1 |
+
+對應 §4.4 範例表預期值（save=gen-4 / bak1=gen-3 / bak2=gen-2 / bak3=gen-1）。
 
 **`File.Replace` 語意**（Windows）：
 
@@ -496,11 +521,18 @@ Step 1: 立即 ExecuteSave()
   └─ 此次寫入後 save.json 內 schemaMeta.gameOverState = "Over"
      （由 FT-06 在發 OnGameOver 前已更新 GuildState，FT-10 序列化時讀到的是 Over 態）
 
-Step 2: 終末檔複製
+Step 2: 終末檔複製（idempotent；對齊 §5.6 EC-6）
   string gameoverPath = $"{persistentDataPath}/save_gameover_{unixTimestamp}.json";
-  File.Copy(savePath, gameoverPath, overwrite: false);
   // unixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-  // overwrite: false 因 unix 秒級時間戳已唯一；若極端 race 可加 .{milliseconds} 後綴
+  // overwrite: false 因 unix 秒級時間戳已唯一；若極端 race（如 hot reload 同秒重觸發）
+  // File.Copy 會拋 IOException，由 try-catch 捕獲後 log warning 不重複封存
+  try {
+      File.Copy(savePath, gameoverPath, overwrite: false);
+  }
+  catch (IOException ex) {
+      Debug.LogWarning($"終末檔複製失敗（可能為同秒重觸發或磁碟空間不足）：{ex}");
+      // 不重複封存、不阻擋 Step 3；視為 idempotent — OnGameOver 在 FT-06 端已是冪等事件
+  }
 
 Step 3: 發布 OnGameSealed
   OnGameSealed?.Invoke(new GameSealedEventArgs {
@@ -619,8 +651,8 @@ string AssembleRootJson() {
 |---|---|---|---|
 | `OnSaveCompleted` | `void` | 每次 `ExecuteSave` 成功完成（含三軌全部觸發點） | Debug 工具 / P-03 通知（可選） **【→Log API待更新】** |
 | `OnSaveFailed` | `Exception ex` | `ExecuteSave` 拋例外時 | Debug；正式 UI **不顯示**（§3.4.3 隱性 fail-safe） |
-| `OnLoadCompleted` | `int loadedFromBackupIndex` | Bootstrap Phase C 全部 owner 還原完成（含全 backup 失敗的首次遊玩） | P-02（決定主畫面進入 / 啟動畫面分支） |
-| `OnLoadFailed` | `Exception ex` | 全部 backup 失敗時 | 同上；P-02 走首次遊玩路徑 |
+| `OnLoadCompleted` | `int loadedFromBackupIndex` | Bootstrap Phase E 結束的**單一收尾信號**（無 save file / 全失敗 / 載入成功皆發布；對齊 §3.3.2 Phase E）；payload `loadedFromBackupIndex == -1` 代表首次遊玩或全 backup 失敗 | P-02（**主流程信號**：依此進入主畫面 / 啟動畫面分支） |
+| `OnLoadFailed` | `Exception ex` | 全部 backup 失敗時，**先**發布此事件，**再**發布 `OnLoadCompleted(-1)` 作為 Phase E 收尾 | P-02 / 診斷工具（**可選訂閱**：用於記錄 ex 細節，但不作為流程驅動） |
 | `OnGameSealed` | `string gameoverFilePath, long sealedTimestamp` | §3.5.1 Step 3 | P-02 / P-03 **【→Log API待更新】** |
 | `OnGameReset` | `void` | §3.5.2 Step 4 | P-02（執行 scene reload） |
 
@@ -794,14 +826,19 @@ bakPaths[i] = Path.Combine(persistentDataPath, $"save.bak{i + 1}")
 | 1 | `save.bak2` | 次新（前一輪的 `save.bak1`） |
 | 2 | `save.bak3` | 最舊（再下一輪會被新的 `save.bak2` 覆寫） |
 
-**Rotation 演算法**（§3.4.1 `RotateOlderBackups` 對應）：
+**Rotation 演算法**（§3.4.1 `RotateOlderBackups` 對應；**先 rotate 後 File.Replace**，見 §3.4.1 步驟 3 / 4 順序保證）：
 
 ```
+// Step 3: rotate 較舊端 — 由最舊往最新方向 move，避免覆寫尚未搬移的 bak{i+1}
 for i from (N - 1) downto 1:
     src = bakPaths[i - 1]   // bak{i}
     dst = bakPaths[i]       // bak{i+1}
     if File.Exists(src):
         File.Move(src, dst, overwrite=true)
+// 完成後 bak1 為空（內容已搬到 bak2）
+
+// Step 4: File.Replace 將舊 save.json 寫入空出的 bak1，並用 save.tmp 替換 save.json
+File.Replace(savePath + ".tmp", savePath, bakPaths[0])
 ```
 
 **範例**（執行第三次寫入後的磁碟狀態）：
@@ -1035,7 +1072,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 1 | P-02 Main UI Framework | `HasSaveFile()` / `IsGameOver()` / `GetLoadedFromBackupIndex()` 查詢 | 啟動畫面分支判斷（首次遊玩 / 繼續遊戲 / Game Over 雙選項）；§3.4.3 規範正式 UI 不顯示 backup 索引，但 debug overlay 可呈現 | P-02 GDD（**待設計**） |
 | 2 | P-02 Main UI Framework | `ResetToNewGame()` 呼叫 + `OnGameReset` 訂閱 | 玩家點「開新公會」按鈕 → P-02 呼叫 `ResetToNewGame()` → 訂閱 `OnGameReset` 執行 scene reload（§3.5.2） | P-02 GDD（**待設計**） |
 | 3 | P-02 Main UI Framework | `OnGameSealed` 訂閱 | Game Over 後封存完成回呼，P-02 可選擇呈現「公會封存」UI | P-02 GDD（**待設計**） |
-| 4 | P-02 Main UI Framework | `OnLoadCompleted` / `OnLoadFailed` 訂閱 | Bootstrap 完成回呼，決定主畫面進入時機 | P-02 GDD（**待設計**） |
+| 4 | P-02 Main UI Framework | `OnLoadCompleted` 訂閱（**主流程信號**）；`OnLoadFailed` 訂閱（**可選診斷**） | Bootstrap 完成回呼以 `OnLoadCompleted` 為單一決策點（含 -1 / 全失敗 / 載入成功皆發布，§3.7.2）；`OnLoadFailed` 僅供 P-02 / 診斷工具記錄 ex 細節，不作為流程驅動 | P-02 GDD（**待設計**） |
 | 5 | P-03 Notification System | `OnSaveCompleted` 訂閱（可選） **【→Log API待更新】** | 桌面通知「進度已儲存」（Jam 版可隱藏，§2 設計原則「玩家不該意識到存檔」） | P-03 GDD（**待設計**） |
 | 6 | 各 owner 系統（共 10 個） | `MarkDirty()` 呼叫（特殊事件用） | 一般情況走事件訂閱自動標記；特殊變動可主動呼叫 | 各 owner GDD §6 反向登記 |
 | 7 | F-02 Time System | 接受 FT-10 呼叫的 `Initialize(lastActiveTimestamp)` | 離線計算交棒；F-02 §6 已登記 FT-10 為呼叫方 | F-02 §6 line 210（已登記） |
@@ -1059,7 +1096,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 12 | 出 | `OnSaveCompleted` | 發布者 | Debug / P-03 訂閱（可選） | §3.7.2 |
 | 13 | 出 | `OnSaveFailed(Exception)` | 發布者 | Debug；正式 UI **不顯示** | §3.7.2 + §3.4.3 |
 | 14 | 出 | `OnLoadCompleted(int loadedFromBackupIndex)` | 發布者 | P-02 訂閱 | §3.7.2 |
-| 15 | 出 | `OnLoadFailed(Exception)` | 發布者 | P-02 訂閱（走首次遊玩） | §3.7.2 |
+| 15 | 出 | `OnLoadFailed(Exception)` | 發布者 | P-02 / 診斷工具（**可選訂閱**，不作為流程驅動；流程信號統一以 #14 OnLoadCompleted 為準） | §3.7.2 |
 | 16 | 出 | `OnGameSealed(string filePath, long timestamp)` | 發布者 | P-02 / P-03 訂閱 **【→Log API待更新】** | §3.5.1 / §3.7.2 |
 | 17 | 出 | `OnGameReset` | 發布者 | P-02 訂閱（執行 scene reload） | §3.5.2 / §3.7.2 |
 | 18 | 同步 API | `Initialize(long lastActiveTimestamp)` | 呼叫者 | F-02 接收 | §3.3.2 Phase D |
@@ -1275,7 +1312,7 @@ void InitTuning() {
 |---|---|
 | **情境** | 存在合法 `save.json` 含全部 10 個 owner 子區塊 |
 | **操作** | Phase C 執行 |
-| **預期** | 還原順序為 F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-03 → FT-09 |
+| **預期** | 還原順序為 F-03 → C-06 → C-02 → FT-06 → FT-07 → FT-02 → FT-08 → FT-12 → FT-01 → FT-09 → FT-03 |
 | **驗證方式** | 各 owner `RestoreFromSave` 開頭 Debug.Log 觀察順序 |
 
 #### AC-2.4：Critical owner 失敗觸發回退
@@ -1349,7 +1386,7 @@ void InitTuning() {
 |---|---|
 | **情境** | save.json + bak1 + bak2 + bak3 全部損毀（JSON 解析失敗） |
 | **操作** | 啟動遊戲 |
-| **預期** | (a) `OnLoadFailed(ex)` 發布；(b) 走 Phase E 首次遊玩；(c) `loadedFromBackupIndex == -1` |
+| **預期** | (a) **先**發布 `OnLoadFailed(ex)`；(b) 各 owner 走 `InitializeAsNewGame()` 預設初始化；(c) **再**發布 `OnLoadCompleted(loadedFromBackupIndex == -1)` 作為 Phase E 收尾（對齊 §3.3.2 / §3.7.2） |
 | **驗證方式** | EventBus log + API 斷言 |
 
 #### AC-3.5：玩家不見對話框

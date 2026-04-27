@@ -1,7 +1,7 @@
 # Guild Building System 系統設計文件
 
 _建立時間：2026-04-23_
-_狀態：設計完成（Section 1-8 全部完成，待 /design-review）_
+_狀態：設計完成（已通過 2026-04-27 /design-review，修正 C1~C3 / I1 / 補 AC-20~21）_
 _系統 ID：FT-07_
 
 ---
@@ -239,7 +239,7 @@ CalculateMaintenanceCosts() → Dictionary<int, int>:
 | 公會大廳（ID=3） | 0 | 20 | 45 | 80 | 120 |
 | 公會櫃臺（ID=4） | 0 | 20 | 40 | 70 | 100 |
 | 預備金保險櫃（ID=5） | 0 | 15 | 30 | 50 | 75 |
-| 職員休息室（ID=6） | 0 | 0 | 40 | 90 | 160 | 240 |
+| 職員休息室（ID=6） | 0 | 40 | 90 | 160 | 240 |
 
 **設計依據**：
 - 所有建築 L1 免維護費，降低新玩家壓力
@@ -373,8 +373,11 @@ AfterUpgrade(buildingID, newLevel):
 
 **Case 5.6 — 聲望閘判定時 FT-06 尚未初始化**
 - 情境：場景載入順序異常，FT-07 在 FT-06 就緒前收到升級請求
-- 行為：`FT06.GetCurrentLevel()` 回傳預設值（0 或拋出 null ref）→ 若回傳 0，聲望閘必然不通過（安全 fallback）；若拋例外則由呼叫端 catch
-- 文件標註：依賴 Unity 場景初始化順序保證 FT-06 先於 FT-07 可用（由 gameplay-programmer 實作時以 Script Execution Order 保障）
+- 行為：依賴 FT-06 §3.2 既定保證——FT-06 `Awake` 階段（步驟 4）必寫入 `currentLevel = 1`，故 FT-07 在自身 `Awake` 之後呼叫 `FT06.GetCurrentLevel()` 必回傳合法等級（≥ 1）。若實作層真的早於 FT-06 `Awake` 取值（C# field default `0`），聲望閘必然不通過（所有 L3+ 升級需 `guildLevelReq ≥ 3`，`0 < 3` → reject），為安全 fallback；FT-07 端不額外 try-catch，FT-06 instance 缺失視為實作 bug，由 Unity 例外路徑暴露
+- 實作保障：
+  - **執行期**：Script Execution Order 強制 FT-06 早於 FT-07（gameplay-programmer 實作時設置）
+  - **存讀檔**：FT-10 §3.3.3 拓撲順序 row 4 = FT-06、row 5 = FT-07，FT-06 必先 `RestoreFromSave` 完成
+- 對齊：FT-06 §3.5 `GetCurrentLevel()` 即時讀 `currentLevel`、不快取，回傳值即為當前 field 值
 
 **Case 5.7 — 職員休息室升級（FT-08 擴張後）**
 - 情境：玩家建造職員休息室後逐級升級 L1~L5
@@ -393,8 +396,9 @@ AfterUpgrade(buildingID, newLevel):
 | **F-03 Resource Management** | `GetGold(): int` | 升級前金幣閘門判定 | 同步查詢 |
 | **F-03 Resource Management** | `AddGold(int amount)` | 扣除升級費用；走 `AddGold`（非 `AddGoldAllowBankruptcy`），因建築升級為主動消費，不允許讓金幣進入負值（§5.2） | 控制 API |
 | **FT-06 Guild Core** | `GetCurrentLevel(): int` | 聲望閘門判定（nextLevel >= 3 時） | 同步查詢 |
+| **F-02 Time System**（Phase 2） | `OnDailyReset(resetTimestamp)` 事件 | 設施維護費管線觸發點（§3.8.1）；**Jam 版不訂閱**，Phase 2 啟用維護費時才訂閱 | 事件訂閱 |
 
-**硬依賴**：F-01、F-03、FT-06 皆為必要依賴，任一缺失 FT-07 無法運作。
+**硬依賴**：F-01、F-03、FT-06 皆為必要依賴（Jam 版即生效），任一缺失 FT-07 無法運作。F-02 僅在 Phase 2 啟用維護費管線時為硬依賴；Jam 版 FT-07 不訂閱 `OnDailyReset`，F-02 缺失不影響 Jam 行為。
 
 ### 6.2 下游系統（讀取 FT-07 的系統）
 
@@ -403,7 +407,6 @@ AfterUpgrade(buildingID, newLevel):
 | **FT-01 Adventurer Recruitment** | `GetRosterCap()` | 招募名冊上限閘門 |
 | **FT-01 Adventurer Recruitment** | `GetRecruitRefreshInterval()` | 候選池刷新計時 |
 | **FT-02 Mission Dispatch** | `GetMaxConcurrentMissions()` | 同時派遣上限閘門 |
-| **F-03 Resource Management** | `SetBankruptcyWarningDuration(int)` | FT-07 主動推送：啟動時（`Start()`）與保險櫃升級時，呼叫 `F03.SetBankruptcyWarningDuration(GetBankruptcyWarningSeconds())` 寫入破產倒數秒數；F-03 被動接收，不查詢 FT-07 |
 | **FT-08 Gacha System** | `IsStaffSystemUnlocked()` | 整體面試 gacha 啟停閘 |
 | **FT-08 Gacha System** | `GetBuildingLevel(6)` | 面試自動刷新間隔階梯（讀 `BuildingTable[6, level].effectValue`）|
 | **FT-12 Staff System** | `IsStaffSystemUnlocked()` | 整體職員運營啟停閘（與 FT-08 共用） |
@@ -413,6 +416,16 @@ AfterUpgrade(buildingID, newLevel):
 | **P-02 Main UI** | `GetMissionSlotCount()` | 委託板顯示槽數 |
 | **P-03 Notification** | `OnBuildingUpgraded` 事件 | 升級完成通知 **【→Log API待更新】** |
 | **FT-10 Save/Load** | `BuildingState[]` 全量序列化 / 還原 | 存讀檔內容 |
+
+### 6.2.1 主動推送對象（FT-07 寫入下游 API，非下游查詢）
+
+下列系統由 FT-07 **主動呼叫其寫入 API** 推送資料；該系統不查詢 FT-07，與 §6.2 的「下游讀取」語意正交。
+
+| 推送對象 | 寫入 API | 推送時機 | 推送內容 |
+|---|---|---|---|
+| **F-03 Resource Management** | `SetBankruptcyWarningDuration(int)` | (1) FT-07 `Start()`（§4.4）<br>(2) 保險櫃（buildingID=5）升級成功後（§4.5） | `GetBankruptcyWarningSeconds()`（依保險櫃當前等級查 `BuildingTable[5, level].effectValue`） |
+
+對齊 F-03 §3.5 rule 8：F-03 為 Foundation 層被動接收者，不訂閱 FT-07 事件、不主動查詢 FT-07；推送語意由 FT-07 保證（業務語義不在 F-03 端做檢查）。
 
 ### 6.3 與 FT-06 的職責切割（補丁登記）
 
@@ -474,6 +487,8 @@ FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等
 | 6 | 職員休息室 | `0`（未建造） |
 
 對應 FT-10 §3.3.3 拓撲順序 row 5、§3.3.4 Degradable 分類、§6.1 #15（FT-10 設計來源清單）。
+
+> FT-10 透過本 `ISaveable` 契約序列化 `BuildingState[]`（6 棟 `currentLevel`）；還原完成後 FT-07 推送破產倒數秒數至 F-03。
 
 ---
 
@@ -599,3 +614,10 @@ FT-07 自身 API 在 FT-06 就緒後即可實作；FT-01、FT-02 容量閘需等
 - **AC-17**：預備金保險櫃從 L1 升至 L5 後，`F03.GetBankruptcyWarningDuration()` == `172800`（48h）；每次升級（L1→L2、L2→L3 等）後值即時更新
 - **AC-18**：升級其他建築（委託板、公會大廳等，`buildingID != 5`）後，`F03.GetBankruptcyWarningDuration()` 不變
 - **AC-19**：存檔載入後 `Start()` 以存檔等級推送正確秒數——例如保險櫃存檔等級為 L3，`Start()` 後 `F03.GetBankruptcyWarningDuration()` == `43200`
+
+### 8.8 Phase 2 維護費管線封鎖（Jam 範疇 no-op）
+
+對齊 §3.8 開頭的 Phase 2 規格封鎖：Jam 版 FT-07 不訂閱 F-02 `OnDailyReset`、不計算維護費、不發布 `OnGuildMaintenanceDue`。
+
+- **AC-20**：Jam 版執行期內，FT-02 模擬時間推進跨日（觸發 F-02 `OnDailyReset`）→ FT-07 **不**執行 `CalculateMaintenanceCosts()`、**不**發布 `OnGuildMaintenanceDue`；FT-05 `MaintenanceBreakdown` event listener 收到 0 次調用
+- **AC-21**：BuildingTable.csv 的 `maintenanceCost` 欄位於 Jam 版**僅做存在性驗證**（schema 完整性），不參與任何 runtime 計算；變更該欄值不影響 Jam 行為

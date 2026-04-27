@@ -1100,7 +1100,7 @@ maxReserve = max(1, interviewSlotCount - 1)
 |---|---|
 | `StaffGachaPoolTable.minGuildLevel > maxGuildLevel` | DataManager 載入時 `LogError`、跳過該行 |
 | `StaffGachaPoolTable` 5 個預留閘任一非預設值（Jam 版） | 拋 `StaffGachaPoolTableValidationException`；Jam 版強制空值 |
-| `StaffRefreshCostTable[guildLevel]` 缺行 | LogError + fallback 至 `cost = 0`（玩家可免費刷新，臨時降級） |
+| `StaffRefreshCostTable[guildLevel]` 缺行 | DataManager 載入時拋 `StaffRefreshCostTableValidationException("missing guildLevel={n}")`、整檔回退；critical data fail-fast，與 §3.3.6 一致 |
 | `StaffRarityProbTable.csv` 機率總和 ≠ 1.0 | LogWarning + 動態歸一化（§4.1.5） |
 | `TrashItemTable.csv` 為空 | trash roll 跳過；1★ 層全部 staff（§3.5.3） |
 

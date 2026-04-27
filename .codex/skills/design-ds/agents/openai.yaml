@@ -1,4 +1,4 @@
-﻿interface:
+interface:
   display_name: "Design DS"
   short_description: "Generate Data-Specs from GDD source documents."
   default_prompt: "Use $design-ds to generate Data-Specs for the specified GDD IDs."

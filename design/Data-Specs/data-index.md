@@ -49,8 +49,8 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱                           | GDD 來源                                                                        | 系統分類                                 | DataSpec 狀態                                 | CSV 狀態 |
 | ------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------- | ------ |
-| `SystemConstants.csv`          | 【F-01】data-manager.md（跨系統 key-value 常數，由各消費者註冊）                               | Foundation / F-01 DataManager        | ✅ `[F-01-DS] system-constants.md`           | 📐     |
-| `ReputationLabelTable.csv`     | 【F-03】resource-management.md §3.7 / §4.4 / §6.1 | Foundation / F-03 ResourceManagement | ✅ `[F-03-DS] reputation-label-table.md`   | 📐     |
+| `SystemConstants.csv`          | 【F-01】data-manager.md（跨系統 key-value 常數，由各消費者註冊）                               | Foundation / F-01 DataManager        | 📐                                          | 📐     |
+| `ReputationLabelTable.csv`     | 【F-03】resource-management.md §3.7 / §4.4 / §6.1 | Foundation / F-03 ResourceManagement | 📐                                          | 📐     |
 
 ---
 
@@ -58,17 +58,17 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱 | GDD 來源 | 系統分類 | DataSpec 狀態 | CSV 狀態 |
 |---|---|---|---|---|
-| `MissionTemplate.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-template.md` | 📐 |
-| `MissionTypeTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-type-table.md` | 📐 |
-| `MissionCategoryTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-category-table.md` | 📐 |
-| `MissionDifficultyTable.csv` | 【C-01】mission-database.md §3.1（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta；FT-02 §3.2 與 FT-09 §3.2.3 為消費者視角引用） | Core / C-01 MissionDatabase | ✅ `[C-01-DS] mission-difficulty-table.md` | 📐 |
-| `AdventurerTemplate.csv` | 【C-02】adventurer-management.md | Core / C-02 AdventurerManagement | ✅ `[C-02-DS] adventurer-template.md` | 📐 |
-| `RecruitCostTable.csv` | 【C-02】adventurer-management.md §3.3 + §7.2（FT-01 §7.2 為消費者視角的引用） | Core / C-02 AdventurerManagement | ✅ `[C-02-DS] recruit-cost-table.md` | 📐 |
-| `ProfessionTable.csv` | 【C-03】profession-system.md §3.1 + §7.1（合併 raceIDs / raceWeights / traitGroupIDs；C-04 §3.2 與 C-05 §3.4 為消費者視角引用） | Core / C-03 ProfessionSystem | ✅ `[C-03-DS] profession-table.md` | 📐 |
-| `RaceTable.csv` | 【C-04】race-system.md §3.1 + §7.1 | Core / C-04 RaceSystem | ✅ `[C-04-DS] race-table.md` | 📐 |
-| `TraitTable.csv` | 【C-05】trait-system.md §3.1 + §7.1 | Core / C-05 TraitSystem | ✅ `[C-05-DS] trait-table.md` | 📐 |
-| `TraitGroupTable.csv` | 【C-05】trait-system.md §3.3 + §7.2 | Core / C-05 TraitSystem | ✅ `[C-05-DS] trait-group-table.md` | 📐 |
-| `WorldDangerTable.csv` | 【C-06】world-danger-system.md §3.1 + §7.1~§7.3（單表整合升級閘 / 任務池權重 / 債務上限） | Core / C-06 WorldDangerSystem | ✅ `[C-06-DS] world-danger-table.md` | 📐 |
+| `MissionTemplate.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
+| `MissionTypeTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
+| `MissionCategoryTable.csv` | 【C-01】mission-database.md §3.1 | Core / C-01 MissionDatabase | 📐 | 📐 |
+| `MissionDifficultyTable.csv` | 【C-01】mission-database.md §3.1（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta；FT-02 §3.2 與 FT-09 §3.2.3 為消費者視角引用） | Core / C-01 MissionDatabase | 📐 | 📐 |
+| `AdventurerTemplate.csv` | 【C-02】adventurer-management.md | Core / C-02 AdventurerManagement | 📐 | 📐 |
+| `RecruitCostTable.csv` | 【C-02】adventurer-management.md §3.3 + §7.2（FT-01 §7.2 為消費者視角的引用） | Core / C-02 AdventurerManagement | 📐 | 📐 |
+| `ProfessionTable.csv` | 【C-03】profession-system.md §3.1 + §7.1（合併 raceIDs / raceWeights / traitGroupIDs；C-04 §3.2 與 C-05 §3.4 為消費者視角引用） | Core / C-03 ProfessionSystem | 📐 | 📐 |
+| `RaceTable.csv` | 【C-04】race-system.md §3.1 + §7.1 | Core / C-04 RaceSystem | 📐 | 📐 |
+| `TraitTable.csv` | 【C-05】trait-system.md §3.1 + §7.1 | Core / C-05 TraitSystem | 📐 | 📐 |
+| `TraitGroupTable.csv` | 【C-05】trait-system.md §3.3 + §7.2 | Core / C-05 TraitSystem | 📐 | 📐 |
+| `WorldDangerTable.csv` | 【C-06】world-danger-system.md §3.1 + §7.1~§7.3（單表整合升級閘 / 任務池權重 / 債務上限） | Core / C-06 WorldDangerSystem | 📐 | 📐 |
 
 ---
 
@@ -77,18 +77,18 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | 表格名稱                            | GDD 來源                                                             | 系統分類                                  | DataSpec 狀態                                 | CSV 狀態 |
 | ------------------------------- | ------------------------------------------------------------------ | ------------------------------------- | ------------------------------------------- | ------ |
 | `VeteranRankWeightTable.csv`    | 【FT-01】adventurer-recruitment.md §4.4 + §7.3                       | Feature / FT-01 AdventurerRecruitment | ✅ `[FT-01-DS] veteran-rank-weight-table.md` | 📐     |
-| `SuccessRateTable.csv`          | 【FT-02】mission-dispatch.md §3.1 + §7.1                             | Feature / FT-02 MissionDispatch       | ✅ `[FT-02-DS] success-rate-table.md`       | 📐     |
+| `SuccessRateTable.csv`          | 【FT-02】mission-dispatch.md §3.1 + §7.1                             | Feature / FT-02 MissionDispatch       | ✅ `[FT-02-DS] success-rate-table.md`        | 📐     |
 | `ReputationDeltaTable.csv`      | 【FT-04】outcome-resolution.md §3.6 + §7.2                           | Feature / FT-04 OutcomeResolution     | ✅ `[FT-04-DS] reputation-delta-table.md`   | 📐     |
-| `GuildLevelTable.csv`           | 【FT-06】guild-core.md §3.5 + §7.1                                   | Feature / FT-06 GuildCore             | 📐                                          | 📐     |
-| `BuildingTable.csv`             | 【FT-07】guild-building-system.md §3 + §7.1                          | Feature / FT-07 GuildBuildingSystem   | 📐                                          | 📐     |
-| `StaffTable.csv`                | 【FT-12】staff-system.md §3.2 + §7.1.1（2026-04-26 從原 FT-08 拆出，owner 移交 FT-12）| Feature / FT-12 StaffSystem           | ✅ `[FT-12-DS] staff-table.md`             | 📐     |
-| `StaffGachaPoolTable.csv`       | 【FT-08】gacha-system.md §3.2 + §7.1.3                              | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-gacha-pool-table.md`  | 📐     |
+| `GuildLevelTable.csv`           | 【FT-06】guild-core.md §3.5 + §7.1                                   | Feature / FT-06 GuildCore             | ✅ `[FT-06-DS] guild-level-table.md`        | 📐     |
+| `BuildingTable.csv`             | 【FT-07】guild-building-system.md §3 + §7.1                          | Feature / FT-07 GuildBuildingSystem   | ✅ `[FT-07-DS] building-table.md`           | 📐     |
+| `StaffTable.csv`                | 【FT-12】staff-system.md §3.2 + §7.1.1（2026-04-26 從原 FT-08 拆出，owner 移交 FT-12）| Feature / FT-12 StaffSystem           | ✅ `[FT-12-DS] staff-table.md`              | 📐     |
+| `StaffGachaPoolTable.csv`       | 【FT-08】gacha-system.md §3.2 + §7.1.3                              | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-gacha-pool-table.md`   | 📐     |
 | `StaffRefreshCostTable.csv`     | 【FT-08】gacha-system.md §3.3.6 + §7.1.1                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-refresh-cost-table.md` | 📐     |
-| `StaffRarityProbTable.csv`      | 【FT-08】gacha-system.md §4.1.5 + §7.1.2                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-rarity-prob-table.md` | 📐     |
-| `TrashItemTable.csv`            | 【FT-08】gacha-system.md §3.5.2 + §7.1.4                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] trash-item-table.md`        | 📐     |
-| `StaffTuning.csv`               | 【FT-12】staff-system.md §7.2 + 【FT-08】gacha-system.md §7.2（共用：EFFECT_MAX_* / cooldown 由 FT-12 owner，PITY_THRESHOLD 等 gacha 常數由 FT-08 owner，與 SystemConstants 切分） | Feature / FT-08 + FT-12（共用）       | ✅ `[FT-08-DS] staff-tuning.md`            | 📐     |
-| `FactionRouteTable.csv`         | 【FT-09】faction-story-system.md §3.2.1 + §7.2                       | Feature / FT-09 FactionStorySystem    | 📐                                          | 📐     |
-| `StoryStageTable.csv`           | 【FT-09】faction-story-system.md §3.2.2 + §7.2                       | Feature / FT-09 FactionStorySystem    | 📐                                          | 📐     |
+| `StaffRarityProbTable.csv`      | 【FT-08】gacha-system.md §4.1.5 + §7.1.2                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] staff-rarity-prob-table.md`  | 📐     |
+| `TrashItemTable.csv`            | 【FT-08】gacha-system.md §3.5.2 + §7.1.4                            | Feature / FT-08 GachaSystem           | ✅ `[FT-08-DS] trash-item-table.md`         | 📐     |
+| `StaffTuning.csv`               | 【FT-12】staff-system.md §7.2 + 【FT-08】gacha-system.md §7.2（共用：EFFECT_MAX_* / cooldown 由 FT-12 owner，PITY_THRESHOLD 等 gacha 常數由 FT-08 owner，與 SystemConstants 切分） | Feature / FT-08 + FT-12（共用）       | ✅ `[FT-08-DS] staff-tuning.md`             | 📐     |
+| `FactionRouteTable.csv`         | 【FT-09】faction-story-system.md §3.2.1 + §7.2                       | Feature / FT-09 FactionStorySystem    | ✅ `[FT-09-DS] faction-route-table.md`      | 📐     |
+| `StoryStageTable.csv`           | 【FT-09】faction-story-system.md §3.2.2 + §7.2                       | Feature / FT-09 FactionStorySystem    | ✅ `[FT-09-DS] story-stage-table.md`        | 📐     |
 
 ---
 
@@ -113,7 +113,7 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱 | 歸檔原因 | 取代來源 | DataSpec 狀態 |
 |---|---|---|---|
-| `BankruptcyThresholdTable.csv` | Phase 2 已 deprecated（runtime 不查詢） | FT-07 預備金保險櫃透過 `SetBankruptcyWarningDuration` 推送 `_currentWarningDuration` 至 F-03 | ✅ `[F-03-DS] bankruptcy-threshold-table.md`（保留為設計參考） |
+| `BankruptcyThresholdTable.csv` | Phase 2 已 deprecated（runtime 不查詢） | FT-07 預備金保險櫃透過 `SetBankruptcyWarningDuration` 推送 `_currentWarningDuration` 至 F-03 | 📐（保留為設計參考） |
 | `RewardTable.csv` | 2026-04-26 合併 | C-01 `MissionDifficultyTable.baseReward` 欄位 | — |
 | `DurationTable.csv` | 2026-04-26 合併 | C-01 `MissionDifficultyTable.baseDuration` 欄位 | — |
 | `DeathRateTable.csv` | 2026-04-26 合併（owner 由 FT-02 移交 C-01） | C-01 `MissionDifficultyTable.baseDeathRate` 欄位 | — |
@@ -129,12 +129,12 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 分類 | 表格數 | DataSpec ✅ | CSV ✅ |
 |---|---|---|---|
-| Foundation | 2 | 2 | 0 |
-| Core | 11 | 11 | 0 |
-| Feature | 14 | 9 | 0 |
+| Foundation | 2 | 0 | 0 |
+| Core | 11 | 0 | 0 |
+| Feature | 13 | 13 | 0 |
 | 文字表 | 6 | 0 | 0 |
-| **總計（active）** | **33** | **22** | **0** |
-| 歸檔 | 9 | 1 | — |
+| **總計（active）** | **32** | **13** | **0** |
+| 歸檔 | 9 | 0 | — |
 
 > 2026-04-26 合併批次：移除 7 張表（A1 + A2 + B1 + B2），BankruptcyThresholdTable 移到歸檔分區（原計入 Foundation）；總表數 40 → 33。
 > 實際 `Assets/Resources/Data/Tables/` 目錄內無任何正式 CSV；現有 `SystemConstants.csv` / `BankruptcyThresholdTable.csv` 僅存在於 `Assets/Tests/EditMode/.../TestResources/` 作為測試 fixture。

@@ -768,6 +768,8 @@ Input:    OnStaffSalaryDue(totalAmount = 90)
 | FT-10 Save/Load | （Jam 範疇外）全 4 事件 | 收支日誌歷史 |
 | FT-06 Guild Core | **不直接訂閱 FT-05**；透過 F-03 `OnBankruptcyWarningStateChanged` 接管 | Game Over 流程 |
 
+> **FT-05 × FT-10 持久化說明**：Jam 版不持久化 FT-05 結算歷史；FT-10 §1 既定範疇外。Post-Jam 擴充收支日誌時再修訂此說明。
+
 ---
 
 ### 6.3 事件契約矩陣（Event Contract Matrix）

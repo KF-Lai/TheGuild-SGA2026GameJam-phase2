@@ -224,6 +224,8 @@ var traits = DataManager.Instance.PickRandom<TraitData>("warrior_traits");
 | FT-10 Save/Load | `GetAll<T>`（各表）| 反序列化時驗證 ID 合法性 |
 | P-02 Main UI | `GetAll`、`GetWhere` | UI 呈現用資料查詢 |
 
+> **FT-10 RestoreFromSave 補充**：FT-10 `RestoreFromSave` 流程中，以 `GetAll<T>` 驗證各 owner 序列化資料的 ID 合法性；FT-10 為間接消費者，透過各 owner `RestoreFromSave` 呼叫。
+
 ### 6.3 介面規範
 
 下游系統對 DataManager 的唯一假設：**`Awake` 完成後，所有表格已可查詢**。DataManager 不提供非同步 callback，不發送事件——下游系統直接在自身 `Start` 或之後呼叫 API 即可。

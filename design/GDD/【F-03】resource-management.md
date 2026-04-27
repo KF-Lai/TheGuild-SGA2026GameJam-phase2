@@ -453,6 +453,8 @@ Resource Management 依賴 F-02 Time System 的 tick 事件，而 Time System �
 
 對應 FT-10 §3.3.3 拓撲順序 row 1、§3.3.4 Critical 分類、§6.1 #3（FT-10 設計來源清單）。
 
+> FT-10 透過本 `ISaveable` 契約序列化/還原 `currentGold` 等 7 個欄位；此為 F-03 在 FT-10 Bootstrap 路徑的唯一持久化介面。
+
 ## 7. 可調參數（Tuning Knobs）
 
 ### 7.1 全域常數（SystemConstants.csv）

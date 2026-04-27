@@ -367,6 +367,8 @@ GeneratePool(rankPool, poolSize):
 
 對應 FT-10 §3.3.3 拓撲順序 row 8、§3.3.4 Degradable 分類、§6.1 #9（FT-10 設計來源清單）。
 
+> FT-10 透過本 `ISaveable` 契約序列化候選池、刷新時間戳與免費刷新次數；此為 FT-01 在 FT-10 Bootstrap 路徑的唯一持久化介面。
+
 ## 7. 可調參數（Tuning Knobs）
 
 ### 7.1 SystemConstants.csv
