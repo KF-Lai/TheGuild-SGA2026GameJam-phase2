@@ -1,0 +1,5 @@
+difficulty,F,E,D,C,A,S,SS,SSS
+baseReward,30,80,200,400,800,1200,2000,3000
+baseDuration,5,12,30,60,840,1200,1800,3240
+baseDeathRate,0.02,0.06,0.10,0.13,0.40,0.50,0.60,0.70
+factionScoreDelta,1,1,2,3,8,13,20,30

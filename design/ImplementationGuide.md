@@ -153,7 +153,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | —   | F-01 DataManager              | 已完成 | —    | 2026-04-26 前 | 偏差全修                     |
 | —   | F-02 Time System              | 已完成 | —    | 2026-04-26 前 | MissionTimer 待 FT-02-A 移除 |
 | —   | F-03 Resource Management      | 已完成 | —    | 2026-04-26 前 | §6.3 契約段落待補            |
-| 1   | C-01 Mission Database         | 待     |      |               |                              |
+| 1   | C-01 Mission Database         | 已完成 | 2026-04-28 | 2026-04-28 | C-01-FSD Codex Medium 落地；附帶修正 SystemConstants.ESCORT_TYPE_ID 4→2 |
 | 2   | C-03 Profession System        | 待     |      |               |                              |
 | 3   | C-04 Race System              | 待     |      |               |                              |
 | 4   | C-05 Trait System             | 待     |      |               |                              |

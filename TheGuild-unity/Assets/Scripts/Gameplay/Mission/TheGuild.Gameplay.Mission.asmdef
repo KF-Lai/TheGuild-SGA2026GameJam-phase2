@@ -1,0 +1,16 @@
+{
+  "name": "TheGuild.Gameplay.Mission",
+  "rootNamespace": "TheGuild.Gameplay.Mission",
+  "references": [
+    "TheGuild.Core.Data"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
