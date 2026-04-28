@@ -151,7 +151,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | #   | 系統                          | 狀態   | 開始 | 完成          | 備註                         |
 | --- | ----------------------------- | ------ | ---- | ------------- | ---------------------------- |
 | —   | F-01 DataManager              | 已完成 | —    | 2026-04-26 前 | 偏差全修                     |
-| —   | F-02 Time System              | 已完成 | —    | 2026-04-26 前 | MissionTimer 待 FT-02-A 移除 |
+| —   | F-02 Time System              | 已完成 | —    | 2026-04-26 前 | D-01 已隨 FT-02-A 移除 MissionTimer / _missionTimers / OnMissionExpiredEvent / OfflineSummary.CompletedMissionInstanceIds；D-02 OnOfflineResolvedEvent payload 簡化為僅 OfflineSeconds |
 | —   | F-03 Resource Management      | 已完成 | —    | 2026-04-26 前 | §6.3 契約段落待補            |
 | 1   | C-01 Mission Database         | 已完成 | 2026-04-28 | 2026-04-28 | C-01-FSD Codex Medium 落地；附帶修正 SystemConstants.ESCORT_TYPE_ID 4→2 |
 | 2   | C-03 Profession System        | 已完成 | 2026-04-28 | 2026-04-28 | C-03-FSD Codex Medium 落地；定義 IReadOnlyIntSet 替代 .NET 5+ IReadOnlySet |
@@ -159,7 +159,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | 4   | C-05 Trait System             | 已完成 | 2026-04-28 | 2026-04-28 | C-05-FSD Codex Medium 落地；23 effectTargets 硬編碼於 Loader |
 | 5   | C-02 Adventurer Management    | 已完成 | 2026-04-28 | 2026-04-28 | C-02-FSD subagent (sonnet+high) 實作；codex-mcp review 採納 UpdateStatus woundedUntilTimestamp 不變式 + RestoreFromSave 規則 7 |
 | 6   | C-06 World Danger System      | 已完成 | 2026-04-28 | 2026-04-28 | C-06-FSD Codex Medium 落地；ISaveable Stub 待 FT-10 |
-| 7   | FT-02-A Mission Dispatch Core | 待     |      |               | 同步執行 D-01                |
+| 7   | FT-02-A Mission Dispatch Core | 已完成 | 2026-04-28 | 2026-04-28 | FT-02-FSD-A subagent (sonnet+high) 實作 + 主體完成 D-01/D-02 移除；codex-mcp APPROVED + 採納 RestoreFromSave Instance==null 防禦；獨立 asmdef `TheGuild.Gameplay.MissionDispatch` 避免與 Profession/Race 既有 cyclic ref；D-01 已連帶清理 13 個 TimeSystemTests mission timer 測試 |
 | 8   | FT-02-B Commission Board      | 待     |      |               |                              |
 | 9   | FT-04 Outcome Resolution      | 待     |      |               |                              |
 | 10  | FT-06 Guild Core              | 待     |      |               |                              |

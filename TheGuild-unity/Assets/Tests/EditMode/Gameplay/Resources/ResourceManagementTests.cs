@@ -383,7 +383,7 @@ namespace Tests.EditMode.Gameplay.Resources
         {
             _rm.AddGold(-150);
             _rm.AddGold(200);
-            EventBus.Publish(new OnOfflineResolvedEvent(100, 0));
+            EventBus.Publish(new OnOfflineResolvedEvent(100));
             Assert.AreEqual(BankruptcyWarningState.Normal, _rm.GetBankruptcyWarningState());
         }
 

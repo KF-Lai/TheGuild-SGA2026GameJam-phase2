@@ -90,7 +90,7 @@ namespace Tests.PlayMode.Gameplay.Resources
             Assert.AreEqual(BankruptcyWarningState.Warning, _rm.GetBankruptcyWarningState());
 
             _now += 90000;
-            EventBus.Publish(new OnOfflineResolvedEvent(90000, 0));
+            EventBus.Publish(new OnOfflineResolvedEvent(90000));
 
             yield return null;
             Assert.AreEqual(BankruptcyWarningState.Bankrupt, _rm.GetBankruptcyWarningState());

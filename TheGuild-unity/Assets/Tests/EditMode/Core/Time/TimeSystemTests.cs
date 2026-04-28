@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using NUnit.Framework;
+using System.Reflection;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.Time;
@@ -10,6 +9,9 @@ using UnityEngine.TestTools;
 
 namespace Tests.EditMode.Core.Time
 {
+    /// <summary>
+    /// F-02 TimeSystem 測試（FSD-A D-01 後：mission timer 相關測試已移除，由 FT-02-A 自帶測試覆蓋）。
+    /// </summary>
     public sealed class TimeSystemTests
     {
         private long _now;
@@ -58,88 +60,7 @@ namespace Tests.EditMode.Core.Time
         }
 
         [Test]
-        public void AC_TS_01_Realtime_60Seconds_ExpireOnce()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-
-            _timeSystem.RegisterMission("m1", _now, 60);
-
-            for (int i = 0; i < 60; i++)
-            {
-                _now += 1;
-                _timeSystem.TickForTests(1f);
-            }
-
-            Assert.AreEqual(1, expired);
-        }
-
-        [Test]
-        public void AC_TS_02_Realtime_SameFrameMultiExpire_AllPublished()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-
-            _timeSystem.RegisterMission("m1", _now, 10);
-            _timeSystem.RegisterMission("m2", _now, 10);
-
-            _now += 10;
-            _timeSystem.TickForTests(1f);
-
-            Assert.AreEqual(2, expired);
-        }
-
-        [Test]
-        public void AC_TS_03_RemainingZero_TriggersNextTick()
-        {
-            string got = null;
-            EventBus.Subscribe<OnMissionExpiredEvent>(e => got = e.MissionInstanceId);
-
-            _timeSystem.RegisterMission("m1", _now, 1);
-            _now += 1;
-            _timeSystem.TickForTests(1f);
-
-            Assert.AreEqual("m1", got);
-        }
-
-        [Test]
-        public void AC_TS_04_InitializeOnlyPublishesPending_WhenHasExpiredMission()
-        {
-            int pending = 0;
-            int expired = 0;
-            int resolved = 0;
-
-            EventBus.Subscribe<OnOfflinePendingEvent>(_ => pending++);
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-            EventBus.Subscribe<OnOfflineResolvedEvent>(_ => resolved++);
-
-            _timeSystem.RegisterMission("m1", _now - 600, 60);
-            _timeSystem.Initialize(_now - 300);
-
-            Assert.AreEqual(1, pending);
-            Assert.AreEqual(0, expired);
-            Assert.AreEqual(0, resolved);
-        }
-
-        [Test]
-        public void AC_TS_05_ConfirmOfflineResolution_OrderAndResolved()
-        {
-            List<string> seq = new List<string>(4);
-
-            EventBus.Subscribe<OnOfflinePendingEvent>(_ => seq.Add("Pending"));
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => seq.Add("Expired"));
-            EventBus.Subscribe(EventNames.OnDailyReset, () => seq.Add("Daily"));
-            EventBus.Subscribe<OnOfflineResolvedEvent>(_ => seq.Add("Resolved"));
-
-            _timeSystem.RegisterMission("m1", _now - 600, 60);
-            _timeSystem.Initialize(_now - 300);
-            _timeSystem.ConfirmOfflineResolution();
-
-            CollectionAssert.AreEqual(new[] { "Pending", "Expired", "Resolved" }, seq);
-        }
-
-        [Test]
-        public void AC_TS_06_NoMissionNoCrossDay_DirectResolved()
+        public void AC_TS_06_NoCrossDay_DirectResolved()
         {
             int pending = 0;
             int resolved = 0;
@@ -154,7 +75,7 @@ namespace Tests.EditMode.Core.Time
         }
 
         [Test]
-        public void AC_TS_06b_NoMissionButCrossDay_PendingThenDailyAndResolved()
+        public void AC_TS_06b_CrossDay_PendingThenDailyAndResolved()
         {
             int pending = 0;
             int daily = 0;
@@ -226,56 +147,19 @@ namespace Tests.EditMode.Core.Time
         }
 
         [Test]
-        public void AC_TS_11_ConfirmOrder_ExpiredThenDailyThenResolved()
-        {
-            List<string> seq = new List<string>(4);
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => seq.Add("Expired"));
-            EventBus.Subscribe(EventNames.OnDailyReset, () => seq.Add("Daily"));
-            EventBus.Subscribe<OnOfflineResolvedEvent>(_ => seq.Add("Resolved"));
-
-            _timeSystem.RegisterMission("m1", _now - 3600, 60);
-            _timeSystem.Initialize(_now - 86_400);
-            _timeSystem.ConfirmOfflineResolution();
-
-            CollectionAssert.AreEqual(new[] { "Expired", "Daily", "Resolved" }, seq);
-        }
-
-        [Test]
         public void AC_TS_12_ConfirmIdempotent()
         {
             int resolved = 0;
             EventBus.Subscribe<OnOfflineResolvedEvent>(_ => resolved++);
 
-            _timeSystem.RegisterMission("m1", _now - 600, 60);
-            _timeSystem.Initialize(_now - 300);
+            // 跨日才會進入 Pending 狀態，使用者得呼叫 ConfirmOfflineResolution。
+            _timeSystem.Initialize(_now - 86_400 - 60);
 
             _timeSystem.ConfirmOfflineResolution();
             _timeSystem.ConfirmOfflineResolution();
             _timeSystem.ConfirmOfflineResolution();
 
             Assert.AreEqual(1, resolved);
-        }
-
-        [Test]
-        public void AC_TS_13_RealtimeAndOfflineConsistency_WithinOneSecond()
-        {
-            int realCount = 0;
-            int offlineCount = 0;
-
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => realCount++);
-            _timeSystem.RegisterMission("m1", _now, 10);
-            _now += 10;
-            _timeSystem.TickForTests(1f);
-            _timeSystem.UnregisterMission("m1");
-
-            EventBus.ClearAll();
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => offlineCount++);
-            _timeSystem.RegisterMission("m2", _now - 10, 10);
-            _timeSystem.Initialize(_now - 10);
-            _timeSystem.ConfirmOfflineResolution();
-
-            Assert.AreEqual(1, realCount);
-            Assert.AreEqual(1, offlineCount);
         }
 
         [Test]
@@ -314,8 +198,8 @@ namespace Tests.EditMode.Core.Time
             EventBus.Subscribe<OnOfflineResolvedEvent>(_ => resolved++);
 
             _timeSystem.PauseTick();
-            _timeSystem.RegisterMission("m1", _now - 600, 60);
-            _timeSystem.Initialize(_now - 300);
+            // 跨日後進入 Pending 狀態（FSD-A D-01 後不再以任務驅動 Pending）。
+            _timeSystem.Initialize(_now - 86_400 - 60);
             _timeSystem.ConfirmOfflineResolution();
 
             Assert.AreEqual(1, pending);
@@ -367,39 +251,6 @@ namespace Tests.EditMode.Core.Time
         }
 
         [Test]
-        public void AC_TS_21_MissionExpired_Deduplicated()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-
-            _timeSystem.RegisterMission("m1", _now, 1);
-
-            for (int i = 0; i < 3; i++)
-            {
-                _now += 1;
-                _timeSystem.TickForTests(1f);
-            }
-
-            Assert.AreEqual(1, expired);
-        }
-
-        [Test]
-        public void AC_TS_22_OfflineThenRealtime_NoDuplicateMissionExpired()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-
-            _timeSystem.RegisterMission("m1", _now - 120, 60);
-            _timeSystem.Initialize(_now - 120);
-            _timeSystem.ConfirmOfflineResolution();
-
-            _now += 5;
-            _timeSystem.TickForTests(5f);
-
-            Assert.AreEqual(1, expired);
-        }
-
-        [Test]
         public void AC_TS_23_CrossYearDailyReset_Works()
         {
             int daily = 0;
@@ -413,24 +264,6 @@ namespace Tests.EditMode.Core.Time
             _timeSystem.TickForTests(1f);
 
             Assert.AreEqual(1, daily);
-        }
-
-        [Test]
-        public void AC_TS_24_UnregisterClearsDedupSet_AllowsReuseId()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(_ => expired++);
-
-            _timeSystem.RegisterMission("m1", _now, 1);
-            _now += 1;
-            _timeSystem.TickForTests(1f);
-
-            _timeSystem.UnregisterMission("m1");
-            _timeSystem.RegisterMission("m1", _now, 1);
-            _now += 1;
-            _timeSystem.TickForTests(1f);
-
-            Assert.AreEqual(2, expired);
         }
 
         [Test]
@@ -461,26 +294,6 @@ namespace Tests.EditMode.Core.Time
             _timeSystem.TickForTests(600f);
 
             Assert.AreEqual(60, second);
-        }
-
-        [Test]
-        public void AC_TS_28_CheckMissionTimers_HandlerUnregisterDoesNotSkipOthers()
-        {
-            int expired = 0;
-            EventBus.Subscribe<OnMissionExpiredEvent>(e =>
-            {
-                expired++;
-                _timeSystem.UnregisterMission(e.MissionInstanceId);
-            });
-
-            _timeSystem.RegisterMission("m1", _now, 10);
-            _timeSystem.RegisterMission("m2", _now, 10);
-            _timeSystem.RegisterMission("m3", _now, 10);
-
-            _now += 10;
-            _timeSystem.TickForTests(1f);
-
-            Assert.AreEqual(3, expired);
         }
 
         private static void ResetDataManagerForTestsByReflection()

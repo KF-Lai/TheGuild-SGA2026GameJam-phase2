@@ -18,10 +18,6 @@ namespace TheGuild.Core.Time
         private static Func<long> _clockProviderForTests;
         private static Func<float> _deltaProviderForTests;
 
-        private readonly List<MissionTimer> _missionTimers = new List<MissionTimer>(32);
-        private readonly HashSet<string> _publishedExpirations = new HashSet<string>(8, StringComparer.Ordinal);
-        private readonly List<string> _expiredMissionScratch = new List<string>(8);
-
         private float _accumulator;
         private int _minuteAccumulator;
         private bool _tickPaused;
@@ -84,7 +80,8 @@ namespace TheGuild.Core.Time
         }
 
         /// <summary>
-        /// 【離線階段 B】依序發布 OnMissionExpired → OnDailyReset(可選) → OnOfflineResolved。
+        /// 【離線階段 B】依序發布 OnDailyReset(可選) → OnOfflineResolved。
+        /// FSD-A D-01：F-02 不再持有任務計時器，任務完成由 FT-02-A 訂閱 OnOfflineResolved 後自行掃描 _activeMissions 處理。
         /// </summary>
         public void ConfirmOfflineResolution()
         {
@@ -93,70 +90,16 @@ namespace TheGuild.Core.Time
                 return;
             }
 
-            IReadOnlyList<string> ids = _pendingSummary.CompletedMissionInstanceIds;
-            for (int i = 0; i < ids.Count; i++)
-            {
-                PublishMissionExpired(ids[i]);
-            }
-
             if (_pendingSummary.CrossesDailyReset)
             {
                 _lastResetUtcDate = DateTimeOffset.FromUnixTimeSeconds(NowUTC).UtcDateTime.Date;
                 EventBus.Publish(EventNames.OnDailyReset);
             }
 
-            EventBus.Publish(new OnOfflineResolvedEvent(
-                _pendingSummary.OfflineSeconds,
-                _pendingSummary.CompletedCount));
+            EventBus.Publish(new OnOfflineResolvedEvent(_pendingSummary.OfflineSeconds));
 
             _pendingSummary = default;
             _offlineState = OfflineState.Resolved;
-        }
-
-        /// <summary>
-        /// 註冊任務計時器。durationSeconds 單位為秒（呼叫方負責分鐘→秒轉換）。
-        /// </summary>
-        public void RegisterMission(string missionInstanceId, long dispatchTimestamp, int durationSeconds)
-        {
-            if (string.IsNullOrEmpty(missionInstanceId))
-            {
-                Debug.LogError("[TimeSystem] RegisterMission 失敗：missionInstanceId 不可為空");
-                return;
-            }
-
-            MissionTimer timer = new MissionTimer(missionInstanceId, dispatchTimestamp, durationSeconds);
-
-            int existingIndex = IndexOfMission(missionInstanceId);
-            if (existingIndex >= 0)
-            {
-                _missionTimers[existingIndex] = timer;
-                _publishedExpirations.Remove(missionInstanceId);
-                return;
-            }
-
-            _missionTimers.Add(timer);
-            _publishedExpirations.Remove(missionInstanceId);
-        }
-
-        /// <summary>
-        /// 移除任務計時器。
-        /// </summary>
-        public void UnregisterMission(string missionInstanceId)
-        {
-            if (string.IsNullOrEmpty(missionInstanceId))
-            {
-                return;
-            }
-
-            for (int i = _missionTimers.Count - 1; i >= 0; i--)
-            {
-                if (_missionTimers[i].MissionInstanceId == missionInstanceId)
-                {
-                    _missionTimers.RemoveAt(i);
-                }
-            }
-
-            _publishedExpirations.Remove(missionInstanceId);
         }
 
         /// <summary>
@@ -165,14 +108,6 @@ namespace TheGuild.Core.Time
         public void PauseTick()
         {
             _tickPaused = true;
-        }
-
-        /// <summary>
-        /// 取得目前進行中任務計時器快照。
-        /// </summary>
-        public IReadOnlyList<MissionTimer> GetActiveMissionTimers()
-        {
-            return new List<MissionTimer>(_missionTimers);
         }
 
         /// <summary>
@@ -292,7 +227,6 @@ namespace TheGuild.Core.Time
             _lastActiveTimestamp = nowUtc;
 
             EventBus.Publish(new OnSecondTickEvent(nowUtc));
-            CheckMissionTimers(nowUtc);
             CheckDailyResetCrossing(nowUtc);
             TickMinute(nowUtc);
         }
@@ -356,42 +290,6 @@ namespace TheGuild.Core.Time
             return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
-        private void CheckMissionTimers(long nowUtc)
-        {
-            _expiredMissionScratch.Clear();
-
-            for (int i = 0; i < _missionTimers.Count; i++)
-            {
-                MissionTimer timer = _missionTimers[i];
-                long remainingSeconds = GetRemainingSeconds(in timer, nowUtc);
-                if (remainingSeconds <= 0)
-                {
-                    _expiredMissionScratch.Add(timer.MissionInstanceId);
-                }
-            }
-
-            for (int i = 0; i < _expiredMissionScratch.Count; i++)
-            {
-                PublishMissionExpired(_expiredMissionScratch[i]);
-            }
-        }
-
-        private void PublishMissionExpired(string missionInstanceId)
-        {
-            if (string.IsNullOrEmpty(missionInstanceId))
-            {
-                return;
-            }
-
-            if (_publishedExpirations.Contains(missionInstanceId))
-            {
-                return;
-            }
-
-            _publishedExpirations.Add(missionInstanceId);
-            EventBus.Publish(new OnMissionExpiredEvent(missionInstanceId));
-        }
-
         private void CheckDailyResetCrossing(long currentUtcSeconds)
         {
             DateTime currentUtc = DateTimeOffset.FromUnixTimeSeconds(currentUtcSeconds).UtcDateTime;
@@ -429,7 +327,8 @@ namespace TheGuild.Core.Time
         /// 建立離線摘要資料並回傳是否需要進入 Pending。
         /// 回傳 false 可能代表兩種狀況：
         /// 1) 無離線時間，未發送任何事件。
-        /// 2) 離線有時間但 0 任務且無跨日，已立即發送 OnOfflineResolvedEvent。
+        /// 2) 離線有時間但無跨日，已立即發送 OnOfflineResolvedEvent。
+        /// FSD-A D-01：任務完成清單由 FT-02-A 訂閱 OnOfflineResolved 後自行計算。
         /// </summary>
         private bool TryBuildOfflineSummary(long lastActiveTimestamp, long nowUtc, out OfflineSummary summary)
         {
@@ -445,56 +344,16 @@ namespace TheGuild.Core.Time
                 ? _offlineMaxSeconds
                 : rawOfflineSeconds;
 
-            List<string> completedMissionIds = CollectCompletedMissionIds(nowUtc);
             bool crossesDailyReset = ComputeDailyResetCrossing(lastActiveTimestamp, nowUtc);
 
-            if (completedMissionIds.Count == 0 && !crossesDailyReset)
+            if (!crossesDailyReset)
             {
-                EventBus.Publish(new OnOfflineResolvedEvent(offlineSeconds, 0));
+                EventBus.Publish(new OnOfflineResolvedEvent(offlineSeconds));
                 return false;
             }
 
-            summary = new OfflineSummary(
-                offlineSeconds,
-                completedMissionIds.Count,
-                completedMissionIds,
-                crossesDailyReset);
-
+            summary = new OfflineSummary(offlineSeconds, crossesDailyReset);
             return true;
-        }
-
-        private List<string> CollectCompletedMissionIds(long nowUtc)
-        {
-            List<string> completed = new List<string>(8);
-            for (int i = 0; i < _missionTimers.Count; i++)
-            {
-                MissionTimer timer = _missionTimers[i];
-                long remainingSeconds = GetRemainingSeconds(in timer, nowUtc);
-                if (remainingSeconds <= 0)
-                {
-                    completed.Add(timer.MissionInstanceId);
-                }
-            }
-
-            return completed;
-        }
-
-        private static long GetRemainingSeconds(in MissionTimer timer, long nowUtc)
-        {
-            return timer.DispatchTimestamp + timer.DurationSeconds - nowUtc;
-        }
-
-        private int IndexOfMission(string missionInstanceId)
-        {
-            for (int i = 0; i < _missionTimers.Count; i++)
-            {
-                if (_missionTimers[i].MissionInstanceId == missionInstanceId)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
     }
 }

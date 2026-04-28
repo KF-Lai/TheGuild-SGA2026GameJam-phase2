@@ -27,19 +27,6 @@ namespace TheGuild.Core.Events
     }
 
     /// <summary>
-    /// 任務到期事件。
-    /// </summary>
-    public readonly struct OnMissionExpiredEvent
-    {
-        public OnMissionExpiredEvent(string missionInstanceId)
-        {
-            MissionInstanceId = missionInstanceId;
-        }
-
-        public string MissionInstanceId { get; }
-    }
-
-    /// <summary>
     /// 離線摘要已準備完成，等待玩家確認。
     /// </summary>
     public readonly struct OnOfflinePendingEvent
@@ -54,17 +41,16 @@ namespace TheGuild.Core.Events
 
     /// <summary>
     /// 玩家確認離線摘要後，離線結算完成。
+    /// FSD-A D-02：payload 簡化為僅 OfflineSeconds，任務完成數由 FT-02-A 訂閱後計算並發 OnOfflineMissionsResolvedEvent。
     /// </summary>
     public readonly struct OnOfflineResolvedEvent
     {
-        public OnOfflineResolvedEvent(long offlineSeconds, int completedCount)
+        public OnOfflineResolvedEvent(long offlineSeconds)
         {
             OfflineSeconds = offlineSeconds;
-            CompletedCount = completedCount;
         }
 
         public long OfflineSeconds { get; }
-        public int CompletedCount { get; }
     }
 
     /// <summary>
