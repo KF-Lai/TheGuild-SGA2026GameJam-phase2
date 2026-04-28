@@ -155,7 +155,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | —   | F-03 Resource Management      | 已完成 | —    | 2026-04-26 前 | §6.3 契約段落待補            |
 | 1   | C-01 Mission Database         | 已完成 | 2026-04-28 | 2026-04-28 | C-01-FSD Codex Medium 落地；附帶修正 SystemConstants.ESCORT_TYPE_ID 4→2 |
 | 2   | C-03 Profession System        | 已完成 | 2026-04-28 | 2026-04-28 | C-03-FSD Codex Medium 落地；定義 IReadOnlyIntSet 替代 .NET 5+ IReadOnlySet |
-| 3   | C-04 Race System              | 待     |      |               |                              |
+| 3   | C-04 Race System              | 已完成 | 2026-04-28 | 2026-04-28 | C-04-FSD Codex Medium 落地；PlayMode 統計測試 AC-RS-10 通過 |
 | 4   | C-05 Trait System             | 待     |      |               |                              |
 | 5   | C-02 Adventurer Management    | 待     |      |               |                              |
 | 6   | C-06 World Danger System      | 待     |      |               |                              |

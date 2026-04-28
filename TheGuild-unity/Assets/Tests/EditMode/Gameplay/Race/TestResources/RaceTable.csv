@@ -1,0 +1,4 @@
+﻿raceID,1,2,3,4
+name,人類,精靈,獸人,矮人
+description,Balanced and adaptable,Skilled in magic,Strong and resilient,Sturdy craftmasters
+modifiers,"[{""typeID"":2,""successDelta"":0.0,""deathDelta"":-0.08},{""typeID"":3,""successDelta"":0.08,""deathDelta"":0.0}]","[{""typeID"":4,""successDelta"":0.10,""deathDelta"":-0.05}]","[{""typeID"":1,""successDelta"":0.0,""deathDelta"":-0.08},{""typeID"":4,""successDelta"":-0.05,""deathDelta"":0.0}]","[{""typeID"":1,""successDelta"":0.10,""deathDelta"":0.0},{""typeID"":2,""successDelta"":0.0,""deathDelta"":0.05}]"

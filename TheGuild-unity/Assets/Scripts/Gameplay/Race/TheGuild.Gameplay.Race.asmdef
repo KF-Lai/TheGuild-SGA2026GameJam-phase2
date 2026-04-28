@@ -1,0 +1,18 @@
+﻿{
+  "name": "TheGuild.Gameplay.Race",
+  "rootNamespace": "TheGuild.Gameplay.Race",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.Profession"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

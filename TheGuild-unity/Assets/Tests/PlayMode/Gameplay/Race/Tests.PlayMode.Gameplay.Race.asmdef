@@ -1,0 +1,25 @@
+﻿{
+  "name": "Tests.PlayMode.Gameplay.Race",
+  "rootNamespace": "Tests.PlayMode.Gameplay.Race",
+  "references": [
+    "TheGuild.Gameplay.Race",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Core.Data",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
