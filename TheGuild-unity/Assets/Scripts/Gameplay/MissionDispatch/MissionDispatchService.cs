@@ -41,17 +41,29 @@ namespace TheGuild.Gameplay.MissionDispatch
         public bool IsCritical => false;
 
         /// <summary>
-        /// 序列化 FT-02-A 自己的狀態（activeMissions + _nextActiveMissionID）。
-        /// FSD §6.4 / §5.3 ISaveable。
+        /// 序列化 FT-02 整體狀態：activeMissions + _nextActiveMissionID + 兩池（委派 CommissionBoardService）。
+        /// FSD §6.4 / §5.3 ISaveable（OwnerKey 共用 "ft02Dispatch"）。
         /// </summary>
-        // TODO(FT-02-B): FSD-B 落地後合併為 FT02SaveDTO（含兩池）
         public string Serialize()
         {
-            FT02ASaveDTO dto = new FT02ASaveDTO
+            FT02SaveDTO dto = new FT02SaveDTO
             {
-                activeMissions      = new List<ActiveMission>(_activeMissions),
-                nextActiveMissionID = _nextActiveMissionID
+                activeMissions = new List<ActiveMission>(_activeMissions),
+                nextActiveMissionID = _nextActiveMissionID,
+                regularMissionPool = new List<int>(),
+                staticMissionPool = new List<int>(),
             };
+
+            if (CommissionBoardService.Instance != null)
+            {
+                (List<int> regular, List<int> staticPool) = CommissionBoardService.Instance.GetSerializableState();
+                dto.regularMissionPool = regular;
+                dto.staticMissionPool = staticPool;
+            }
+            else
+            {
+                Debug.LogWarning("[MissionDispatchService] Serialize: CommissionBoardService.Instance 為 null，兩池序列化為空。");
+            }
 
             return JsonUtility.ToJson(dto);
         }
@@ -68,10 +80,10 @@ namespace TheGuild.Gameplay.MissionDispatch
                 return;
             }
 
-            FT02ASaveDTO dto;
+            FT02SaveDTO dto;
             try
             {
-                dto = JsonUtility.FromJson<FT02ASaveDTO>(json);
+                dto = JsonUtility.FromJson<FT02SaveDTO>(json);
             }
             catch (Exception ex)
             {
@@ -137,6 +149,18 @@ namespace TheGuild.Gameplay.MissionDispatch
             int savedNext = dto.nextActiveMissionID;
             int requiredNext = maxID + 1;
             _nextActiveMissionID = savedNext >= requiredNext ? savedNext : requiredNext;
+
+            // 委派 FT-02-B 還原兩池（FSD §5.3：A 為主 ISaveable，B 暴露 RestoreState 由 A 委派）。
+            if (CommissionBoardService.Instance != null)
+            {
+                CommissionBoardService.Instance.RestoreState(
+                    dto.regularMissionPool ?? new List<int>(),
+                    dto.staticMissionPool ?? new List<int>());
+            }
+            else
+            {
+                Debug.LogError("[MissionDispatchService] RestoreFromSave: CommissionBoardService.Instance 為 null，兩池無法還原。");
+            }
         }
 
         /// <summary>
@@ -270,10 +294,16 @@ namespace TheGuild.Gameplay.MissionDispatch
                 WorldDangerService.Instance.OnMissionAccepted(difficulty);
             }
 
-            // ── Step 10：從委託板移除（FT-02-B Stub）────────────────────────────
+            // ── Step 10：從委託板移除 ───────────────────────────────────────────
 
-            // TODO(FT-02-B): _commissionBoardService.RemoveMissionFromBoard(missionID); 待 B 落地補；目前 LogWarning。
-            Debug.LogWarning($"[MissionDispatchService] Dispatch: step 10 stub — RemoveMissionFromBoard(missionID={missionID}) 待 FT-02-B 實作。");
+            if (CommissionBoardService.Instance != null)
+            {
+                CommissionBoardService.Instance.RemoveMissionFromBoard(missionID);
+            }
+            else
+            {
+                Debug.LogWarning($"[MissionDispatchService] Dispatch: step 10 — CommissionBoardService.Instance 為 null，跳過 RemoveMissionFromBoard(missionID={missionID})。");
+            }
 
             return true;
         }
@@ -490,12 +520,20 @@ namespace TheGuild.Gameplay.MissionDispatch
 
         // ── 序列化 DTO ────────────────────────────────────────────────────────────
 
-        // TODO(FT-02-B): FSD-B 落地後合併為 FT02SaveDTO（含兩池）
+        /// <summary>
+        /// FT-02 ISaveable 共用 DTO（OwnerKey="ft02Dispatch"）：含 FT-02-A activeMissions + FT-02-B 兩池。
+        /// FSD-A §5.3 ISaveable。
+        /// </summary>
         [Serializable]
-        private sealed class FT02ASaveDTO
+        private sealed class FT02SaveDTO
         {
+            // FT-02-A 部分
             public List<ActiveMission> activeMissions;
             public int nextActiveMissionID;
+
+            // FT-02-B 部分（從 CommissionBoardService 委派取得）
+            public List<int> regularMissionPool;
+            public List<int> staticMissionPool;
         }
     }
 }

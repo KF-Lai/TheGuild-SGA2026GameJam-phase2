@@ -160,7 +160,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | 5   | C-02 Adventurer Management    | 已完成 | 2026-04-28 | 2026-04-28 | C-02-FSD subagent (sonnet+high) 實作；codex-mcp review 採納 UpdateStatus woundedUntilTimestamp 不變式 + RestoreFromSave 規則 7 |
 | 6   | C-06 World Danger System      | 已完成 | 2026-04-28 | 2026-04-28 | C-06-FSD Codex Medium 落地；ISaveable Stub 待 FT-10 |
 | 7   | FT-02-A Mission Dispatch Core | 已完成 | 2026-04-28 | 2026-04-28 | FT-02-FSD-A subagent (sonnet+high) 實作 + 主體完成 D-01/D-02 移除；codex-mcp APPROVED + 採納 RestoreFromSave Instance==null 防禦；獨立 asmdef `TheGuild.Gameplay.MissionDispatch` 避免與 Profession/Race 既有 cyclic ref；D-01 已連帶清理 13 個 TimeSystemTests mission timer 測試 |
-| 8   | FT-02-B Commission Board      | 待     |      |               |                              |
+| 8   | FT-02-B Commission Board      | 已完成 | 2026-04-28 | 2026-04-28 | FT-02-FSD-B 主體實作（subagent quota 失敗轉主體閉環）；codex-mcp APPROVED；FT-02-A DTO 整合 FT02SaveDTO 含兩池；Dispatch step 10 改實呼 RemoveMissionFromBoard；同 MissionDispatch asmdef |
 | 9   | FT-04 Outcome Resolution      | 待     |      |               |                              |
 | 10  | FT-06 Guild Core              | 待     |      |               |                              |
 | 11  | FT-07 Guild Building System   | 待     |      |               | T21 Phase 2 旗標待裁         |
