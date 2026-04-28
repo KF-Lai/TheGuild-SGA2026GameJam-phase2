@@ -1,0 +1,17 @@
+{
+  "name": "TheGuild.Gameplay.Profession",
+  "rootNamespace": "TheGuild.Gameplay.Profession",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Gameplay.Mission"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
