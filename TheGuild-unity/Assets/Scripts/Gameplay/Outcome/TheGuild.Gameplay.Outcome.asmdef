@@ -1,0 +1,23 @@
+{
+  "name": "TheGuild.Gameplay.Outcome",
+  "rootNamespace": "TheGuild.Gameplay.Outcome",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Trait"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
