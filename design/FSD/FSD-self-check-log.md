@@ -43,5 +43,37 @@
 | 2026-04-28 | `【FT-09-FSD】faction-story-system.md` | 通過 | 通過 | 通過 | 正向 FSD（無既有 Faction / Story Script）；FSD 未拆分（5 Script：FactionStoryTypes / IFactionStoryService / FactionStoryTableLoader / FactionStoryScoreAccumulator / FactionStoryService，預估 1000~1200 行）；GDD §3.1~§3.7 共 7 子節全部「對齊」；GDD §4 公式 F-1~F-3 runtime 直接採用偽碼，F-4 / F-5 為 offline 設計師工具不轉譯為程式碼；GDD §5 共 12 條 EC（EC-1~EC-12）皆有對策、涉及 Script、驗證方式；GDD §8 AC-F-1~F-8（8 條）/ AC-EC-1~12（12 條）/ AC-D-1~9（9 條）/ AC-T-1~4（4 條）全對齊 §1.3 DoD-01~DoD-11；GDD §6.3 雙向依賴 10 條 + §6.5 ISaveable 契約全部覆蓋；無真實衝突；建議項 B-01（FT-02 InjectStaticMissionResult 5 enum 確認）/B-02（DialogueTable owner 待 P-02 GDD 定案）/B-03（P-02 / P-03 GDD 待設計，§6.4 反向依賴 ⏳）/B-04（ISaveable 簽名待 FT-10 FSD 定案）/B-05（GDD §3.1.2 Step F 補發時 stage 已被縮減的分支）/B-06（GDD §3.3.2 Step 1 失敗早退與 categoryID=3 劇情委託判定的跨節依賴）皆不阻擋實作；§8.4 兩條 GDD 回註意圖（§3.1.2 / §3.3.2，待主體覆核後寫入 GDD）；§8.5 無衝突紀錄；待主體複核後轉「已完成」 |
 | 2026-04-28 | `【FT-10-FSD】save-load-system.md` | 通過 | 通過 | 通過 | 正向 FSD（無既有 Save/Load Script）；FSD 未拆分（6 Script：SaveLoadTypes / ISaveable / ISaveLoadService / SaveFileIO / SaveLoadBootstrap / SaveLoadService，預估 1000~1310 行）；GDD §3.1~§3.7 共 22 子節全部「對齊」；GDD §4.1~§4.5 公式 5 條直接採用偽碼（未替代）；GDD §5 共 12 條 EC（EC-1~EC-12）皆有對策、涉及 Script、驗證方式；GDD §8 AC-1.1~AC-1.6 / AC-2.1~AC-2.7 / AC-3.1~AC-3.5 / AC-4.1~AC-4.3 / AC-5.1~AC-5.2 / AC-6.1~AC-6.2 / AC-7.1~AC-7.3 / AC-EC-1~AC-EC-12 共 38 條全對齊 §1.3 DoD-01~DoD-14；GDD §6.1~§6.4 雙向依賴 15 系統 + 反向依賴清單 15 條全部覆蓋；無真實衝突；建議項 B-01（SaveLoadService.cs 行數監控；預估 350~430 行接近 500 行門檻）/B-02（P-02 P-03 GDD 待設計，下游契約只能依 FT-10 GDD 既定設計撰寫）/B-03（ISaveable.RestoreFromSave(null) 契約傳遞至各 owner FSD §6.3）/B-04（F-01 GetSystemConstant<string> 泛型多載確認，否則改 GetString fallback）/B-05（Bootstrap retry 時各 owner RestoreFromSave 冪等性）/B-06（OnApplicationQuit 在 Editor 不一定觸發，PlayMode 測試策略）/B-07（F-02 Initialize 時序 invariant：拓撲順序內 owner 不應依賴 F-02 已 Initialize）/B-08（終末檔列舉 wrapper 不提供，由 P-02 直接呼叫 Directory.GetFiles）皆不阻礙實作；§8.4 無 GDD 回註；§8.5 無衝突紀錄；待主體複核後轉「已完成」 | B-01~B-08 登記於 FSD §8.3；無衝突；待主體複核後轉「已完成」 |
 | 2026-04-28 | `【FT-10-FSD】save-load-system.md`（design-review patch 後重 review） | 通過 | 通過 | 通過 | `/design-review FT-10-FSD` 提出 5 條 implementability 建議全數於 §5.4.1 落地：(1) Phase A 補外層 retry loop 偽碼；(2) §5.4.1.A 補 `SortByRestoreOrder` OwnerKey-indexed dictionary 實作（11 entries + 未知 key 末位排序）；(3) §5.4.1.B 補 `SubscribeAllEvents` + `_eventUnsubscribers` push-Action 偽碼；(4) §5.4.1.C 補 `ExtractOwnerJson(root, ownerKey)` switch 對映（含空字串視為 null 規則）；(5) §5.4.1.D 補 `ResetAllSaveables()` retry-前-強制重置 helper；Phase D 偽碼補 `_schemaMeta.lastActiveTimestamp` 取自最後成功 Phase B 的說明。§8.3 B-05「Bootstrap retry 冪等性」標「✓ 已解決」並引用 §5.4.1.D；其餘 7 條建議（B-01/02/03/04/06/07/08）維持原狀（皆為實作期或跨 FSD 同步議題）；無新衝突；附錄 A 已新增 patch review 列 | B-05 已解決，B-01~04 / B-06~08 維持實作期建議；待主體複核後轉「已完成」 |
+
+---
+
+## 附錄 A：P-02 暫緩備註（T19 裁決，2026-04-28）
+
+**裁決摘要**：P-02 GDD 暫不啟動（使用者裁決），下列 FSD 條目對 P-02 的對齊**全部暫緩執行**，待 P-02 啟動後一次處理。FSD 內部邏輯不依賴 P-02 同步，建議實作期不阻礙啟動。
+
+| FSD | 條目 | P-02 暫緩涉及內容 | 復工觸發條件 |
+| --- | --- | --- | --- |
+| `【FT-05-FSD】guild-gold-flow.md` | §8.3 B-02 | P-02 clamp 提示（金幣不足 / 預收失敗時 UI 給玩家的提示文案）；FT-05 已具備事件，P-02 訂閱端待設計 | P-02 GDD §3.X UI 阻塞 / 金錢操作 UX 章節啟動 |
+| `【FT-06-FSD】guild-core.md` | §8.3 B-05 | Pending 期間 UI 阻塞屬 P-02 範疇（公會升級 Pending 狀態的整體 UI 攔截）；FT-06 事件已具備 | P-02 GDD UI 阻塞章節啟動 |
+| `【FT-09-FSD】faction-story-system.md` | §8.3 B-02 | DialogueTable owner 待 P-02 定案（對話文本資料表歸 P-02 owner，FT-09 透過 dialogueKey 引用） | P-02 GDD §3.X DialogueTable 定義章節啟動 |
+| `【FT-09-FSD】faction-story-system.md` | §8.3 B-03（P-02 部分） | P-02 對話視窗 UI 訂閱契約 + 委託板 UI 視覺差異（categoryID=3）+ 結算面板 epilogue UI；FT-09 事件 5 條已具備 | P-02 GDD UI 章節啟動 |
+| `【FT-10-FSD】save-load-system.md` | §8.3 B-02（P-02 部分） | 終末檔列舉 wrapper 由 P-02 直接呼叫 `Directory.GetFiles`；FT-10 不提供 wrapper API | P-02 GDD 終末檔 UI / Game Over 重啟流程章節啟動 |
+
+**FSD-index §7.1 同步標記**：上述條目皆於 FT-05 / FT-06 / FT-09 / FT-10 row 標 ⏸ T19 裁決暫緩，可從 FSD-index §7.1 反查。
+
+---
+
+## 附錄 B：P-03 已設計可對齊備註（T20 裁決，2026-04-28）
+
+**裁決摘要**：P-03 Notification System GDD 已存在於 `design/GDD/【P-03】notification-system.md`（使用者裁決），下列 FSD 條目對 P-03 的對齊**可執行**，由相關 FSD 在後續 patch 中對 §2.5 / §5.2 訂閱契約段落補對 P-03 的 Log API / Notification 訂閱引用。
+
+| FSD | 條目 | P-03 對齊內容 |
+| --- | --- | --- |
+| `【FT-01-FSD】adventurer-recruitment.md` | §8.3 B-01 | P-03 Notification GDD 已存在，可對 OnRecruitSuccess 訂閱契約延展（FT-01 無需修改，由 P-03 GDD 自行登記訂閱） |
+| `【FT-03-FSD】npc-decision-system.md` | §8.3 B-02 | FT-03 各 `Debug.LogWarning` 點之後可改呼叫 P-03 Log API（建議事項，不阻礙實作） |
+| `【FT-07-FSD】guild-building-system.md` | §8.3 B-03 | FT-07 各 `LogWarning` 點之後可改呼叫 P-03 Log API |
+| `【FT-09-FSD】faction-story-system.md` | §8.3 B-03（P-03 部分） | StageUnlocked / DialogueConfirmed / StageResolved / RouteCompleted 4 事件可選訂閱（P-03 GDD 自行登記） |
+| `【FT-10-FSD】save-load-system.md` | §8.3 B-02（P-03 部分） | FT-10 各 LogWarning / LogError 點可改呼叫 P-03 Log API |
+
+**FSD-index §7.1 同步標記**：上述條目皆於對應 row 標 ✓ T20 裁決，等待後續 P-03 對齊 patch。
 | 2026-04-28 | `【FT-12-FSD】staff-system.md` | 通過 | 通過 | 通過 | 正向 FSD（無既有 Staff Script）；FSD 未拆分（5 Script：StaffTypes / IStaffService / StaffTableLoader / StaffEffectAggregator / StaffService，預估 1280~1640 行）；GDD §3.1~§3.11 共 11 子節全部「對齊」；GDD §4.1 effect 聚合上限公式直接採用偽碼（min/max + cap）、§4.2 薪水公式為 Phase 2 規格 Jam 版整段不執行；GDD §5.1~§5.5 共 17 條邊緣案例皆有對策、涉及 Script、驗證方式（含時鐘倒退 / Phase 2 離線補發 / reallocatingStart=0 穩態 / B-5 冷卻 gate / B-6 idempotent / B-7 Working 直接銷毀 / 無 slot 能力穩態 / M-3 解鎖 reset / M-5 RestoreFromSave 5 種 capacity 衝突修復）；GDD §8 AC-1 / AC-3~AC-35 全對齊 §1.3 DoD（AC-2 / AC-21~AC-25 / AC-36 標 Phase 2 不驗收）；GDD §6.7 ISaveable 契約 step 1~7 完整對應 §5.4.11 偽碼；無真實衝突；建議項 B-01（FT-12-DS staff-table.md / FT-08-DS staff-tuning.md 皆 _待建_）/B-02（FT-07-DS building-table.md _待建_，FT-12 透過 IBuildingService.GetSlotCount 間接消費）/B-03（StaffTuning DS 撰寫時 owner 標註 FT-08 / FT-12 / 共用）/B-04（FT-10 ISaveable 簽名待定）/B-05（F-02 OnHourTick 缺位、改用 OnMinuteTick + 自節流每 3600s）/B-06（StaffService 預估 450~550 行接近 500 拆分門檻；Phase 2 啟用時拆分 SalaryPipeline.cs）/B-07（CandidateCard 跨型別 reference FT-08 GachaTypes 不重複定義）/B-08（M-3 解鎖 reset 範圍 Jam vs Phase 2 兩條分支）/B-09（TryGoOnLeave oldBuildingID > 0 守護已涵蓋）/B-10（EFFECT_MAX_RECRUIT_REFRESH_REDUCTION_SEC 單位秒 vs 其他 float 比率混型）+ D-01（Auto-leave 自節流間隔 3600s 表格化建議補登 `AUTO_LEAVE_SCAN_INTERVAL_SECONDS` 至 StaffTuning）皆不阻擋實作；§8.4 無 GDD 回註；§8.5 無衝突紀錄；待主體複核後轉「已完成」 |
 | 2026-04-28 | `【FT-12-FSD】staff-system.md`（design-review patch 後重 review） | 通過 | 通過 | 通過 | `/design-review FT-12-FSD` NEEDS REVISION 全修。HIGH：§2.3 / §5.4.3 step 7 / §6.1 / §6.3 / §4.4 五處同步從 `GetBuildingState` + `GetSlotCount` 改為 `IBuildingService.GetBuildingLevel(int)` + `IDataManager.Get<BuildingData>((buildingID, level)).slotCount` 直讀（對齊 FT-07 FSD §5.1 / §8.3 B-02 「不新增 GetSlotCount API」既定路徑）；§8.3 新增 B-11 已修登記。MEDIUM：§5.2 補事件 struct `OnXxxEvent` 後綴慣例 note；§5.4.1 step 5 + 7 採方案 (b) C# const `StaffPhase2.SalaryEnabled = false`（編譯期 dead code elimination）；新增 §5.4.12 Subscribe / Unsubscribe 對稱生命週期說明（OnDestroy / OnDisable + method group 訂閱）。LOW：§5.4.10 入口偽碼澄清 `dueTimestamp = TimeSystem.NowUTC`（OnDailyResetEvent payload 為空 struct）；§5.4.11 step 3 排序加 `(hiredTimestamp ASC, instanceID ASC)` 雙鍵保證決定性。§8.4 新增 GDD 回註意圖 1 條（FT-12 GDD §6.1 row 4 待同步 FT-07 API）；附錄 A 補 patch review 列。本次 patch 不變動章節結構、不影響 GDD 對齊 11 子節「對齊」狀態、不影響 §1.3 DoD / §8.1 / §8.2 / §8.5 既有判定；B-11 標「已修」、其餘 B-01~B-10 / D-01 維持實作期或跨 FSD 同步建議。 | B-11 已解決，B-01~B-10 / D-01 維持原狀；待主體複核後轉「已完成」 |

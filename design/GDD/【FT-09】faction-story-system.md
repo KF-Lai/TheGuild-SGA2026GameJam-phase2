@@ -138,10 +138,17 @@ Bootstrap(SaveData? saveData):
         C-06.OnFactionScoreUpdated(GetMaxFactionScore())   // 即使全 0 也推一次，保持 C-06 同步
     Step F: 補發未確認對話階段：
         FOR each stageID IN _pendingDialogueStages:
+            // T15 補規則：stage 已被縮減 / 不存在的防禦分支
+            IF NOT StoryStageTable.Contains(stageID):
+                Debug.LogWarning("Bootstrap Step F: stageID={id} not found in StoryStageTable (likely content shrink); dropped from queue")
+                _pendingDialogueStages.Remove(stageID)
+                continue
             EventBus.Publish(OnFactionStoryStageUnlocked(stageID, ...))
 ```
 
 > Step F 處理「玩家上次離線時階段已解鎖但對話視窗未確認」的場景——重發事件讓 P-02 重新彈出對話框。詳細 `_pendingDialogueStages` 入隊 / 出隊規則見 §3.4 / §3.5。
+
+> **T15 補規則（2026-04-28，FSD 回註）**：若 SaveData 中保存的 `stageID` 在 `StoryStageTable` 已被縮減 / 移除（內容調整跨版本場景），Step F 不發布事件、`LogWarning` 並從 queue 移除該項，避免未知 stage 觸發下游 `OnFactionStoryStageUnlocked` 事件異常。對應 FT-09-FSD §8.4 回註紀錄。
 
 #### 3.1.3 降級行為（Degradation Contract）
 
@@ -355,6 +362,8 @@ HandleOnMissionResolved(Outcome outcome):
         maxScore = GetMaxFactionScore()
         C-06.OnFactionScoreUpdated(maxScore)
 ```
+
+> **T16 修補規則（2026-04-28，對應 EC-5 + FT-09-FSD §8.4 line 553）**：上方 Step 1 三個早退條件（neutral / failure / unknown factionID）以及 Step 2 `delta == 0` 的早退**僅針對「分數累積路徑（Step 2~6）」**，實作端**不可** unconditional `return` 結束整個 `HandleOnMissionResolved`；應改為「跳至 §3.6.2 Step 7」繼續執行劇情委託結算路徑（識別 `categoryID == 3` → 反查 stage → 發布 `OnFactionStoryStageResolved` → 路線完結判定）。理由：EC-5「劇情委託失敗 / 死亡」明定「`_unlockedStageIndices` 不回退；發 StageResolved 含 isSuccess / isDead」，§3.6.2 Step 7~10 為劇情委託 epilogue 觸發路徑（P-02 播放 epilogue 文本依據），不應因「分數累積條件不符」而被跳過。實作建議結構：將 §3.3.2 Step 1~6 包成內部 `AccumulateScore(outcome)`，Step 1~6 內的 `return` 改為「跳出 Score Accumulator」；`HandleOnMissionResolved` 主流程恆執行「`AccumulateScore(outcome)` → §3.6.2 Step 7~10」。
 
 ---
 

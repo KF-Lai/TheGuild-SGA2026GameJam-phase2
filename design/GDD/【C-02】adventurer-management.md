@@ -108,6 +108,8 @@ Dead ─── 終態
    - 從 `Idle` **轉出至** `Dispatched` / `Wounded` / `Dead` 任一狀態：`idleSinceTimestamp = 0`
    - `lastAutoPickupTimestamp` 由 FT-03 主動呼叫 `SetLastAutoPickupTimestamp` 寫入；C-02 不在狀態轉移時自動清除或設定此欄位
 
+   > **FSD 回註（2026-04-28，T8 裁決）**：FT-03-FSD §8.4 已確認此欄位「**不受狀態轉移影響**」。FT-03 為唯一寫入方；C-02 在 Idle→Dispatched / Idle→Wounded / Idle→Dead / 任意狀態 → Dead 等狀態轉移分支皆不清除、不重設；僅 FT-01 透過 `CreateFromTemplate` 初始化時設為 0。
+
 ---
 
 ### 3.5 查詢 API

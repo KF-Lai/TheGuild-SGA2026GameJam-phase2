@@ -549,10 +549,10 @@ SaveSystem.RequestRestore(ownerKey="factionStorySaveData", json)
 
 | 日期 | GDD 檔案 | 章節 | 回註摘要 |
 | --- | --- | --- | --- |
-| 2026-04-28 | `【FT-09】faction-story-system.md` | §3.1.2 Step F | FSD 回註：補發事件時若 stage 已被 CSV 縮減導致 `GetByStageID` 回 null，FSD 採「LogError + 不出隊」保守處理，與 EC-10(e) 夾擠原則一致；GDD 可考慮明文化此分支（B-05 修補意圖；待主體覆核後寫入 GDD） |
-| 2026-04-28 | `【FT-09】faction-story-system.md` | §3.3.2 Step 1 | FSD 回註：失敗 / delta=0 / 未知 factionID 早退時，若該 outcome 對應劇情委託（`categoryID == 3`），仍須走 §3.6.2 路徑發 `OnFactionStoryStageResolvedEvent`（對應 EC-5 失敗 / 死亡仍須播 epilogue）；建議 GDD 偽碼將 `return` 改為「跳至 Step 7」並加註此跨節依賴（B-06 修補意圖；待主體覆核後寫入 GDD） |
+| 2026-04-28 | `【FT-09】faction-story-system.md` | §3.1.2 Step F | FSD 回註：補發事件時若 stage 已被 CSV 縮減導致 `GetByStageID` 回 null，FSD 採「LogError + 不出隊」保守處理，與 EC-10(e) 夾擠原則一致；GDD 可考慮明文化此分支（B-05 修補意圖）。**[2026-04-28 T15 落地]** ✓ 已寫入 GDD §3.1.2 Step F，補規則：「stageID 不存在於 StoryStageTable 則 LogWarning + 從 queue 移除 + continue」+ FSD 回註說明段落。 |
+| 2026-04-28 | `【FT-09】faction-story-system.md` | §3.3.2 Step 1 | FSD 回註：失敗 / delta=0 / 未知 factionID 早退時，若該 outcome 對應劇情委託（`categoryID == 3`），仍須走 §3.6.2 路徑發 `OnFactionStoryStageResolvedEvent`（對應 EC-5 失敗 / 死亡仍須播 epilogue）；建議 GDD 偽碼將 `return` 改為「跳至 Step 7」並加註此跨節依賴（B-06 修補意圖）。**[2026-04-28 T16 落地]** ✓ 已寫入 GDD §3.3.2 Step 6 後補「T16 修補規則」block：明示 Step 1~6 早退僅限分數累積路徑、§3.6.2 Step 7~10 必執行、實作建議用 `AccumulateScore` 內部方法包覆。 |
 
-> 兩條回註目前僅作為意圖登記，待主體最終覆核後決定是否寫入 GDD。FSD 邏輯不依賴 GDD 同步更新即可完整實作。
+> **更新（2026-04-28）**：兩條回註已於 T15 / T16 裁決批次寫入 GDD（§3.1.2 Step F 防禦分支 / §3.3.2 Step 6 後 T16 修補規則 block）。FSD 邏輯與 GDD 已對齊。
 
 ### 8.5 衝突處理紀錄
 

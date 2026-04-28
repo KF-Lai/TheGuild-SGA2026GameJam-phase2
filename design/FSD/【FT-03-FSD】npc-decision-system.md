@@ -371,7 +371,7 @@ P-02.OnHoverMissionSlot(instanceID, missionID)
 
 | 日期 | GDD 檔案 | 章節 | 回註摘要 |
 | --- | --- | --- | --- |
-| 無 | — | — | 本 FSD 無需對 GDD 加回註（無規格偏差，無替代公式，無職責邊界澄清）。B-01/B-02 為建議項，待後續系統 FSD 撰寫時確認。 |
+| 2026-04-28 | 【C-02】adventurer-management.md | §3.4（狀態轉移規則第 6 項，`lastAutoPickupTimestamp` 子項，line 109） | **T8 裁決回註**：確認 `lastAutoPickupTimestamp` 不受 C-02 狀態轉移影響——FT-03 為唯一寫入方（透過 `SetLastAutoPickupTimestamp`），C-02 在所有狀態轉移分支（Idle→Dispatched / Idle→Wounded / Idle→Dead / 任意狀態 → Dead）皆不清除、不重設此欄位；僅 FT-01 透過 `CreateFromTemplate` 初始化時設為 0。對應 C-02 FSD §8.3 B-01。 |
 
 ### 8.5 衝突處理紀錄
 

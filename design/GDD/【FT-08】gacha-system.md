@@ -438,8 +438,8 @@ OnStaffSystemBoot():
     ELSE IF currentCandidates.All(c => c == null):    // 首次解鎖、currentCandidates 為空
         ExecuteRefresh(refreshType=Auto, poolID=currentPoolID)
 
-    // Step D：薪水補發（FT-12 FT-12 FT-12 §3.5.4）—— ⚠️ Phase 2，Jam 版整段跳過（FT-12 FT-12 FT-12 §3.5 為 Phase 2）
-    ProcessOfflineSalary()                            // Jam 版不執行（FT-12 FT-12 FT-12 §3.5 / FT-12 §3.4.3）
+    // Step D：薪水補發（FT-12 §3.5.4）—— ⚠️ Phase 2，Jam 版整段跳過（FT-12 §3.5 為 Phase 2）
+    ProcessOfflineSalary()                            // Jam 版不執行（FT-12 §3.5 / FT-12 §3.4.3）
 ```
 
 **保留卡與補刷的競態保證**（Case 5.2.4 回應）：
@@ -1178,6 +1178,7 @@ maxReserve = max(1, interviewSlotCount - 1)
 | `TRASH_ROLL_RATE_AT_RARITY_1` | `0.30` | 1★ 層 trash 觸發機率 |
 | `MAX_RESERVE_FALLBACK` | `1` | 面試欄 = 1 時的特例 maxReserve |
 | `INTERVIEW_AUTO_REFRESH_INTERVAL_L1` ~ `L5` | `86400` ~ `21600` | 自動刷新間隔（職員休息室等級驅動） |
+| `MIN_AUTO_REFRESH_INTERVAL_SEC` | `3600` | 自動刷新間隔下限（floor），用於 §4.1.6 `autoRefreshIntervalSec(L) = max(MIN_AUTO_REFRESH_INTERVAL_SEC, buildingInterval - staffReduction)`；安全範圍 `[1800, 7200]`（§7.2） |
 
 ### 6.6 雙向聲明同步表
 
