@@ -64,7 +64,7 @@ TheGuild-unity/Assets/
 
 - **設計文件 / 程式碼註釋**：繁體中文（Unity API、識別符號、專有名詞保持英文）
 - **識別符號**：英文（PascalCase / _camelCase / camelCase）
-- **時間單位**：全專案只用「秒」或「小時」，禁用分/天/週
+- **時間單位（CSV 表格規範）**：CSV 表格中的時間欄位只用「秒」或「小時」，禁用分/天/週；程式碼、GDD、FSD 內部運算與敘述不受此規則限制（可依語境使用分鐘、天等表達）
 - **Git commit 訊息**：繁體中文（subject 與 description；技術 prefix 如 `opt(round-N):` / `feat:` / `fix:` 與 `Co-Authored-By` trailer 保持英文標準格式）
 
 ---
