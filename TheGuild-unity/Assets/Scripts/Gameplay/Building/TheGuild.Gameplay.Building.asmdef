@@ -1,0 +1,20 @@
+{
+  "name": "TheGuild.Gameplay.Building",
+  "rootNamespace": "TheGuild.Gameplay.Building",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Guild"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
