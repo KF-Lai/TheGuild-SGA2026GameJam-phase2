@@ -158,7 +158,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | 3   | C-04 Race System              | 已完成 | 2026-04-28 | 2026-04-28 | C-04-FSD Codex Medium 落地；PlayMode 統計測試 AC-RS-10 通過 |
 | 4   | C-05 Trait System             | 已完成 | 2026-04-28 | 2026-04-28 | C-05-FSD Codex Medium 落地；23 effectTargets 硬編碼於 Loader |
 | 5   | C-02 Adventurer Management    | 待     |      |               |                              |
-| 6   | C-06 World Danger System      | 待     |      |               |                              |
+| 6   | C-06 World Danger System      | 已完成 | 2026-04-28 | 2026-04-28 | C-06-FSD Codex Medium 落地；ISaveable Stub 待 FT-10 |
 | 7   | FT-02-A Mission Dispatch Core | 待     |      |               | 同步執行 D-01                |
 | 8   | FT-02-B Commission Board      | 待     |      |               |                              |
 | 9   | FT-04 Outcome Resolution      | 待     |      |               |                              |

@@ -1,0 +1,13 @@
+dangerLevel,E,D,C,B,A
+name,Watch,Caution,Alert,Crisis,Catastrophe
+timeThreshold,0,1,3,7,14
+missionCountReq,0,10,15,20,25
+minDifficulty,F,F,D,C,B
+factionScoreReq,0,0,5,12,20
+weightF_E,40,20,10,5,0
+weightD,30,35,20,10,5
+weightC,20,25,35,25,15
+weightB,8,15,25,35,30
+weightA,2,5,8,20,35
+weightS_SSS,0,0,2,5,15
+maxDebt,-100,-500,-1000,-2500,-5000
