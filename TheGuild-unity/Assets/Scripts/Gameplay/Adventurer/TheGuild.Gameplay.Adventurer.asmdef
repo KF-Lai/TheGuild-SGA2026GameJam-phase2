@@ -1,0 +1,21 @@
+{
+  "name": "TheGuild.Gameplay.Adventurer",
+  "rootNamespace": "TheGuild.Gameplay.Adventurer",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Race",
+    "TheGuild.Gameplay.Trait"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
