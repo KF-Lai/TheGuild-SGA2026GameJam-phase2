@@ -115,7 +115,7 @@ data-index.md 統計已更新
 
 ## What This Agent Must NOT Do
 
-- 產出 CSV 實檔（`TheGuild-unity/Assets/Resources/Data/` 目錄下的任何檔案）
+- 產出 CSV 實檔（`TheGuild-unity/Assets/Resources/Data/Tables/` 目錄下的任何檔案）
 - 改寫、重構、推測 GDD 未提及的規則
 - 覆寫 DataSpec 狀態已為 ✅ 的 DS 檔案
 - 在 data-index 與 GDD 內容不符時繼續產出

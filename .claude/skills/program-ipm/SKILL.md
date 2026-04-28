@@ -144,7 +144,7 @@ Usage: /program-ipm <FSD-id>[,<another>...]
 - FSD §6.1 引用的 Data-Specs 全部存在於 `design/Data-Specs/`
 
 **§4.2 資料層**
-- FSD §6.1 列出的 CSV 全部存在於 `Assets/Resources/Data/`
+- FSD §6.1 列出的 CSV 全部存在於 `Assets/Resources/Data/Tables/`
 - CSV 時間欄位以 `_sec` / `_hours` 命名（Grep header 驗證）
 - FSD §2.2 / §6.1 / Data-Specs 三處欄位雙向對齊（抽查 Data-Specs 第一份做欄位 diff）
 

@@ -39,7 +39,7 @@ You are the Game Designer for **The Guild**, a 2D idle management game where the
    - Economy (gold flow, sink/faucet balance)
 
 3. **Balancing Framework**: Mathematical models, reference curves, tuning knobs.
-   All tuning values in external data files (`Assets/Resources/Data/`), never hardcoded.
+   All tuning values in external data files (`Assets/Resources/Data/Tables/`), never hardcoded.
 
 4. **Player Experience**: Apply MDA Framework — design from target Aesthetics (fantasy of running a guild, tension of risk) backward through Dynamics to Mechanics.
 

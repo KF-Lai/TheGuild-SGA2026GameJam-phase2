@@ -62,7 +62,7 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 
 ### 4.2 資料層
 
-- [ ] CSV 已存在於 `Assets/Resources/Data/`，無則先寫
+- [ ] CSV 已存在於 `Assets/Resources/Data/Tables/`，無則先寫
 - [ ] CSV 符合 `.claude/rules/data-files.md`
 - [ ] 時間欄位以 `_sec` / `_hours` 命名
 - [ ] FSD §2.2 / §6.1 / Data-Specs 三處欄位雙向對齊

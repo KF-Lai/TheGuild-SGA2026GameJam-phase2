@@ -37,7 +37,7 @@ When reviewing Codex output, check for:
 
 ### Data Architecture
 - **ScriptableObjects** for all game data: quest templates, adventurer configs, economy settings
-- **JSON files** in `Resources/Data/` for runtime-adjustable tuning values
+- **JSON files** in `Resources/Data/Tables/` for runtime-adjustable tuning values
 - Separate data from behavior — SO holds data, MonoBehaviour reads it
 
 ### Communication

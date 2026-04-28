@@ -17,7 +17,7 @@
 
 - **引擎**：Unity 2D (URP) + C# (.NET)
 - **UI**：UI Toolkit (UXML/USS) 為主，UGUI 為輔（世界空間 UI）
-- **資料驅動**：CSV 表格放在 `Assets/Resources/Data/`，欄位規格見 `design/data-specs/`
+- **資料驅動**：CSV 表格放在 `Assets/Resources/Data/Tables/`，欄位規格見 `design/data-specs/`
 - **命名慣例**：`PascalCase`（public）、`_camelCase`（private field）、`camelCase`（local）
 
 ---
@@ -34,7 +34,7 @@ TheGuild-unity/Assets/
   Scripts/Core/             ← 事件匯流排、存檔、時間、資料管理
   Scripts/Gameplay/         ← 委託、冒險者、經濟、公會
   Scripts/UI/
-  Resources/Data/           ← CSV 資料檔
+  Resources/Data/Tables/    ← CSV 資料檔
   Tests/EditMode|PlayMode/  ← Unity Test Framework
 ```
 
@@ -48,7 +48,7 @@ TheGuild-unity/Assets/
 - **Gemini Narrative**：writer agent 可呼叫 `gemini_generate_narrative` 產生文本初稿
 - **Gemini Web Search**：全域 PreToolUse hook 自動觸發，無需手動呼叫
 - **Unity 操作**：透過 UnityMCP（refresh、tests、scene、asset、console）
-- **CSV 生成**：Claude Code 直接 `Write` 到 `Resources/Data/`，Unity refresh 後 .meta 自動生成
+- **CSV 生成**：Claude Code 直接 `Write` 到 `Resources/Data/Tables/`，Unity refresh 後 .meta 自動生成
 
 ---
 

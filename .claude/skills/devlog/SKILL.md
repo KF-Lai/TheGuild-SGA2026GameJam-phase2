@@ -70,7 +70,7 @@ From the file paths and insertion/deletion counts alone, infer:
 - Which GDD files were created or significantly rewritten (large `+` counts)
 - Which Data-Specs were added (new files in `design/Data-Specs/`)
 - Which scripts were modified (`Assets/Scripts/`)
-- Which CSV data files changed (`Assets/Resources/Data/`)
+- Which CSV data files changed (`Assets/Resources/Data/Tables/`)
 - Which skill/rule/config files were updated (`.claude/`)
 - Which test files changed (`Tests/`)
 
