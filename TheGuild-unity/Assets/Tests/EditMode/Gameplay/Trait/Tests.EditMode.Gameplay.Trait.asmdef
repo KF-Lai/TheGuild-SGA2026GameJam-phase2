@@ -1,0 +1,24 @@
+{
+  "name": "Tests.EditMode.Gameplay.Trait",
+  "rootNamespace": "Tests.EditMode.Gameplay.Trait",
+  "references": [
+    "TheGuild.Gameplay.Trait",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Core.Data",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": []
+}
