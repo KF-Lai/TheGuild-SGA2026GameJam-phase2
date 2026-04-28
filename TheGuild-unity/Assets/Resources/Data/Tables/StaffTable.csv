@@ -1,0 +1,18 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === StaffTable — 職員模板 ===
+# 對應 §3.2 資料表範例（說明用，§7 調參）
+# salary 欄位以下範例展示 Phase 2 預期調參梯度；Jam 版可全填 0（薪水管線未啟用，§7.1.1）
+
+staffID,101,102,103,104,105
+name,克勞德·會計師,艾蓮·委託官,蘿絲·櫃台小姐,無名小職員,咖啡杯
+rarity,3,2,2,1,1
+salary,40,30,30,10,0
+severancePay,120,80,80,10,0
+isFiller,false,false,false,true,true
+factionID,0,0,0,0,0
+minGuildLevel,2,1,1,1,1
+effectIDs,AccountantCommission|AccountantPenaltyOnVault,Willingness,RecruitRefreshOnCounter,Willingness,""
+effectValues,0.02|-0.02,0.05,7200,0.01,""
+slotBuildingIDs,5,1,4,0,0
+uiFlagIDs,"",SuccessRatePreview,"","",""
+uiFlagBuildingIDs,0,1,0,0,0

@@ -1,0 +1,11 @@
+# === 公會等級表 ===
+# PK: level（int 1..5）
+# 對齊 FT-06 §3.5 + §7.1 Game Jam 初始資料
+# maxDifficulty 為 deprecated legacy，保持與 maxRecruitableRank 同值
+
+level,1,2,3,4,5
+reputationThreshold,0,30,80,200,400
+title,新手冒險者公會,初階冒險者公會,中階冒險者公會,高階冒險者公會,名聲顯赫的冒險者公會
+maxDifficulty,D,C,B,A,S
+maxRecruitableRank,D,C,B,A,S
+maxMissionDifficulty,D,C,B,A,SS

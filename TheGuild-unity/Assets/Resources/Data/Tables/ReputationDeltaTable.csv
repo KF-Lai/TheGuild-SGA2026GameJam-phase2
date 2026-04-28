@@ -1,0 +1,6 @@
+# === 任務結算聲望變化表 ===
+# 對齊 FT-04 §3.6 / §7.2；condition 特質以 += 疊加於基礎 delta 之上
+
+difficulty,F,E,D,C,B,A,S,SS,SSS
+successDelta,3,4,5,6,8,6,8,10,12
+failDelta,-1,-2,-3,-4,-6,-8,-10,-12,-15

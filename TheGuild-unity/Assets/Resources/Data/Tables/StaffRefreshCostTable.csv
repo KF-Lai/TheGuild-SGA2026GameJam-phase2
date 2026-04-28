@@ -1,0 +1,7 @@
+# === StaffRefreshCostTable ===
+# 手動刷新費（cost）與面試欄張數（interviewSlotCount）依公會等級遞增
+# 對齊 FT-08 §3.3.6 Jam 版範例
+
+guildLevel,1,2,3,4,5
+cost,100,150,250,400,600
+interviewSlotCount,3,3,4,4,5

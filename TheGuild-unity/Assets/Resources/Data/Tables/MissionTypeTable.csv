@@ -1,0 +1,5 @@
+# === MissionTypeTable 任務類型 ===
+# typeID=2 護送任務在 MissionTemplate 中僅允許 D~A 難度（GDD §3.2）
+
+typeID,1,2,3,4
+typeName,討伐,護送,採集,調查

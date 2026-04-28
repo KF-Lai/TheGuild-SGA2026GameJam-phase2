@@ -1,0 +1,7 @@
+# === FactionRouteTable — 陣營路線定義 ===
+# 對應 §3.2.1 Jam 預設值（1 條秩序路線）
+# Jam 版僅 1 筆；Post-Jam 新增路線直接在此追加
+
+factionID,1
+name,秩序
+description,守護世界既有秩序的陣營路線

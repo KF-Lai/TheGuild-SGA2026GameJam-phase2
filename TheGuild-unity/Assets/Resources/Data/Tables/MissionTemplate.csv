@@ -1,0 +1,9 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === MissionTemplate 任務模板 ===
+# difficulty 護送任務(typeID=2)只能填 D/C/B/A；categoryID=0 進入常規委託生成池
+
+missionID,1,2,3,4,5
+difficulty,F,D,C,B,B
+typeID,1,2,3,1,4
+factionID,0,1,0,2,0
+categoryID,0,0,0,0,1

@@ -1,0 +1,15 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === 建築升級表 ===
+# PK: buildingID_level（複合主鍵；格式 {buildingID}_{level}）
+# 對齊 FT-07 §7.1 完整預設值（5 筆示例：委託板 L1/L2、招募廣告欄 L1、職員休息室 L0/L1）
+
+buildingID_level,1_1,1_2,2_1,6_0,6_1
+buildingID,1,1,2,6,6
+name,委託板,委託板,招募廣告欄,職員休息室,職員休息室
+maxLevel,5,5,3,5,5
+level,1,2,1,0,1
+effectValue,5,8,86400,0,86400
+upgradeCost,0,150,0,0,500
+guildLevelReq,0,0,0,0,0
+slotCount,3,3,0,0,0
+maintenanceCost,0,15,0,0,0

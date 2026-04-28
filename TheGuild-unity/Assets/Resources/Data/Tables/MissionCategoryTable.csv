@@ -1,0 +1,5 @@
+# === MissionCategoryTable 任務類別 ===
+# categoryID=0(regular) 進入 Commission Flow 生成池；其餘由特定系統觸發
+
+categoryID,0,1,2,3
+categoryName,regular,tutorial,guild_challenge,faction_story

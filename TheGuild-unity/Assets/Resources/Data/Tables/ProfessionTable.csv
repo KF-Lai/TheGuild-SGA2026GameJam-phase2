@@ -1,0 +1,14 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === ProfessionTable 職業定義表（Game Jam 7 種職業，全 tier=1）===
+# raceWeights 為相對比例，不需加總為 100（GDD §3.1）
+
+professionID,1,2,3,7
+name,戰士,法師,遊俠,傭兵
+description,前線肉盾與近戰主力,遠程魔法輸出,全地形採集與追蹤,無固定專長的雇傭戰士
+strongTypeIDs,1,4,3,0
+weakTypeIDs,4,3,2,0
+tier,1,1,1,1
+baseProfessionID,0,0,0,0
+raceIDs,1|3,2|4,1|2,1|3|4
+raceWeights,60|40,55|45,50|50,50|30|20
+traitGroupIDs,1|3|4,1|2|4,1|2|5,2|4|5

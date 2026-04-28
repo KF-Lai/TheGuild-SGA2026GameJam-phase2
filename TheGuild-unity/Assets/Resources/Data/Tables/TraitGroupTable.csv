@@ -1,0 +1,9 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === TraitGroupTable 特質群組定義（Game Jam 5 個群組）===
+# pickMode=uniform 表示無放回抽樣；traitIDs 由內容量產後填入
+
+groupID,1,2,3,4,5
+groupName,combat_stat,behavior_general,behavior_combat,condition_luck,condition_survival
+traitIDs,1|2|3|4|5,6|7|8|9|10,11|12|13|14|15,16|17|18|19|20,21|22|23|24|25
+pickCount,1,1,1,1,1
+pickMode,uniform,uniform,uniform,uniform,uniform

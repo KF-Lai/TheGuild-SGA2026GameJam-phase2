@@ -1,0 +1,11 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === StoryStageTable — 陣營劇情階段 ===
+# 對應 §3.2.2 Jam 預設值（秩序路線 3 個階段）
+# threshold=[10, 30, 60]：B 任務一單 +5 分，第 2~3 單成功後解鎖 stage1
+
+stageID,1001,1002,1003
+factionID,1,1,1
+stageIndex,1,2,3
+scoreThreshold,10,30,60
+missionID,9001,9002,9003
+dialogueKey,story.order.stage1,story.order.stage2,story.order.stage3

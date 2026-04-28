@@ -1,0 +1,5 @@
+# === 老手池階級抽取權重表 ===
+# 對齊 FT-01 §4.4 RollVeteranRank；runtime 過濾超過 maxRecruitableRank 的行後重新正規化
+
+rank,D,C,B,A,S
+weight,40,30,18,9,3

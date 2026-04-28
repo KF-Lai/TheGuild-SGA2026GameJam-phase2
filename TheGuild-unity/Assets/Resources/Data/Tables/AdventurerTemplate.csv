@@ -1,0 +1,13 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === AdventurerTemplate 具名 NPC 冒險者模板 ===
+# isUnique=1 表示全局只能出現一次（含 Dead 後不再招募）
+
+templateID,1,2,3
+name,艾克·鐵拳,莉亞·月影,傭兵甲
+rank,C,D,E
+professionID,1,4,7
+raceID,3,2,0
+fixedTraitIDs,0,0,0
+randomTraitGroupIDs,1|3,1|2,2|4
+factionID,0,1,0
+isUnique,1,1,0
