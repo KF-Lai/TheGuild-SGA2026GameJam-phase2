@@ -1,0 +1,33 @@
+{
+  "name": "Tests.EditMode.Gameplay.GoldFlow",
+  "rootNamespace": "Tests.EditMode.Gameplay.GoldFlow",
+  "references": [
+    "TheGuild.Gameplay.GoldFlow",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.Outcome",
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.Building",
+    "TheGuild.Gameplay.Guild",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Staff",
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
