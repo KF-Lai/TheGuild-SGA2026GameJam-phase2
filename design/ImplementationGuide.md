@@ -97,31 +97,31 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 
 ### 5.2 Core 層
 
-| #   | 系統                       | 上游                   | 並行條件   |
-| --- | -------------------------- | ---------------------- | ---------- |
-| 1   | C-01 Mission Database      | F-01                   | 與 #2 並行 |
-| 2   | C-03 Profession System     | F-01                   | 與 #1 並行 |
-| 3   | C-04 Race System           | F-01、C-03             | 與 #4 並行 |
-| 4   | C-05 Trait System          | F-01、C-03             | 與 #3 並行 |
+| #   | 系統                         | 上游                  | 並行條件    |
+| --- | -------------------------- | ------------------- | ------- |
+| 1   | C-01 Mission Database      | F-01                | 與 #2 並行 |
+| 2   | C-03 Profession System     | F-01                | 與 #1 並行 |
+| 3   | C-04 Race System           | F-01、C-03           | 與 #4 並行 |
+| 4   | C-05 Trait System          | F-01、C-03           | 與 #3 並行 |
 | 5   | C-02 Adventurer Management | F-01、C-03、C-04、C-05 | 與 #6 並行 |
-| 6   | C-06 World Danger System   | F-01、F-03             | 與 #5 並行 |
+| 6   | C-06 World Danger System   | F-01、F-03           | 與 #5 並行 |
 
 ### 5.3 Feature 層
 
-| 階段 | #   | 系統                          | 上游                             | 備註                       |
-| ---- | --- | ----------------------------- | -------------------------------- | -------------------------- |
-| F1   | 7   | FT-02-A Mission Dispatch Core | C-01/02/03/04/05、F-02、F-03     | 同時執行 D-01 移除舊計時器 |
-| F1   | 8   | FT-02-B Commission Board      | FT-02-A、C-01                    | 序列於 #7 後               |
-| F1   | 9   | FT-04 Outcome Resolution      | FT-02、F-03、C-01、C-02          | 序列於 #8 後               |
-| F2   | 10  | FT-06 Guild Core              | F-03、F-01                       | 可與 F1 並行               |
-| F2   | 11  | FT-07 Guild Building System   | FT-06、F-03                      | 序列於 #10 後              |
-| F3   | 12  | FT-12 Staff System            | FT-06、FT-07、F-01、F-02         | Phase 2 薪水管線不啟用     |
-| F3   | 13  | FT-08 Gacha System            | FT-06、FT-07、FT-12              | 序列於 #12 後              |
-| F4   | 14  | FT-01 Adventurer Recruitment  | C-02/03/04/05、F-03、FT-12       | 與 #15 並行                |
-| F4   | 15  | FT-03 NPC Decision System     | FT-02、C-02、C-05、F-02、FT-12   | 與 #14 並行                |
-| F5   | 16  | FT-05 Guild Gold Flow         | FT-02、FT-04、F-03、FT-07、FT-12 | 與 #17 並行                |
-| F5   | 17  | FT-09 Faction Story System    | FT-04、C-01、F-01                | 與 #16 並行                |
-| F6   | 18  | FT-10 Save/Load System        | ALL                              | 必須最後；獨佔             |
+| 階段  | #   | 系統                            | 上游                           | 備註               |
+| --- | --- | ----------------------------- | ---------------------------- | ---------------- |
+| F1  | 7   | FT-02-A Mission Dispatch Core | C-01/02/03/04/05、F-02、F-03   | 同時執行 D-01 移除舊計時器 |
+| F1  | 8   | FT-02-B Commission Board      | FT-02-A、C-01                 | 序列於 #7 後         |
+| F1  | 9   | FT-04 Outcome Resolution      | FT-02、F-03、C-01、C-02         | 序列於 #8 後         |
+| F2  | 10  | FT-06 Guild Core              | F-03、F-01                    | 可與 F1 並行         |
+| F2  | 11  | FT-07 Guild Building System   | FT-06、F-03                   | 序列於 #10 後        |
+| F3  | 12  | FT-12 Staff System            | FT-06、FT-07、F-01、F-02        | Phase 2 薪水管線不啟用  |
+| F3  | 13  | FT-08 Gacha System            | FT-06、FT-07、FT-12            | 序列於 #12 後        |
+| F4  | 14  | FT-01 Adventurer Recruitment  | C-02/03/04/05、F-03、FT-12     | 與 #15 並行         |
+| F4  | 15  | FT-03 NPC Decision System     | FT-02、C-02、C-05、F-02、FT-12   | 與 #14 並行         |
+| F5  | 16  | FT-05 Guild Gold Flow         | FT-02、FT-04、F-03、FT-07、FT-12 | 與 #17 並行         |
+| F5  | 17  | FT-09 Faction Story System    | FT-04、C-01、F-01              | 與 #16 並行         |
+| F6  | 18  | FT-10 Save/Load System        | ALL                          | 必須最後；獨佔          |
 
 ### 5.4 暫緩／範疇外
 
