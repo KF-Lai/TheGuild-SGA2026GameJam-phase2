@@ -1,0 +1,26 @@
+{
+  "name": "TheGuild.Gameplay.Recruitment",
+  "rootNamespace": "TheGuild.Gameplay.Recruitment",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Race",
+    "TheGuild.Gameplay.Trait",
+    "TheGuild.Gameplay.Guild",
+    "TheGuild.Gameplay.Building",
+    "TheGuild.Gameplay.Staff"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
