@@ -6,6 +6,7 @@ using TheGuild.Core.SaveContract;
 using TheGuild.Gameplay.Adventurer;
 using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.FactionStory.Events;
+using TheGuild.Gameplay.Gacha.Events;
 using TheGuild.Gameplay.MissionDispatch.Events;
 using TheGuild.Gameplay.Outcome.Events;
 using TheGuild.Gameplay.Resources.Events;
@@ -306,6 +307,7 @@ namespace TheGuild.Gameplay.Save
             Hook<OnMissionResolvedEvent>(_ => MarkDirty());
             Hook<BuildingUpgradedEvent>(_ => MarkDirty());
             Hook<OnFactionScoreChangedEvent>(_ => MarkDirty());
+            Hook<OnGachaStateDirtyEvent>(_ => MarkDirty());
         }
 
         private void OnDestroy()

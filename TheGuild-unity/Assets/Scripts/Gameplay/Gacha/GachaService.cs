@@ -6,6 +6,7 @@ using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Guild;
+using TheGuild.Gameplay.Gacha.Events;
 using TheGuild.Gameplay.Resources;
 using TheGuild.Gameplay.Staff;
 using UnityEngine;
@@ -281,7 +282,7 @@ namespace TheGuild.Gameplay.Gacha
                 {
                     case HireStaffResult.OK:
                         _playerState.currentCandidates[slotIndex] = CandidateCardExtensions.MakeEmptySlot(_playerState.currentPoolID, slotIndex);
-                        // TODO(FT-10): mark dirty
+                        EventBus.Publish(new OnGachaStateDirtyEvent());
                         return RecruitResult.SUCCESS;
 
                     case HireStaffResult.STAFF_SYSTEM_LOCKED:
@@ -334,7 +335,7 @@ namespace TheGuild.Gameplay.Gacha
             }
 
             _playerState.currentCandidates[slotIndex] = CandidateCardExtensions.MakeEmptySlot(_playerState.currentPoolID, slotIndex);
-            // TODO(FT-10): mark dirty
+            EventBus.Publish(new OnGachaStateDirtyEvent());
             return RejectResult.SUCCESS;
         }
 
@@ -380,7 +381,7 @@ namespace TheGuild.Gameplay.Gacha
             _playerState.reservedCandidates.Add(candidate);
 
             _playerState.currentCandidates[slotIndex] = CandidateCardExtensions.MakeEmptySlot(_playerState.currentPoolID, slotIndex);
-            // TODO(FT-10): mark dirty
+            EventBus.Publish(new OnGachaStateDirtyEvent());
             return ReserveResult.SUCCESS;
         }
 
@@ -405,7 +406,7 @@ namespace TheGuild.Gameplay.Gacha
             if (reserved == null)
             {
                 _playerState.reservedCandidates.RemoveAt(reserveIndex);
-                // TODO(FT-10): mark dirty
+                EventBus.Publish(new OnGachaStateDirtyEvent());
                 return ReleaseResult.SUCCESS;
             }
 
@@ -433,7 +434,7 @@ namespace TheGuild.Gameplay.Gacha
             }
 
             ReleaseReserveInternal(reserved);
-            // TODO(FT-10): mark dirty
+            EventBus.Publish(new OnGachaStateDirtyEvent());
             return ReleaseResult.SUCCESS;
         }
 
@@ -702,7 +703,7 @@ namespace TheGuild.Gameplay.Gacha
             }
 
             // Step 9: mark dirty.
-            // TODO(FT-10): mark dirty
+            EventBus.Publish(new OnGachaStateDirtyEvent());
 
             // Step 10: no refresh event publish (FSD §3.3.7).
             return RefreshResult.SUCCESS;
