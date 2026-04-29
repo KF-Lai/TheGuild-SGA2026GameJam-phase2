@@ -13,13 +13,6 @@ using UnityEngine;
 //              ISaveable 序列化（Serialize / RestoreFromSave / InitializeAsNewGame）、
 //              保險櫃啟動與升級時推送破產倒數秒數至 F-03
 
-// ── ISaveable TODO ────────────────────────────────────────────────────────────
-// TODO(FT-10)：待 ISaveable 介面建立後，於類別宣告加上 `: ISaveable`，
-// 並將 IBuildingService 中的 ISaveable 衍生簽名移至獨立介面。
-// 目前保留全部 ISaveable 方法簽名（OwnerKey / IsCritical / Serialize /
-// RestoreFromSave / InitializeAsNewGame）為 public，FT-10 整合時無需修改方法本身。
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace TheGuild.Gameplay.Building
 {
     /// <summary>

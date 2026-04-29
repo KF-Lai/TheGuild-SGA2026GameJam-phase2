@@ -13,12 +13,6 @@ using UnityEngine;
 // 職責（SRP）：訂閱 F-03 事件、連跳 queue 排程、Game Over 兩階段狀態機、
 //              ISaveable 序列化、對外查詢 API
 
-// ── ISaveable TODO ────────────────────────────────────────────────────────────
-// TODO(FT-10)：待 ISaveable 介面建立後，於類別宣告加上 `: ISaveable`。
-// 目前保留全部 ISaveable 方法簽名（OwnerKey / IsCritical / Serialize /
-// RestoreFromSave / InitializeAsNewGame）為 public，FT-10 整合時無需修改方法本身。
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace TheGuild.Gameplay.Guild
 {
     /// <summary>
@@ -67,7 +61,7 @@ namespace TheGuild.Gameplay.Guild
             DataManager.RegisterTable<GuildLevelEntry>(GuildCoreConstants.GUILD_LEVEL_TABLE_NAME);
         }
 
-        // ── ISaveable Properties（TODO FT-10：add `: ISaveable` to class declaration） ──
+        // ── ISaveable Properties ────────────────────────────────────────────────
 
         /// <summary>FT-10 ISaveable owner 識別鍵。</summary>
         public string OwnerKey => GuildCoreConstants.OWNER_KEY;

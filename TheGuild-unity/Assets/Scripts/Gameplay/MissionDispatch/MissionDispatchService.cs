@@ -10,8 +10,6 @@ using TheGuild.Gameplay.MissionDispatch.Events;
 using TheGuild.Gameplay.WorldDanger;
 using UnityEngine;
 
-// TODO(FT-10): Save/Load 完成後補上 ISaveable，ownerKey = "ft02Dispatch", IsCritical = false（Degradable）。
-
 namespace TheGuild.Gameplay.MissionDispatch
 {
     /// <summary>

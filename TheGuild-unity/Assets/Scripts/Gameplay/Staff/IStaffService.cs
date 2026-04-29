@@ -1,10 +1,5 @@
 using System.Collections.Generic;
 
-// ── ISaveable TODO ────────────────────────────────────────────────────────────
-// TODO(FT-10)：待 ISaveable 介面建立後，於本介面繼承 `: ISaveable`，
-// 並移除重複宣告（OwnerKey / IsCritical / Serialize / RestoreFromSave / InitializeAsNewGame）。
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace TheGuild.Gameplay.Staff
 {
     /// <summary>

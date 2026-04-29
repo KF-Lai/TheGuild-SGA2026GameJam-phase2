@@ -8,12 +8,6 @@ using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Resources;
 using UnityEngine;
 
-// ── ISaveable TODO ────────────────────────────────────────────────────────────
-// TODO(FT-10)：待 ISaveable 介面建立後，於類別宣告加上 `: ISaveable`。
-// 目前保留 ISaveable 需要的 public 成員（OwnerKey / IsCritical / Serialize /
-// RestoreFromSave / InitializeAsNewGame）以便 FT-10 直接接線。
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace TheGuild.Gameplay.Staff
 {
     /// <summary>

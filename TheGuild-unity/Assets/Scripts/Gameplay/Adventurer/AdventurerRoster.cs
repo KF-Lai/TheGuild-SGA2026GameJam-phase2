@@ -9,8 +9,6 @@ using TheGuild.Gameplay.Race;
 using TheGuild.Gameplay.Trait;
 using UnityEngine;
 
-// TODO(FT-10): Save/Load 完成後補上 ISaveable，ownerKey = "c02AdventurerRoster", IsCritical = true。
-
 namespace TheGuild.Gameplay.Adventurer
 {
     /// <summary>

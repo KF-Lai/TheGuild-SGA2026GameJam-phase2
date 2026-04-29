@@ -4,13 +4,6 @@ using System;
 // 實作依據：【FT-07-FSD】guild-building-system.md §5.1
 // 職責（SRP）：對外 API 簽名定義，含升級、查詢與 ISaveable 衍生方法
 
-// ── ISaveable TODO ────────────────────────────────────────────────────────────
-// TODO(FT-10)：待 ISaveable 介面建立後，可將本介面中宣告的 ISaveable 衍生簽名
-// （OwnerKey / IsCritical / Serialize / RestoreFromSave / InitializeAsNewGame）
-// 拆出為 `: ISaveable` 繼承，並從 IBuildingService 移除重複宣告。
-// 目前 BuildingService 直接實作這些方法，FT-10 整合時無需修改方法本身。
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace TheGuild.Gameplay.Building
 {
     /// <summary>

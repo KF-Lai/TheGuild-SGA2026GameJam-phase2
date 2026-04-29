@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 
 // 實作依據：gacha-system.md §5.1
-// TODO(FT-10)：Save/Load 系統整合後改由 `: ISaveable` 正式繼承，
-// 並移除重複宣告（OwnerKey / IsCritical / Serialize / RestoreFromSave / InitializeAsNewGame）。
 
 namespace TheGuild.Gameplay.Gacha
 {
