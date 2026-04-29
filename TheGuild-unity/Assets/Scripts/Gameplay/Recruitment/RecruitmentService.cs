@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Adventurer;
 using TheGuild.Gameplay.Building;
@@ -17,7 +18,7 @@ using UnityEngine;
 namespace TheGuild.Gameplay.Recruitment
 {
     [DefaultExecutionOrder(200)]
-    public sealed class RecruitmentService : MonoBehaviour
+    public sealed class RecruitmentService : MonoBehaviour, ISaveable
     {
         private const string OwnerKeyValue = "ft01Recruitment";
         private const int RookieCandidateStartId = 1;
@@ -55,7 +56,7 @@ namespace TheGuild.Gameplay.Recruitment
         public static RecruitmentService Instance { get; private set; }
 
         public string OwnerKey => OwnerKeyValue;
-        public bool IsCritical => true;
+        public bool IsCritical => false;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RegisterTables()
@@ -609,3 +610,5 @@ namespace TheGuild.Gameplay.Recruitment
         }
     }
 }
+
+

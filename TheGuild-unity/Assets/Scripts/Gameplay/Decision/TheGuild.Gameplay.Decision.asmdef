@@ -1,24 +1,35 @@
-{
-  "name": "TheGuild.Gameplay.Decision",
-  "rootNamespace": "TheGuild.Gameplay.Decision",
-  "references": [
-    "TheGuild.Core.Data",
-    "TheGuild.Core.Time",
-    "TheGuild.Core.Events",
-    "TheGuild.Gameplay.Adventurer",
-    "TheGuild.Gameplay.Trait",
-    "TheGuild.Gameplay.Mission",
-    "TheGuild.Gameplay.MissionDispatch",
-    "TheGuild.Gameplay.Guild",
-    "TheGuild.Gameplay.Staff"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+﻿{
+    "name":  "TheGuild.Gameplay.Decision",
+    "rootNamespace":  "TheGuild.Gameplay.Decision",
+    "references":  [
+                       "TheGuild.Core.Data",
+                       "TheGuild.Core.Time",
+                       "TheGuild.Core.Events",
+                       "TheGuild.Gameplay.Adventurer",
+                       "TheGuild.Gameplay.Trait",
+                       "TheGuild.Gameplay.Mission",
+                       "TheGuild.Gameplay.MissionDispatch",
+                       "TheGuild.Gameplay.Guild",
+                       "TheGuild.Gameplay.Staff",
+                       "TheGuild.Core.SaveContract"
+                   ],
+    "includePlatforms":  [
+
+                         ],
+    "excludePlatforms":  [
+
+                         ],
+    "allowUnsafeCode":  false,
+    "overrideReferences":  false,
+    "precompiledReferences":  [
+
+                              ],
+    "autoReferenced":  true,
+    "defineConstraints":  [
+
+                          ],
+    "versionDefines":  [
+
+                       ],
+    "noEngineReferences":  false
 }

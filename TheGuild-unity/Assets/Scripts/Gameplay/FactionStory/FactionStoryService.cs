@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Gameplay.FactionStory.Events;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch;
@@ -14,7 +15,7 @@ using OutcomeRecord = TheGuild.Gameplay.Outcome.Outcome;
 namespace TheGuild.Gameplay.FactionStory
 {
     [DefaultExecutionOrder(220)]
-    public sealed class FactionStoryService : MonoBehaviour, IFactionStoryService
+    public sealed class FactionStoryService : MonoBehaviour, IFactionStoryService, ISaveable
     {
         private bool _isEnabled;
         private bool _isBootstrapped;
@@ -637,3 +638,5 @@ namespace TheGuild.Gameplay.FactionStory
         }
     }
 }
+
+

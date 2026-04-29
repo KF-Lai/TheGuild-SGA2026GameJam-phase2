@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Profession;
 using TheGuild.Gameplay.Race;
@@ -18,7 +19,7 @@ namespace TheGuild.Gameplay.Adventurer
     /// GDD §3.1 / §3.4 / §3.5 / §6.4。
     /// </summary>
     [DefaultExecutionOrder(110)]
-    public sealed class AdventurerRoster : MonoBehaviour
+    public sealed class AdventurerRoster : MonoBehaviour, ISaveable
     {
         private readonly List<AdventurerInstance> _roster = new List<AdventurerInstance>(32);
         private int _nextInstanceID = 1;

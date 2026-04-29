@@ -1,22 +1,33 @@
-{
-  "name": "TheGuild.Gameplay.Gacha",
-  "rootNamespace": "TheGuild.Gameplay.Gacha",
-  "references": [
-    "TheGuild.Core.Data",
-    "TheGuild.Core.Time",
-    "TheGuild.Core.Events",
-    "TheGuild.Gameplay.Resources",
-    "TheGuild.Gameplay.Building",
-    "TheGuild.Gameplay.Guild",
-    "TheGuild.Gameplay.Staff"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+﻿{
+    "name":  "TheGuild.Gameplay.Gacha",
+    "rootNamespace":  "TheGuild.Gameplay.Gacha",
+    "references":  [
+                       "TheGuild.Core.Data",
+                       "TheGuild.Core.Time",
+                       "TheGuild.Core.Events",
+                       "TheGuild.Gameplay.Resources",
+                       "TheGuild.Gameplay.Building",
+                       "TheGuild.Gameplay.Guild",
+                       "TheGuild.Gameplay.Staff",
+                       "TheGuild.Core.SaveContract"
+                   ],
+    "includePlatforms":  [
+
+                         ],
+    "excludePlatforms":  [
+
+                         ],
+    "allowUnsafeCode":  false,
+    "overrideReferences":  false,
+    "precompiledReferences":  [
+
+                              ],
+    "autoReferenced":  true,
+    "defineConstraints":  [
+
+                          ],
+    "versionDefines":  [
+
+                       ],
+    "noEngineReferences":  false
 }

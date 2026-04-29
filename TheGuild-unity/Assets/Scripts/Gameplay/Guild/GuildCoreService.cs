@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Resources;
 using TheGuild.Gameplay.Resources.Events;
@@ -28,7 +29,7 @@ namespace TheGuild.Gameplay.Guild
     // DefaultExecutionOrder=150：晚於 ResourceManagement（無顯式順序，估約 100~120）
     // 與 OutcomeResolutionService（140）；確保訂閱時上游已初始化。
     [DefaultExecutionOrder(150)]
-    public sealed class GuildCoreService : MonoBehaviour
+    public sealed class GuildCoreService : MonoBehaviour, ISaveable
     {
         // ── Singleton ────────────────────────────────────────────────────────────
 

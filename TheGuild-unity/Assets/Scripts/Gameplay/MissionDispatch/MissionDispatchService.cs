@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Adventurer;
 using TheGuild.Gameplay.Mission;
@@ -19,7 +20,7 @@ namespace TheGuild.Gameplay.MissionDispatch
     /// GDD §3.5 / §3.7 / §3.8；FSD §5.1 / §5.4 流程 B / C / D。
     /// </summary>
     [DefaultExecutionOrder(130)]   // 在 AdventurerRoster=110 / Recovery=120 之後
-    public sealed class MissionDispatchService : MonoBehaviour
+    public sealed class MissionDispatchService : MonoBehaviour, ISaveable
     {
         // TODO(FT-07): 待 FT-07 落地後改呼叫 IBuildingService.GetMaxConcurrentMissions()。
         private const int FALLBACK_MAX_CONCURRENT_MISSIONS = 5;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Resources;
@@ -19,10 +20,10 @@ namespace TheGuild.Gameplay.Staff
     /// FT-12 職員主服務。
     /// </summary>
     [DefaultExecutionOrder(170)]
-    public sealed class StaffService : MonoBehaviour, IStaffService
+    public sealed class StaffService : MonoBehaviour, IStaffService, ISaveable
     {
         private const string STAFF_TABLE_NAME = "StaffTable";
-        private const string OWNER_KEY = "ft12StaffSystem";
+        private const string OWNER_KEY = "ft12Staff";
         private const int SECONDS_PER_DAY = 86400;
         private const int DEFAULT_OFFLINE_MAX_SECONDS = 604800;
 

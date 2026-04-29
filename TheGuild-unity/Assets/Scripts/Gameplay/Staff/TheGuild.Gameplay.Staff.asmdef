@@ -1,20 +1,31 @@
-{
-  "name": "TheGuild.Gameplay.Staff",
-  "rootNamespace": "TheGuild.Gameplay.Staff",
-  "references": [
-    "TheGuild.Core.Data",
-    "TheGuild.Core.Time",
-    "TheGuild.Core.Events",
-    "TheGuild.Gameplay.Resources",
-    "TheGuild.Gameplay.Building"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+﻿{
+    "name":  "TheGuild.Gameplay.Staff",
+    "rootNamespace":  "TheGuild.Gameplay.Staff",
+    "references":  [
+                       "TheGuild.Core.Data",
+                       "TheGuild.Core.Time",
+                       "TheGuild.Core.Events",
+                       "TheGuild.Gameplay.Resources",
+                       "TheGuild.Gameplay.Building",
+                       "TheGuild.Core.SaveContract"
+                   ],
+    "includePlatforms":  [
+
+                         ],
+    "excludePlatforms":  [
+
+                         ],
+    "allowUnsafeCode":  false,
+    "overrideReferences":  false,
+    "precompiledReferences":  [
+
+                              ],
+    "autoReferenced":  true,
+    "defineConstraints":  [
+
+                          ],
+    "versionDefines":  [
+
+                       ],
+    "noEngineReferences":  false
 }

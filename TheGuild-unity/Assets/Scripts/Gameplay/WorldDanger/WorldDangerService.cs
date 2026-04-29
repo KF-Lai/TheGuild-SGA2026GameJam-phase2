@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Resources;
 using TheGuild.Gameplay.WorldDanger.Events;
@@ -13,7 +14,7 @@ namespace TheGuild.Gameplay.WorldDanger
     /// C-06 World Danger Service（concrete singleton）。
     /// </summary>
     [DefaultExecutionOrder(100)]
-    public sealed class WorldDangerService : MonoBehaviour
+    public sealed class WorldDangerService : MonoBehaviour, ISaveable
     {
         private const int SecondsPerDay = 86400;
         private const int FallbackMaxDebt = -100;
@@ -40,7 +41,52 @@ namespace TheGuild.Gameplay.WorldDanger
         private long _gameStartTimestamp;
         private int _cachedMaxFactionScore;
 
-        // TODO(FT-10): Save/Load 完成後補上 ISaveable，ownerKey = "c06WorldDanger"。
+        // FT-10 ISaveable 接線（IsCritical=false / OwnerKey="c06WorldDanger"，per FT-10 FSD §2.3 / §5.4.1.A）
+        public string OwnerKey => "c06WorldDanger";
+        public bool IsCritical => false;
+
+        [Serializable]
+        private sealed class C06SaveData
+        {
+            public string currentDangerLevel;
+            public long gameStartTimestamp;
+        }
+
+        public string Serialize()
+        {
+            return JsonUtility.ToJson(new C06SaveData
+            {
+                currentDangerLevel = _currentDangerLevel,
+                gameStartTimestamp = _gameStartTimestamp
+            });
+        }
+
+        public void RestoreFromSave(string ownerJson)
+        {
+            if (string.IsNullOrEmpty(ownerJson))
+            {
+                InitializeAsNewGame();
+                return;
+            }
+
+            C06SaveData dto = JsonUtility.FromJson<C06SaveData>(ownerJson);
+            if (dto == null)
+            {
+                InitializeAsNewGame();
+                return;
+            }
+
+            _currentDangerLevel = string.IsNullOrEmpty(dto.currentDangerLevel) ? "E" : dto.currentDangerLevel;
+            _gameStartTimestamp = dto.gameStartTimestamp;
+        }
+
+        public void InitializeAsNewGame()
+        {
+            _currentDangerLevel = "E";
+            _acceptedMissionCount = 0;
+            _cachedMaxFactionScore = 0;
+            _gameStartTimestamp = TimeSystem.Instance != null ? TimeSystem.Instance.NowUTC : 0;
+        }
 
         public static WorldDangerService Instance { get; private set; }
 

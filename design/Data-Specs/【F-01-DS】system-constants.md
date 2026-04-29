@@ -18,6 +18,7 @@
   - FT-03 NpcDecision：`DEATH_AVERSION`、`ACCEPTANCE_THRESHOLD`、`WILLINGNESS_JITTER`、`AUTO_PICKUP_IDLE_MINUTES`、`AUTO_PICKUP_INTERVAL_MINUTES`（後兩項 minutes 為 FT-03 Tech Debt，載入時轉秒；Phase 2 應遷移為 `_SECONDS` key）
   - FT-04 OutcomeResolution：`DEATH_RATE_ON_SUCCESS_MULTIPLIER`
   - FT-05 GuildGoldFlow：`COMMISSION_RATE`、`PENALTY_RATE`
+  - FT-10 SaveLoadSystem：`SAVE_AUTO_INTERVAL_SEC`、`SAVE_BACKUP_COUNT`、`SAVE_FILE_NAME`、`SAVE_BAK_PREFIX`、`SAVE_GAMEOVER_PREFIX`
 
 ## 欄位定義
 
@@ -75,6 +76,11 @@
 | DEATH_RATE_ON_SUCCESS_MULTIPLIER | float | [0.0, 1.0] | 0.5 | 任務成功時死亡率折扣係數（FSD-Codex-Reoprts-260427 CT-08 裁決：FSD §5.4 fallback 0.5 為準；GDD AC-OR-02 寫 1.0 已於 FT-04 §8.5 登記為衝突）| FT-04 |
 | COMMISSION_RATE | float | [0.05, 0.50] | 0.20 | 委託基礎傭金率 | FT-05 |
 | PENALTY_RATE | float | [0.05, 0.30] | 0.10 | 委託失敗賠償率 | FT-05 |
+| SAVE_AUTO_INTERVAL_SEC | int | [10, 600] | 60 | FT-10 節流自動寫入間隔（秒）；FT-10 InitTuning 內 clamp | FT-10 |
+| SAVE_BACKUP_COUNT | int | [1, 10] | 3 | FT-10 backup rotation 代數；FT-10 InitTuning 內 clamp | FT-10 |
+| SAVE_FILE_NAME | string | — | save.json | FT-10 主存檔檔名（不建議修改）| FT-10 |
+| SAVE_BAK_PREFIX | string | — | save.bak | FT-10 backup 檔名前綴（實際檔名 `{prefix}{i}` for i ∈ [1, N]）| FT-10 |
+| SAVE_GAMEOVER_PREFIX | string | — | save_gameover_ | FT-10 終末檔前綴（實際檔名 `{prefix}{unixTimestamp}.json`）| FT-10 |
 
 ## 範例
 

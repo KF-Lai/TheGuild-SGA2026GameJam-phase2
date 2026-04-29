@@ -1,6 +1,7 @@
 ﻿using System;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Resources.Events;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace TheGuild.Gameplay.Resources
     /// <summary>
     /// 遊戲資源管理系統，負責金幣、聲望與破產警告狀態。
     /// </summary>
-    public sealed class ResourceManagement : MonoBehaviour
+    public sealed class ResourceManagement : MonoBehaviour, ISaveable
     {
         private const string GoldInitialKey = "GOLD_INITIAL";
         private const string GoldMaxKey = "GOLD_MAX";
@@ -43,6 +44,66 @@ namespace TheGuild.Gameplay.Resources
         /// 單例實體。
         /// </summary>
         public static ResourceManagement Instance { get; private set; }
+        public string OwnerKey => "f03Resources";
+        public bool IsCritical => true;
+
+        [Serializable]
+        private sealed class ResourceSaveData
+        {
+            public int currentGold;
+            public int currentReputation;
+            public int currentBankruptcyThreshold;
+            public BankruptcyWarningState warningState;
+            public long bankruptcyWarningStartTime;
+            public long warningDurationSec;
+        }
+
+        public string Serialize()
+        {
+            ResourceSaveData dto = new ResourceSaveData
+            {
+                currentGold = _currentGold,
+                currentReputation = _currentReputation,
+                currentBankruptcyThreshold = _currentBankruptcyThreshold,
+                warningState = _warningState,
+                bankruptcyWarningStartTime = _bankruptcyWarningStartTime,
+                warningDurationSec = _warningDurationSec
+            };
+            return JsonUtility.ToJson(dto);
+        }
+
+        public void RestoreFromSave(string ownerJson)
+        {
+            if (string.IsNullOrEmpty(ownerJson))
+            {
+                InitializeAsNewGame();
+                return;
+            }
+
+            ResourceSaveData dto = JsonUtility.FromJson<ResourceSaveData>(ownerJson);
+            if (dto == null)
+            {
+                InitializeAsNewGame();
+                return;
+            }
+
+            _currentGold = dto.currentGold;
+            _currentReputation = dto.currentReputation;
+            _currentBankruptcyThreshold = dto.currentBankruptcyThreshold;
+            _warningState = dto.warningState;
+            _bankruptcyWarningStartTime = dto.bankruptcyWarningStartTime;
+            _warningDurationSec = dto.warningDurationSec;
+        }
+
+        public void InitializeAsNewGame()
+        {
+            _currentGold = _goldInitial;
+            _currentReputation = 0;
+            _currentBankruptcyThreshold = DefaultBankruptcyThreshold;
+            _warningState = BankruptcyWarningState.Normal;
+            _bankruptcyWarningStartTime = 0;
+            _warningDurationSec = 0;
+        }
 
         /// <summary>
         /// 取得目前金幣。
@@ -621,3 +682,4 @@ namespace TheGuild.Gameplay.Resources
         }
     }
 }
+

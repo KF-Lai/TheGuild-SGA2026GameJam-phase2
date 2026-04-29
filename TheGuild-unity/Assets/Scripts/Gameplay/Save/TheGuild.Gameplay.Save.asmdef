@@ -1,0 +1,32 @@
+﻿{
+  "name": "TheGuild.Gameplay.Save",
+  "rootNamespace": "TheGuild.Gameplay.Save",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "TheGuild.Core.SaveContract",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.WorldDanger",
+    "TheGuild.Gameplay.Recruitment",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.Decision",
+    "TheGuild.Gameplay.Outcome",
+    "TheGuild.Gameplay.GoldFlow",
+    "TheGuild.Gameplay.Building",
+    "TheGuild.Gameplay.Guild",
+    "TheGuild.Gameplay.Gacha",
+    "TheGuild.Gameplay.Staff",
+    "TheGuild.Gameplay.FactionStory"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

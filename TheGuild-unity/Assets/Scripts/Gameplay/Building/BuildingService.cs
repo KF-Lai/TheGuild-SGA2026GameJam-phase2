@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Gameplay.Guild;
 using TheGuild.Gameplay.Resources;
 using UnityEngine;
@@ -28,7 +29,7 @@ namespace TheGuild.Gameplay.Building
     /// FSD §4.4 / §5.1~§5.4.3。
     /// </summary>
     [DefaultExecutionOrder(160)]
-    public sealed class BuildingService : MonoBehaviour, IBuildingService
+    public sealed class BuildingService : MonoBehaviour, IBuildingService, ISaveable
     {
         // ── Singleton ────────────────────────────────────────────────────────────
 

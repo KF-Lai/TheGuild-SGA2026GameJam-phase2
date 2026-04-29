@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Guild;
@@ -16,7 +17,7 @@ using StaffCandidateCard = TheGuild.Gameplay.Staff.CandidateCard;
 namespace TheGuild.Gameplay.Gacha
 {
     [DefaultExecutionOrder(180)]
-    public sealed class GachaService : MonoBehaviour, IGachaService
+    public sealed class GachaService : MonoBehaviour, IGachaService, ISaveable
     {
         private const string OWNER_KEY = "ft08Gacha";
         private const int DEFAULT_POOL_ID = 1;

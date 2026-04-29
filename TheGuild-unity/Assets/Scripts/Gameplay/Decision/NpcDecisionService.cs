@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
+using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Adventurer;
 using TheGuild.Gameplay.Decision.Events;
@@ -15,7 +16,7 @@ using UnityEngine;
 namespace TheGuild.Gameplay.Decision
 {
     [DefaultExecutionOrder(210)]
-    public sealed class NpcDecisionService : MonoBehaviour, INpcDecisionService
+    public sealed class NpcDecisionService : MonoBehaviour, INpcDecisionService, ISaveable
     {
         private const string KeyDeathAversion = "DEATH_AVERSION";
         private const string KeyAcceptanceThreshold = "ACCEPTANCE_THRESHOLD";
@@ -53,6 +54,21 @@ namespace TheGuild.Gameplay.Decision
         private System.Random _rng;
 
         public static NpcDecisionService Instance { get; private set; }
+        public string OwnerKey => "ft03Decision";
+        public bool IsCritical => false;
+
+        public string Serialize()
+        {
+            return "{}";
+        }
+
+        public void RestoreFromSave(string ownerJson)
+        {
+        }
+
+        public void InitializeAsNewGame()
+        {
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RegisterTables()
@@ -453,3 +469,5 @@ namespace TheGuild.Gameplay.Decision
         }
     }
 }
+
+
