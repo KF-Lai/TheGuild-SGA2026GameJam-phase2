@@ -1,0 +1,27 @@
+{
+  "name": "Tests.EditMode.Gameplay.FactionStory",
+  "rootNamespace": "Tests.EditMode.Gameplay.FactionStory",
+  "references": [
+    "TheGuild.Gameplay.FactionStory",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.Outcome",
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Events",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

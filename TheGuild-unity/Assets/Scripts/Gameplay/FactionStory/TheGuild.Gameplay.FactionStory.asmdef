@@ -1,0 +1,21 @@
+{
+  "name": "TheGuild.Gameplay.FactionStory",
+  "rootNamespace": "TheGuild.Gameplay.FactionStory",
+  "references": [
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.WorldDanger",
+    "TheGuild.Gameplay.Outcome"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
