@@ -1,7 +1,8 @@
 # 系統索引（Systems Index）
 
 _建立時間：2026-04-19_
-_狀態：草稿_
+_最後更新：2026-04-29_
+_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；FT-11 Jam 範疇外不實作；P-02 / P-03 / D-01 / D-02 暫緩設計；P-01 GDD 已設計但 FSD 未啟動_
 
 ---
 
@@ -196,7 +197,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | `TrashItemTable`           | trashItemID (int) | name, description, drawWeightTier1~5（見 FT-08 §3.5） | —                                                         |
 | `StaffTuning`              | key              | value（FT-08 / FT-12 共用常數：EFFECT_MAX_*（FT-12 §4.1）、PITY_THRESHOLD（FT-08）、REALLOCATING_AUTO_LEAVE_SECONDS / BUILDING_SWITCH_COOLDOWN_SECONDS（FT-12 §6.5 / §7.2）、ROSTER_CAP（FT-12）） | —                                                         |
 | `WorldDangerTable`         | dangerLevel      | name, timeThreshold, missionCountReq, minDifficulty, factionScoreReq, weightF_E, weightD, weightC, weightB, weightA, weightS_SSS, maxDebt（C-06 §3.1，整合升級閘 / 池權重 / 債務上限） | —                                                         |
-| `BankruptcyThresholdTable` | reputationMin    | reputationMax, warningDurationSec                                                      | —                                                         |
+| ~~`BankruptcyThresholdTable`~~ | ~~reputationMin~~ | ~~reputationMax, warningDurationSec~~ | **已 deprecated**（2026-04-26 移至 `data-index.md` 歸檔分區；runtime 不查詢，`warningDurationSec` 改由 FT-07 預備金保險櫃透過 `SetBankruptcyWarningDuration` 推送 F-03） |
 | `FactionRouteTable`        | factionID (int)  | name, description                                                                      | —                                                         |
 | `StoryStageTable`          | stageID (int)    | factionID, stageIndex, scoreThreshold, missionID, dialogueKey（FT-09 §3.2.2）          | factionID, MissionTemplate                                |
 | `VeteranRankWeightTable`   | rank             | weight（FT-01 §4.4 / 7.3,5 階加權隨機表）                                              | —                                                         |
@@ -300,31 +301,33 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 
 ## 進度追蹤
 
-| 系統                              | 概念  | GDD                                     | 工項需求書 | 實作  | 測試  |
+> **進度權威來源**：「工項需求書」欄對齊 `design/FSD/FSD-index.md` §7.1 撰寫進度；「實作」與「測試」欄對齊 `design/ImplementationGuide.md` §6 進度表（最後更新 2026-04-29）。EditMode 測試以 225/225 全綠為基準。
+
+| 系統                              | 概念  | GDD                                     | 工項需求書（FSD） | 實作  | 測試  |
 | ------------------------------- | --- | --------------------------------------- | ----- | --- | --- |
-| F-01 DataManager                | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
-| F-02 Time System                | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
-| F-03 Resource Management        | ✅   | ✅                                       | ✅     | ⬜   | ⬜   |
-| C-01 Mission Database           | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| C-02 Adventurer Management      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| C-03 Profession System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| C-04 Race System                | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| C-05 Trait System               | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| C-06 World Danger System        | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-01 Adventurer Recruitment    | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-02 Mission Dispatch          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-03 NPC Decision System       | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-04 Outcome Resolution        | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-05 Guild Gold Flow           | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-06 Guild Core                | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-07 Guild Building System     | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-08 Gacha System              | ✅   | ✅（2026-04-26 從原職員系統拆出，聚焦 gacha）| ⬜     | ⬜   | ⬜   |
-| FT-09 Faction Story System      | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-10 Save/Load System          | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜   | ⬜   |
-| FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ⬜     | ⬜   | ⬜   |
-| P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜     | ⬜   | ⬜   |
-| P-02 Main UI Framework          | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| F-01 DataManager                | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| F-02 Time System                | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| F-03 Resource Management        | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-01 Mission Database           | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-02 Adventurer Management      | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-03 Profession System          | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-04 Race System                | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-05 Trait System               | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| C-06 World Danger System        | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-01 Adventurer Recruitment    | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-02 Mission Dispatch          | ✅   | ✅                                       | ✅（A/B 拆分） | ✅   | ✅   |
+| FT-03 NPC Decision System       | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-04 Outcome Resolution        | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-05 Guild Gold Flow           | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-06 Guild Core                | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-07 Guild Building System     | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-08 Gacha System              | ✅   | ✅（2026-04-26 從原職員系統拆出，聚焦 gacha）| ✅     | ✅   | ✅   |
+| FT-09 Faction Story System      | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-10 Save/Load System          | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜（Jam 範疇外）| ⬜   |
+| FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ✅     | ✅   | ✅   |
+| P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜（FSD 未啟動）| ⬜   | ⬜   |
+| P-02 Main UI Framework          | ✅   | ⬜（設計暫停中）                         | ⬜     | ⬜   | ⬜   |
 | P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-01 Character Content DB       | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-02 Mission Content DB         | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |

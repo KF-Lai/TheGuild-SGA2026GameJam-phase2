@@ -1,7 +1,8 @@
 # 遊戲概念：The Guild
 
 _建立時間：2026-04-19_
-_狀態：草稿_
+_最後更新：2026-04-29_
+_狀態：Phase 2 後端核心循環實作完成（21 系統 GDD + 21 FSD + 18 系統實作通過 EditMode 225/225）；UI 層（P-02）待啟動，FT-11 Jam 範疇外不實作_
 
 ---
 
@@ -570,6 +571,8 @@ DataManager（TextAsset → Dictionary<string, T>）
 
 - [x] 使用 `/design-review design/gdd/game-concept.md` 驗證文件完整性
 - [x] 使用 `/map-systems` 分解概念為系統、對映依賴、排列設計順序
-- [ ] 使用 `/design-system` 逐系統撰寫詳細 GDD（從 DataManager + 資料表架構開始）
-- [ ] 原型驗證核心循環（委託 → 推薦 → 等待 → 結算）
+- [x] 使用 `/design-system` 逐系統撰寫詳細 GDD — 21 系統 GDD 完成（F-01~F-03 / C-01~C-06 / FT-01~FT-10, FT-12 / P-01；FT-11 Jam 範疇外，P-02 / P-03 / D-01 / D-02 暫緩）
+- [x] 原型驗證核心循環（委託 → 推薦 → 等待 → 結算）— 後端 18 系統實作通過 EditMode 225/225，core loop 完整可在 EditMode 跑通；UI 層演示待 P-02 啟動
 - [ ] 使用 `/sprint-plan new` 規劃第一個 Sprint
+- [ ] 啟動 P-02 Main UI Framework 設計與實作（解除暫停，讓玩家可看見遊戲狀態）
+- [ ] 補完 sample CSV 至 demo 級數量（已完成 BuildingTable / MissionTemplate；剩 9 張明確 sample + 4 張疑似 sample，見 `design/Data-Specs/data-index.md`）
