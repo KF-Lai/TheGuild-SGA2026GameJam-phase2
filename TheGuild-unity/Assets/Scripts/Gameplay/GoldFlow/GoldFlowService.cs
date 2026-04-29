@@ -168,7 +168,9 @@ namespace TheGuild.Gameplay.GoldFlow
                 ? StaffService.Instance.GetAccountantPenaltyBonus()
                 : 0f;
 
-            // TODO(FT-07 Phase 2): replace with BuildingService.GetBuildingPenaltyBonus() when available.
+            // FT-07 建築層賠償率加成預留鉤子（FT-05 GDD §3.4）：Jam 階段固定 0，
+            // 目前無建築種類提供賠償加成；Phase 2 若新增此類建築再於 BuildingService
+            // 補 GetBuildingPenaltyBonus() API 並改呼叫之。
             float buildingPenaltyBonus = 0f;
 
             float effectiveCommissionRate = _commissionRate + accountantCommissionBonus;
