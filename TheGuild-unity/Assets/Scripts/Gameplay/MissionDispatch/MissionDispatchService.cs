@@ -5,6 +5,7 @@ using TheGuild.Core.Events;
 using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
 using TheGuild.Gameplay.Adventurer;
+using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch.Events;
 using TheGuild.Gameplay.WorldDanger;
@@ -20,7 +21,7 @@ namespace TheGuild.Gameplay.MissionDispatch
     [DefaultExecutionOrder(130)]   // 在 AdventurerRoster=110 / Recovery=120 之後
     public sealed class MissionDispatchService : MonoBehaviour, ISaveable
     {
-        // TODO(FT-07): 待 FT-07 落地後改呼叫 IBuildingService.GetMaxConcurrentMissions()。
+        // BuildingService.Instance 不可用時（測試環境 / 啟動異常）的保底值。
         private const int FALLBACK_MAX_CONCURRENT_MISSIONS = 5;
 
         private readonly List<ActiveMission> _activeMissions = new List<ActiveMission>(16);
@@ -509,12 +510,14 @@ namespace TheGuild.Gameplay.MissionDispatch
         }
 
         /// <summary>
-        /// 最大同時任務數（FT-07 stub）。
-        /// TODO(FT-07): 待 FT-07 落地後改呼叫 IBuildingService.GetMaxConcurrentMissions()。
+        /// 最大同時任務數：優先呼叫 BuildingService.GetMaxConcurrentMissions()，
+        /// instance 不可用時退回 FALLBACK_MAX_CONCURRENT_MISSIONS。
         /// </summary>
         private static int GetMaxConcurrentMissions()
         {
-            return FALLBACK_MAX_CONCURRENT_MISSIONS;
+            return BuildingService.Instance != null
+                ? BuildingService.Instance.GetMaxConcurrentMissions()
+                : FALLBACK_MAX_CONCURRENT_MISSIONS;
         }
 
         // ── 序列化 DTO ────────────────────────────────────────────────────────────

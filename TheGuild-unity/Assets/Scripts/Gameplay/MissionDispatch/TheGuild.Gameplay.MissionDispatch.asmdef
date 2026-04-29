@@ -11,6 +11,7 @@
                        "TheGuild.Gameplay.Race",
                        "TheGuild.Gameplay.Trait",
                        "TheGuild.Gameplay.WorldDanger",
+                       "TheGuild.Gameplay.Building",
                        "TheGuild.Core.SaveContract"
                    ],
     "includePlatforms":  [

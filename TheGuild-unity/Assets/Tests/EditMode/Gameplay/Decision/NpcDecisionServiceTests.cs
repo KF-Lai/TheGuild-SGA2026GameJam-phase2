@@ -380,13 +380,14 @@ namespace Tests.EditMode.Gameplay.Decision
                 "isUnique,1,0\n";
 
             // BuildingTableLoader 對 buildingID=6 要求 levels {0..maxLevel}，必須同時提供 6_0 與 6_1。
+            // building 4 (Tower / 公會櫃臺) effectValue=5：對齊 AC_ND3_12 填滿 5 個 active missions 的 setup 假設。
             map["BuildingTable"] =
                 "buildingID_level,1_1,2_1,3_1,4_1,5_1,6_0,6_1\n" +
                 "buildingID,1,2,3,4,5,6,6\n" +
                 "name,MissionBoard,Counter,Hall,Tower,Vault,Lounge,Lounge\n" +
                 "maxLevel,1,1,1,1,1,1,1\n" +
                 "level,1,1,1,1,1,0,1\n" +
-                "effectValue,5,86400,10,1,3600,0,0\n" +
+                "effectValue,5,86400,10,5,3600,0,0\n" +
                 "upgradeCost,0,0,0,0,0,0,0\n" +
                 "guildLevelReq,0,0,0,0,0,0,0\n" +
                 "slotCount,0,0,0,1,0,0,0\n" +

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TheGuild.Core.Events;
+using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch.Events;
 using TheGuild.Gameplay.WorldDanger;
@@ -17,7 +18,7 @@ namespace TheGuild.Gameplay.MissionDispatch
     [DefaultExecutionOrder(125)]   // 在 AdventurerRoster=110 之後、MissionDispatchService=130 之前
     public sealed class CommissionBoardService : MonoBehaviour
     {
-        // TODO(FT-07): 待 FT-07 落地後改呼叫 IBuildingService.GetMissionSlotCount()。
+        // BuildingService.Instance 不可用時（測試環境 / 啟動異常）的保底值。
         private const int FALLBACK_MISSION_SLOT_COUNT = 5;
 
         private readonly List<int> _regularMissionPool = new List<int>(8);
@@ -444,7 +445,9 @@ namespace TheGuild.Gameplay.MissionDispatch
 
         private static int GetMissionSlotCount()
         {
-            return FALLBACK_MISSION_SLOT_COUNT;
+            return BuildingService.Instance != null
+                ? BuildingService.Instance.GetMissionSlotCount()
+                : FALLBACK_MISSION_SLOT_COUNT;
         }
     }
 }
