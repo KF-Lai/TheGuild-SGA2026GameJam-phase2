@@ -1,0 +1,70 @@
+missionID,9001,9002,9003,9004,9005,8001,8002,8003,8004,8005,8006,8007,8008
+name,護送沉默的旅人南行,尋找北方廢墟消失的學者,前往女神古殿做出選擇,迎向契者的終局,最後的選擇,平靜的獵隊,調查失蹤的村民,制止異神信徒的活動,護送受驚的商人突圍,追查詭異符號的來源,討伐入侵的異物,調查祭司的秘密通道,護送最後的倖存者逃離
+description,有人需要往南方海岸。他不會說話——但你會懂該怎麼保護他。路線安全，但過程中可能遇見不尋常的旅人。這不是普通的護送任務。,北方廢墟曾有一位學者駐紮研究。最後一封信說他發現了「鏡中無月」。現在他失蹤了。去找到他，或找到他留下的最後記錄。,古老的女神聖殿在北方群山深處。傳聞她已許久未有迴應。去那裡，看看眾神是否仍在聆聽。回來時帶著你的答案。,一個月前失蹤的人回來了，背上帶傷。她說他們也想要平靜。現在輪到你決定什麼是值得交換的代價。前往深淵與契者面對。,天色全黑了。委託板上只有最後一張紙條：「他不會說話，但你會懂。」這一次，沒有人可以替你上陣。派遣你最信任的人，或承擔自己無法承擔的責任。,狩獵隊在森林裡發現了奇怪的痕跡。那些痕跡很舊，卻仍很深。沒人敢靠近。去確認那裡是否仍有威脅。,村子連續一個月無人進城。去調查發生了什麼。帶回消息——或帶回倖存者。,那群外來人在城鎮邊緣扎根。他們沒有傷害任何人，但居民開始改變。制止這場蔓延。,商隊被截停在亂局中。他們的隊長說看見了「不對勁的人」。護送他們安全離開這片混亂的地帶。,符號出現在三個不同的城鎮。每個地方之後都發生了奇怪的事。追查這些符號的意義與來源。,邊境傳來求救。某種不屬於這片土地的東西在製造毀滅。這不是野獸，也不是人類。去制止它。,聖殿的密室被發現了。裡面的祕密足以動搖信仰。去那裡，確認祭司在隱瞞什麼。,末日邊界上最後的倖存城鎮開始崩壞。每一個活著的人都在逃向同一個方向。帶著你能帶的人，朝著最後的希望奔跑。
+difficulty,D,C,B,A,SS,E,D,D,C,C,B,B,A
+typeID,2,4,4,2,1,1,4,1,2,4,1,4,2
+factionID,1,1,1,1,1,0,0,1,0,1,0,1,0
+categoryID,3,3,3,3,3,2,2,2,2,2,2,2,2
+isScriptedDeath,0,0,0,0,1,0,0,0,0,0,0,0,0
+minDangerLevel,0,1,2,3,4,0,1,1,2,2,3,3,4
+requiredTraitID,0,0,0,0,0,0,0,0,0,0,0,0,0
+# === 陣營劇情委託（missionID 9001-9005）===
+# Stage 1（D 難度，護送）: missionID 9001 | minDangerLevel=0（E 和平）| factionID=1 | isScriptedDeath=0
+# Stage 2（C 難度，調查）: missionID 9002 | minDangerLevel=1（D 動盪）| factionID=1 | isScriptedDeath=0
+# Stage 3（B 難度，調查）: missionID 9003 | minDangerLevel=2（C 暗湧）| factionID=1 | isScriptedDeath=0
+# Stage 4（A 難度，護送）: missionID 9004 | minDangerLevel=3（B 危局）| factionID=1 | isScriptedDeath=0
+# Stage 5（SS 難度，討伐）: missionID 9005 | minDangerLevel=4（A 末世）| factionID=1 | isScriptedDeath=1
+#
+# === 世界難度進階委託（missionID 8001-8008）===
+# dangerLevel E（missionID 8001）: E 難度討伐 | minDangerLevel=0 | factionID=0（中立） | 無派遣限制
+# dangerLevel D（missionID 8002-8003）: D 難度混合（調查+討伐） | minDangerLevel=1 | factionID=0/1 混合
+# dangerLevel C（missionID 8004-8005）: C 難度混合（護送+調查） | minDangerLevel=2 | factionID=0/1 混合
+# dangerLevel B（missionID 8006-8007）: B 難度混合（討伐+調查） | minDangerLevel=3 | factionID=0/1 混合
+# dangerLevel A（missionID 8008）: A 難度護送 | minDangerLevel=4 | factionID=0（中立）
+#
+# === isScriptedDeath 機制規則 ===
+# - 僅允許於 categoryID=3（陣營劇情委託）使用
+# - missionID 9005（Stage 5 最後任務）唯一設定為 isScriptedDeath=1
+# - isScriptedDeath=1 時：FT-04 RollSuccessAndDeath 開頭 short-circuit，強制 isSuccess=false / isDead=true / adjustedDeathRate=1.0
+# - on_death_survive 與 on_fail_survive traits 在此任務上無效（FT-04 §3.4 過濾規則）
+# - 與 DialogueTable 對應：Stage 5 dialogueKey 採二元分支 "story.aurorae.stage5.{styleTag}.{alive|dead}"
+#
+# === minDangerLevel 過濾規則（FT-05 Commission Flow）===
+# - E 級（dangerLevel=0）：只允許 minDangerLevel ≤ 0 任務（任務列表：missionID 9001, 8001）
+# - D 級（dangerLevel=1）：只允許 minDangerLevel ≤ 1 任務（任務列表：9001-9002, 8001-8003）
+# - C 級（dangerLevel=2）：只允許 minDangerLevel ≤ 2 任務（任務列表：9001-9003, 8001-8005）
+# - B 級（dangerLevel=3）：只允許 minDangerLevel ≤ 3 任務（任務列表：9001-9004, 8001-8007）
+# - A 級（dangerLevel=4）：只允許 minDangerLevel ≤ 4 任務（任務列表：9001-9005, 8001-8008，全部任務可派遣）
+#
+# === CSV 設計說明 ===
+# - 所有欄位遵守 .claude/rules/data-files.md 轉置格式（PK 列在最前，後續每列為一個欄位）
+# - 多值欄位用 | 分隔（此表無多值欄位）
+# - 不填欄位（由其他系統產出）：baseReward / baseDuration / baseDeathRate / factionScoreDelta
+#   - baseReward / baseDuration / baseDeathRate 由 FT-02 MissionDifficultyTable 反查（基於 difficulty 欄位）
+#   - factionScoreDelta 由 FT-05 MissionRewardTable 反查（基於 difficulty 與 factionID 欄位）
+# - name 與 description 文字嚴格遵守上限規範：name ≤ 12 字（簡潔詩意） | description ≤ 120 字（簡潔留白風格）
+# - factionID 說明：
+#   - factionID=0（neutral）：不累積女神陣營分數；進階委託的中立背景任務
+#   - factionID=1（aurorae）：累積女神陣營分數；陣營劇情任務全部設定為 1；進階委託中偏向女神側的任務
+# - categoryID=3 限制：僅 missionID 9001-9005 允許（FT-09 設計約束）
+# - typeID 護送（2）限制：此表中，護送任務基礎難度最低為 D（missionID 9001, 9004, 8004, 8008），無 F/E 護送任務
+#
+# === 完成標記 ===
+# 撰寫日期：2026-04-30
+# writer-agent：haiku 4.5（narrative-writer persona）
+# 對應設計文件：【FT-09-LORE】aurorae-faction-outline.md v3.1；GDD-FSD-patch-v3.1-aurorae-faction.md §2.1 / §2.4
+# Stage 對應關係（§5 五階段大綱）：
+#   - Stage 1（9001）：一張紙條 | threshold=8 | world=E 和平 | 觸發事件：委託板自動出現紙條、奧菲莉雅皺眉、首次聖徽石出現
+#   - Stage 2（9002）：三封信 | threshold=22 | world=D 動盪 | 觸發事件：奧菲莉雅口袋舊紙條、輔軌郵報啟動
+#   - Stage 3（9003）：鏡中無月 | threshold=50 | world=C 暗湧 | 觸發事件：主軌形象分軌啟動、公會門口契者紙條、FB-M1 jitter modifier 啟動
+#   - Stage 4（9004）：沒回來的那一晚 | threshold=120 | world=B 危局 | 觸發事件：奧菲莉雅失蹤、茶冷了、FB-M2 死亡計數、公會誌新字跡（玩家可自行翻閱）
+#   - Stage 5（9005）：最後的椅子 | threshold=200 | world=A 末世 | 觸發事件：**isScriptedDeath=1 強制必死**、奧菲莉雅二元選擇、二次 dialogueKey 解析（styletag+alive/dead）、公會誌最後一頁自動完成、譚恩接班場景
+#
+# 世界難度進階委託設計說明（§6 Patch summary 補充）：
+# - 設計目標：玩家在官方陣營劇情外，經歷遞進式的「世界危機」體驗
+# - 難度進階路徑：E 平靜佈局 → D 邊陲異常 → C 城鎮陷落 → B 廣域崩壞 → A 末日邊界
+# - factionID 混合策略：
+#   - dangerLevel E/A：全部 neutral（0），保持中立氛圍
+#   - dangerLevel D/C/B：alternating（偶數 neutral, 奇數 aurorae）
+#   - 設計用意：玩家若偏向女神陣營，仍有持續累積分數的進階任務；若中立，整個進階序列不強制任一立場
+# - 與陣營劇情的獨立性：進階委託全部 categoryID=2（guild_challenge），不與 categoryID=3（faction_story）混淆；玩家可獨立體驗進階副線

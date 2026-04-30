@@ -1,0 +1,23 @@
+# === StaffTable — 一般職員 10 位（含米拉/譚恩/凱拉）===
+# staffID 201-207：7 位充數職員（無劇情，純功能加成）
+# staffID 501-503：3 位陣營角色（米拉/譚恩/凱拉，沿用 v3.1 patch 規範）
+# 對應 design/DesignFiles/Story/【FT-09-LORE】story-index.md §3.4 命名規範
+
+staffID,201,202,203,204,205,206,207,501,502,503
+name,凱斯·警衛,莉莎·樂觀者,馬庫斯·紀錄官,蘿拉·後勤,托马斯·見習,艾米莉·招募官,傑克·雜役,米拉,譚恩,凱拉
+rarity,1,2,1,2,1,2,1,4,3,3
+salary,10,25,15,30,10,25,10,80,50,50
+severancePay,20,60,30,80,20,60,20,300,200,200
+isFiller,true,true,true,true,true,true,true,false,false,false
+factionID,0,0,0,0,0,0,0,1,0,0
+minGuildLevel,1,1,1,1,1,1,1,2,1,1
+effectIDs,Willingness,"","",Willingness,Willingness,RecruitRefreshOnCounter,AccountantPenaltyOnVault,Willingness,RecruitRefreshOnCounter,""
+effectValues,0.08,"","",0.12,0.10,1800,-0.01,0.15,1800,""
+slotBuildingIDs,0,0,0,0,0,4,5,0,4,1
+uiFlagIDs,"","","","","","","",SuccessRatePreview,"",SuccessRatePreview
+uiFlagBuildingIDs,0,0,0,0,0,0,0,0,0,1
+personalityDesc,做事認真有餘但缺乏靈活變通，對公會的規則異常執著,總是往好的方向想，樂於幫助每個人，有時候過於天真,沉默寡言的文書工作者，對數字的敏感度遠勝於人情,認真負責但容易被小事絆住，與同僚相處融洽,年輕氣盛，總想著證明自己，容易衝動行動,精力充沛的招募好手，與應徵者建立快速信任,默默處理雜務的新手，觀察力強但還在學習表達,對女神的信仰與對現實的懷疑在她心中拉鋸，表面溫柔卻有自己的底線,說話簡短直接不繞彎子，對公會長有戒心但尊重實力,樂觀隨性、好奇心強，對委託結果比任何人都認真
+intimacyLevel,0,0,0,0,0,0,0,0,0,0
+isLeavePossible,0,0,0,0,0,0,0,0,0,0
+mood,0,0,0,0,0,0,0,0,0,0
+personalEventIDs,0,0,0,0,0,0,0,0,0,0
