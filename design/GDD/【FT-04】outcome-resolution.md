@@ -2,7 +2,7 @@
 
 _建立時間：2026-04-22_
 _完成時間：2026-04-22_
-_狀態：已設計_
+_狀態：已設計（v3.1 patch 進行中）_
 _系統 ID：FT-04_
 
 ---
@@ -95,7 +95,7 @@ OnMissionCompleted(activeMissionID):
     3. template      = C01.GetTemplate(activeMission.missionID)
        if template == null → Debug.LogError, return
     4. outcome = BuildOutcomeSnapshot(activeMission, adventurer, template)
-    5. RollSuccessAndDeath(outcome, activeMission)             // 見 3.3
+    5. RollSuccessAndDeath(outcome, activeMission, template)    // 見 3.3（v3.1：加入 template 參數供 isScriptedDeath 判斷）
     6. ApplyBaseReputationDelta(outcome)                        // 見 3.6
     7. C05.ApplyConditionTraits(outcome, adventurer.traitIDs)   // 見 3.4（C-05 § 4.4）
     8. outcome.finalStatus = MapFinalStatus(outcome)            // 見 3.5
@@ -119,9 +119,21 @@ OnMissionCompleted(activeMissionID):
 
 ### 3.3 兩次獨立擲骰
 
+> **v3.1 新增（P3.1-003）**：函式簽名加入 `template` 參數；開頭新增 `isScriptedDeath` short-circuit 邏輯。**此為主路徑改動，⚠️ 需 design-review 重跑 + EditMode 測試確認。**
+
 ```
-RollSuccessAndDeath(outcome, activeMission):
-    // 成功骰
+RollSuccessAndDeath(outcome, activeMission, template):
+    // === isScriptedDeath 插入點（v3.1 新增）===
+    IF template.isScriptedDeath == 1:
+        outcome.isSuccess         = false
+        outcome.isDead            = true
+        outcome.isWounded         = false
+        outcome.adjustedDeathRate = 1.0
+        outcome.successRoll       = -1.0   // 標記「未擲骰」（Debug 識別；正常值域 [0,1)，-1 為特殊哨兵）
+        outcome.deathRoll         = -1.0
+        return  // 完全跳過下方擲骰邏輯
+
+    // 成功骰（原始邏輯不變）
     outcome.successRoll = Random.Range(0.0, 1.0)    // [0, 1)
     outcome.isSuccess   = outcome.successRoll < activeMission.finalSuccessRate
 
@@ -142,12 +154,30 @@ RollSuccessAndDeath(outcome, activeMission):
 - `DEATH_RATE_ON_SUCCESS_MULTIPLIER = 0.5`（SystemConstants）
 - 兩次擲骰**獨立**，不共用骰子
 - `adjustedDeathRate` 快照於 Outcome，供 UI / debug 顯示「原本 X%，成功折扣後 X×0.5」
+- **`isScriptedDeath == 1` 路徑**：`successRoll = -1.0` / `deathRoll = -1.0` 為哨兵值（正常值域 `[0,1)`）；Debug UI 可依此識別「未擲骰」狀態。不可擲骰後再 override `isDead`——short-circuit 必須在最開頭執行，以避免消耗亂數序列影響 seed-based 測試（見實作紅線 §6.1 #1）
 
 ---
 
 ### 3.4 condition 特質套用
 
-FT-04 委託 C-05 執行 condition 特質的結算邏輯（C-05 § 4.4 `ApplyConditionTraits` 規格）。該規格按 `adventurer.traitIDs` 順序逐一檢查並修改 outcome：
+> **v3.1 新增（P3.1-003）**：新增 `isScriptedDeath` 守衛邏輯——劇本必死任務禁止 `on_death_survive` / `on_fail_survive` 特質生效，呼叫 C-05 前先過濾 traitIDs。詳見下方偽碼。
+
+**呼叫前守衛邏輯（v3.1 新增）**：
+
+```
+ApplyConditionTraits(outcome, adventurer.traitIDs):
+    IF activeMission.isScriptedDeath == 1:
+        filteredTraitIDs = adventurer.traitIDs
+            .Where(t => t.effectTarget != "on_death_survive"
+                     && t.effectTarget != "on_fail_survive")
+        C05.ApplyConditionTraits(outcome, filteredTraitIDs)
+    ELSE:
+        C05.ApplyConditionTraits(outcome, adventurer.traitIDs)
+```
+
+設計理由：劇本必死的設計重量不應被 condition trait 救活。過濾必須在傳入 C-05 前完成，**不可在 condition trait 計算後再 override `isDead = true`**——後者會讓「條件特質救活」與「劇本必死」的執行順序產生語意混亂（見實作紅線 §6.1 #2）。
+
+FT-04 委託 C-05 執行 condition 特質的結算邏輯（C-05 § 4.4 `ApplyConditionTraits` 規格）。該規格按 `adventurer.traitIDs`（過濾後）順序逐一檢查並修改 outcome：
 
 | effectTarget | 作用 | Outcome 修改 |
 |-------------|------|-------------|
@@ -203,6 +233,14 @@ MapFinalStatus(outcome):
 | `(F, T, F)` | **Dead** | 失敗 + 死亡（無救活） |
 
 > `(F, F, F)` 與 `(T, T, T)` 為**不可能狀態**：前者因失敗+存活在擲骰階段已預寫 `isWounded=true`；後者因 condition 救活強制將 `isDead` 設為 `false`。
+
+> **v3.1 新增（P3.1-003）**：**isScriptedDeath 死亡結算路徑**
+>
+> 當 `template.isScriptedDeath == 1` 時，結算必然走「失敗+死亡」路徑（`isSuccess=false, isDead=true, finalStatus=Dead`），跳過擲骰直接進入 MapFinalStatus，映射至 `(F, T, F) → Dead`。
+>
+> - **金流**：設計師可將 Stage 5 任務 `baseReward=0`，讓 FT-05 `CommissionFlow` 自然產生零金流，無需額外特判
+> - **聲望**：不扣聲望的選項——將該任務 `difficulty="SCRIPTED"`，利用 §5.5 / §5.5 fallback 機制（缺失難度 `→ baseDelta=0`），讓 `ReputationDeltaTable` 查無此難度時回傳 `(0, 0)`，聲望不變動
+> - **condition 特質**：`on_death_survive` / `on_fail_survive` 已在 §3.4 守衛邏輯中過濾，此路徑下必死不可被救活
 
 ---
 
@@ -414,6 +452,39 @@ reputationDelta = baseDelta + conditionDelta
 
 ---
 
+### 4.4 styleTag jitter modifier（FB-M1）
+
+> **v3.1 新增（P3.1-003）**：styleTag 偏差對 jitter 的影響公式，設計用途為 FB-M1「玩家最近運氣特別差」的機制感受來源。依賴 FT-09 `GetCurrentStyleTagBias()` API，**待 FT-09 patch 完成後才能實作**。
+
+```
+CalcAdjustedJitter(baseJitter, mission, currentDangerLevelIndex):
+    bias = FT09.GetCurrentStyleTagBias()
+    IF bias == StyleTag.Light
+       AND currentDangerLevelIndex >= 2   // C 暗湧（E=0, D=1, C=2, B=3, A=4）
+       AND mission.factionID == 1:        // 女神陣營
+        return baseJitter - 0.04         // light 任務 jitter 偏負 4%
+    return baseJitter
+```
+
+**變數定義**：
+
+| 變數 | 型別 | 範圍 | 說明 |
+|------|------|------|------|
+| `baseJitter` | `float` | `[0.0, 1.0]`（上游注入） | 基礎 jitter 值，來源待 FT-09 GDD 定義 |
+| `bias` | `StyleTag` | `{Dark, Mixed, Light}` | FT-09 `GetCurrentStyleTagBias()` 即時計算，依 factionID=1 分數決定 |
+| `currentDangerLevelIndex` | `int` | `[0, 4]`（E=0, D=1, C=2, B=3, A=4） | C-06 世界危險度索引 |
+| `mission.factionID` | `int` | `FK → FactionTable` | 任務所屬陣營；`1` = 女神陣營 |
+| 回傳值 | `float` | `baseJitter - 0.04` 或 `baseJitter` | 調整後的 jitter，由呼叫端使用 |
+
+**設計說明**：
+
+- 觸發條件三重交集（styleTag=Light + 危險度 C 以上 + 女神陣營任務）設計為低頻但可感知的機率偏移
+- 負 4% jitter 讓玩家「明明任務成功率看起來高，但最近怎麼老是差一點」的心理感受有機制根源
+- **不快取 `GetCurrentStyleTagBias()`**：每次呼叫即時讀分數，避免 Stage 間 snapshot 語意漏洞（FT-09 實作紅線 §6.1 #4）
+- 此函式為 FT-04 **對外公開預留點**（暫未納入現有管線），待 FT-09 patch 確認 jitter 概念後整合至 §3.2 pipeline 的適當步驟
+
+---
+
 ## 5. 邊緣案例（Edge Cases）
 
 ### 5.1 資料載入
@@ -510,6 +581,7 @@ reputationDelta = baseDelta + conditionDelta
 | **C-02 Adventurer Management** | `GetAdventurer(instanceID) : AdventurerInstance`<br>`UpdateStatus(id, Idle/Dead) : void`<br>`SetWounded(id) : void` | 讀取 `traitIDs` 供 C-05 套用；結算後依 `finalStatus` 更新冒險者；`UpdateStatus` / `SetWounded` 內部保證 `currentMissionID = 0` invariant（C-02 § 3.5） | 單向，FT-04 → C-02 |
 | **C-05 Trait System** | `ApplyConditionTraits(Outcome outcome, int[] traitIDs) : void` | 委託 C-05 依 `effectTarget` 修改 Outcome（擲骰結果、聲望 delta、救活、gold bonus）；C-05 § 4.4 規格為唯一合約 | 單向，FT-04 → C-05 |
 | **F-03 Resource Management** | `AddReputation(int delta) : void` | 聲望變動統一走 F-03；clamp 與破產警告連動由 F-03 自理 | 單向，FT-04 → F-03 |
+| **FT-09 Faction Story** | API: `GetCurrentStyleTagBias() : StyleTag` | **v3.1 新增（P3.1-003 + design-review 補強）** §4.4 styleTag jitter modifier 公式呼叫；read-only query，runtime 即時計算（不快取）。**雙向依賴註記**：FT-09 既已透過 `OnMissionResolved` 事件訂閱 FT-04（observer pattern，間接依賴）；本 query 為 v3.1 新增的直接依賴。**執行流分析**：FT-04 結算 → 查 FT-09 → 計算 jitter → 擲骰 → 發布 OnMissionResolved → FT-09 訂閱處理。**執行順序無循環**（query 為 read-only，不觸發 FT-09 內部副作用）；**靜態依賴有循環**，實作上以 Service Locator / DI 解耦即可。FT-09 disabled 時 `GetCurrentStyleTagBias` 回傳 `StyleTag.Dark`（既有降級行為），jitter modifier 不生效——容錯由 §4.4 公式自身保證 | 雙向，FT-04 ⇄ FT-09 |
 
 > **F-02 Time System**：FT-04 不直接依賴——計時完成由 FT-02 `TickCompletionCheck` 消費 F-02 時間差後發布 `OnMissionCompleted`。FT-04 只訂閱事件。
 >
@@ -705,3 +777,12 @@ PK: `difficulty`（F / E / D / C / B / A / S / SS / SSS）
 - 結算過程中玩家強制關閉遊戲的崩潰復原（§ 5.7）
 - 結算結果的歷史日誌持久化
 - 結算動畫中途被打斷的 UX 行為
+
+---
+
+## 9. 變更歷史（Change Log）
+
+| 日期 | 版本 | 變更摘要 |
+|------|------|---------|
+| 2026-04-22 | v1.0 | 初版建立。完整定義 Outcome 資料結構、12 步驟結算管線、5 種最終結果映射、聲望計算、冒險者狀態更新、邊緣案例 §5.1~§5.7、驗收標準 AC-OR-01~AC-OR-28。 |
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-003：RollSuccessAndDeath 補 isScriptedDeath short-circuit（§3.3）+ §3.4 ApplyConditionTraits 過濾規則 + §3.5 isScriptedDeath 死亡結算路徑說明 + §4.4 styleTag jitter modifier（FB-M1）。需 design-review 重跑（改主路徑）。 |

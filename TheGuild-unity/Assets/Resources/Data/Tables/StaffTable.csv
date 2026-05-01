@@ -1,18 +1,27 @@
-# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
-# === StaffTable — 職員模板 ===
-# 對應 §3.2 資料表範例（說明用，§7 調參）
-# salary 欄位以下範例展示 Phase 2 預期調參梯度；Jam 版可全填 0（薪水管線未啟用，§7.1.1）
-
-staffID,101,102,103,104,105
-name,克勞德·會計師,艾蓮·委託官,蘿絲·櫃台小姐,無名小職員,咖啡杯
-rarity,3,2,2,1,1
-salary,40,30,30,10,0
-severancePay,120,80,80,10,0
-isFiller,false,false,false,true,true
-factionID,0,0,0,0,0
-minGuildLevel,2,1,1,1,1
-effectIDs,AccountantCommission|AccountantPenaltyOnVault,Willingness,RecruitRefreshOnCounter,Willingness,""
-effectValues,0.02|-0.02,0.05,7200,0.01,""
-slotBuildingIDs,5,1,4,0,0
-uiFlagIDs,"",SuccessRatePreview,"","",""
-uiFlagBuildingIDs,0,1,0,0,0
+# === StaffTable — 職員模板（正式版 v3.1）===
+# 資料來源：GDD FT-12 §3；GDD-FSD-patch-v3.1 §3.4；【FT-09-LORE】staff-templates.csv
+# staffID 201-207：7 位充數職員（isFiller=true，無劇情，純功能加成）
+# staffID 501-503：3 位敘事核心職員（米拉/譚恩/凱拉，isFiller=false）
+# v3.1 新增 5 個 Post-Jam 預埋欄位（P3.1-008）：
+#   personalityDesc / intimacyLevel / isLeavePossible / mood / personalEventIDs
+#   Jam 版填寫但不被消費；Post-Jam 親密度/心情系統參考
+# effectIDs/effectValues: 多值用 | 分隔；無效果填 ""
+# personalEventIDs: FK → PersonalEventTable.csv（Post-Jam 新建）；無事件填 0
+staffID,201,202,203,204,205,206,207,501,502,503
+name,凱斯·警衛,莉莎·樂觀者,馬庫斯·紀錄官,蘿拉·後勤,托马斯·見習,艾米莉·招募官,傑克·雜役,米拉,譚恩,凱拉
+rarity,1,2,1,2,1,2,1,4,3,3
+salary,10,25,15,30,10,25,10,80,50,50
+severancePay,20,60,30,80,20,60,20,300,200,200
+isFiller,true,true,true,true,true,true,true,false,false,false
+factionID,0,0,0,0,0,0,0,1,0,0
+minGuildLevel,1,1,1,1,1,1,1,2,1,1
+effectIDs,Willingness,"","",Willingness,Willingness,RecruitRefreshOnCounter,AccountantPenaltyOnVault,Willingness,RecruitRefreshOnCounter,""
+effectValues,0.08,"","",0.12,0.10,1800,-0.01,0.15,1800,""
+slotBuildingIDs,0,0,0,0,0,4,5,0,4,1
+uiFlagIDs,"","","","","","","",SuccessRatePreview,"",SuccessRatePreview
+uiFlagBuildingIDs,0,0,0,0,0,0,0,0,0,1
+personalityDesc,做事認真有餘但缺乏靈活變通，對公會的規則異常執著,總是往好的方向想，樂於幫助每個人，有時候過於天真,沉默寡言的文書工作者，對數字的敏感度遠勝於人情,認真負責但容易被小事絆住，與同僚相處融洽,年輕氣盛，總想著證明自己，容易衝動行動,精力充沛的招募好手，與應徵者建立快速信任,默默處理雜務的新手，觀察力強但還在學習表達,對女神的信仰與對現實的懷疑在她心中拉鋸，表面溫柔卻有自己的底線,說話簡短直接不繞彎子，對公會長有戒心但尊重實力,樂觀隨性、好奇心強，對委託結果比任何人都認真
+intimacyLevel,0,0,0,0,0,0,0,0,0,0
+isLeavePossible,0,0,0,0,0,0,0,0,0,0
+mood,0,0,0,0,0,0,0,0,0,0
+personalEventIDs,0,0,0,0,0,0,0,0,0,0

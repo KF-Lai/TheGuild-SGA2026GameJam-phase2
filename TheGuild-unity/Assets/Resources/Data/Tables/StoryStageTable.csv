@@ -1,11 +1,22 @@
-# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
-# === StoryStageTable — 陣營劇情階段 ===
-# 對應 §3.2.2 Jam 預設值（秩序路線 3 個階段）
-# threshold=[10, 30, 60]：B 任務一單 +5 分，第 2~3 單成功後解鎖 stage1
-
-stageID,1001,1002,1003
-factionID,1,1,1
-stageIndex,1,2,3
-scoreThreshold,10,30,60
-missionID,9001,9002,9003
-dialogueKey,story.order.stage1,story.order.stage2,story.order.stage3
+# === StoryStageTable — 陣營劇情階段（正式版 v3.1）===
+# 資料來源：GDD FT-09 §3.2.x；GDD-FSD-patch-v3.1 §2.4.1 / §2.4.8
+# factionID=1（奧蘿瑞女神陣營，Aurorae，Jam 預設唯一陣營）
+# scoreThreshold：女神陣營分數門檻，由 FT-09 §3.1 單向加分累積
+# missionID：FK → MissionTemplate.csv（categoryID=3 陣營劇情委託）
+# dialogueKey：對話系統 key；FT-09 依 dialogueVariantMode 解析變體
+# dialogueVariantMode: none / styletag_bias / ophelia_alive_dead
+#   - none            : 直接使用 dialogueKey
+#   - styletag_bias   : 加 .light/.mixed/.dark 後綴（若 DialogueTable 有）
+#   - ophelia_alive_dead : Stage 5 解鎖時 styletag 解析；結算後再依 alive/dead 二次解析（§2.4.4）
+# specialEventKey: "" = 無；ophelia_missing = Stage 4 確認後發布奧菲莉雅失蹤事件
+# unlockBlockerCondition: "" = 無 blocker；Stage 5 = npc:ophelia:status==Idle（§2.4.5）
+#   - blocker 未解時加入 _blockedStages；OnOpheliaReturned 後 TriggerDeferredStageCheck 重新檢查
+stageID,1001,1002,1003,1004,1005
+factionID,1,1,1,1,1
+stageIndex,1,2,3,4,5
+scoreThreshold,8,22,50,120,200
+missionID,9001,9002,9003,9004,9005
+dialogueKey,story.aurorae.stage1,story.aurorae.stage2,story.aurorae.stage3,story.aurorae.stage4,story.aurorae.stage5
+dialogueVariantMode,none,none,styletag_bias,styletag_bias,ophelia_alive_dead
+specialEventKey,"","","",ophelia_missing,""
+unlockBlockerCondition,"","","","",npc:ophelia:status==Idle

@@ -32,7 +32,7 @@
 
 > **effectValue 範圍依 effectType / effectTarget（GDD §3.2 / §7.1）**：
 > - `stat` 類（成功率/死亡率 delta）：安全範圍 `-0.15 ~ +0.15`
-> - `behavior` 類（willingness delta）：安全範圍 `-0.30 ~ +0.20`
+> - `behavior` 類（willingness delta）：安全範圍 `-0.30 ~ +0.20`；**v3.1 新增（P3.1-002）**：具名特殊角色（`isUnique=1` 且為敘事核心、且不在隨機抽取群組內）可例外突破至 `-0.40 ~ +0.30`（⚠️ 需 design-review 確認；當前已知例外：traitID=999「沉默」，effectValue=-0.40）
 > - `condition` 觸發機率型（`on_success_gold_bonus` / `on_death_survive` / `on_fail_survive`）：`[0, 1]`；安全範圍 `0.05 ~ 0.30`
 > - `condition` 固定值型（`on_fail_reputation` 負數 / `on_success_reputation_bonus` 正數）：安全範圍 `-5 ~ +5`
 
@@ -73,3 +73,21 @@ effectTarget,success_1,willingness_diff_S,on_death_survive,on_fail_reputation,on
 effectValue,0.08,-0.25,0.20,-2.0,0.15
 ```
 （effectValue 對齊 GDD §7.1 安全範圍；traitIDs 供 TraitGroupTable 引用）
+
+> **v3.1 新增（P3.1-002）**：traitID=999「沉默」為奧菲莉雅專屬特質，effectValue=-0.40 超出標準安全範圍，屬具名特殊角色例外（GDD §7.1）。量產時不得將 traitID=999 加入任何 `TraitGroupTable.traitIDs`。
+
+```csv
+# === Trait 999：沉默（奧菲莉雅專屬，不在隨機抽取群組內）===
+traitID,999
+name,沉默
+description,她不主動接受委託，需要玩家明確指派
+effectType,behavior
+effectTarget,willingness_all
+effectValue,-0.40
+```
+
+## 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|------|------|---------|
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-002：新增 traitID=999 沉默 + §4.4 isScriptedDeath 過濾規則 + §7.1 安全範圍突破。需 design-review 重跑（safe range 例外）|

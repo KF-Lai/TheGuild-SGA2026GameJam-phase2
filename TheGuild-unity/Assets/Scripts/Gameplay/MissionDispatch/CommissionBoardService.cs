@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TheGuild.Core.Events;
 using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Mission;
@@ -20,6 +21,9 @@ namespace TheGuild.Gameplay.MissionDispatch
     {
         // BuildingService.Instance 不可用時（測試環境 / 啟動異常）的保底值。
         private const int FALLBACK_MISSION_SLOT_COUNT = 5;
+
+        // v3.1 P3.1-007：SelectMissionFromPool 每 slot 最多重採次數。
+        private const int MAX_FALLBACK_RETRY = 3;
 
         private readonly List<int> _regularMissionPool = new List<int>(8);
         private readonly List<int> _staticMissionPool = new List<int>(4);
@@ -325,7 +329,7 @@ namespace TheGuild.Gameplay.MissionDispatch
 
         /// <summary>
         /// 三軌補池共用邏輯：依當前危險度權重抽取常規任務填補至 slotCount。
-        /// FSD §5.4 流程 C；GDD §3.9.2。
+        /// FSD §5.4 流程 C；GDD §3.9.2；v3.1 P3.1-007 加入 minDangerLevel 過濾與 per-slot 3 次 fallback。
         /// </summary>
         private void RefillPool()
         {
@@ -357,40 +361,87 @@ namespace TheGuild.Gameplay.MissionDispatch
                 return;
             }
 
-            int attempts = 0;
-            int maxAttempts = deficit * 2;
+            // v3.1 P3.1-007：每次 RefillPool 取一次 dangerIndex，同批補池期間不重複查詢。
+            int currentDangerIndex = GetCurrentDangerIndex();
+
             int filled = 0;
 
-            while (filled < deficit && attempts < maxAttempts)
+            for (int slot = 0; slot < deficit; slot++)
             {
-                attempts++;
+                int retryCount = 0;
 
-                string difficulty = RollDifficulty(weights);
-                if (string.IsNullOrEmpty(difficulty))
+                while (retryCount <= MAX_FALLBACK_RETRY)
                 {
-                    continue;
-                }
+                    string difficulty = RollDifficulty(weights);
+                    if (string.IsNullOrEmpty(difficulty))
+                    {
+                        retryCount++;
+                        continue;
+                    }
 
-                IReadOnlyList<MissionTemplate> templates = MissionDatabaseService.Instance.GetRegularTemplates(difficulty);
-                if (templates == null || templates.Count == 0)
-                {
-                    continue;
-                }
+                    IReadOnlyList<MissionTemplate> templates = MissionDatabaseService.Instance.GetRegularTemplates(difficulty);
 
-                int pickIndex = Random.Range(0, templates.Count);
-                int missionID = templates[pickIndex].missionID;
+                    // v3.1 P3.1-007：過濾 minDangerLevel > currentDangerIndex 的任務。
+                    List<MissionTemplate> candidates = templates != null
+                        ? templates.Where(t => t.minDangerLevel <= currentDangerIndex).ToList()
+                        : null;
 
-                PostResult result = PostRegularMission(missionID);
-                if (result == PostResult.OK)
-                {
-                    filled++;
+                    if (candidates == null || candidates.Count == 0)
+                    {
+                        retryCount++;
+                        if (retryCount > MAX_FALLBACK_RETRY)
+                        {
+                            Debug.LogWarning("[FT-05] SelectMissionFromPool: exhausted 3 retries, skip generation");
+                        }
+                        continue;
+                    }
+
+                    int pickIndex = Random.Range(0, candidates.Count);
+                    int missionID = candidates[pickIndex].missionID;
+
+                    PostResult result = PostRegularMission(missionID);
+                    if (result == PostResult.OK)
+                    {
+                        filled++;
+                        break;
+                    }
+
+                    // ALREADY_ON_BOARD / WRONG_CATEGORY / UNKNOWN_MISSION_ID：消耗一次 retry。
+                    retryCount++;
+                    if (retryCount > MAX_FALLBACK_RETRY)
+                    {
+                        Debug.LogWarning("[FT-05] SelectMissionFromPool: exhausted 3 retries, skip generation");
+                    }
                 }
-                // ALREADY_ON_BOARD / WRONG_CATEGORY / UNKNOWN_MISSION_ID 時 attempt 遞增，不計 filled。
+                // retryCount > MAX_FALLBACK_RETRY 時此 slot 跳過，繼續下一個 slot。
             }
 
             if (filled < deficit)
             {
                 Debug.LogWarning($"[CommissionBoardService] RefillPool: 收斂保護觸發，目標填入 {deficit} 筆，實際 {filled} 筆（模板池可能不足）。");
+            }
+        }
+
+        /// <summary>
+        /// 取得當前世界危險度索引（E=0, D=1, C=2, B=3, A=4）。
+        /// v3.1 P3.1-007：WorldDangerService 為 null 或回傳未知值時降級為 0（E 期）。
+        /// </summary>
+        private static int GetCurrentDangerIndex()
+        {
+            if (WorldDangerService.Instance == null)
+            {
+                return 0;
+            }
+
+            string level = WorldDangerService.Instance.GetCurrentLevel();
+            switch (level)
+            {
+                case "E": return 0;
+                case "D": return 1;
+                case "C": return 2;
+                case "B": return 3;
+                case "A": return 4;
+                default:  return 0;
             }
         }
 

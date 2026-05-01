@@ -1,5 +1,61 @@
 namespace TheGuild.Gameplay.FactionStory.Events
 {
+    // === v3.1 patch P3.1-004：新增事件 ===
+
+    /// <summary>
+    /// Stage 5 任務結算後發布，帶入二次解析的 epilogue dialogue key。
+    /// FT-09 §3.6.2 Step 10 / §3.6.10。
+    /// </summary>
+    public readonly struct OnFactionStoryStageEpilogueEvent
+    {
+        public OnFactionStoryStageEpilogueEvent(
+            int stageID,
+            int factionID,
+            string resolvedEpilogueKey,
+            bool isOpheliaEpilogue,
+            bool subjectAlive)
+        {
+            StageID = stageID;
+            FactionID = factionID;
+            ResolvedEpilogueKey = resolvedEpilogueKey;
+            IsOpheliaEpilogue = isOpheliaEpilogue;
+            SubjectAlive = subjectAlive;
+        }
+
+        public int StageID { get; }
+        public int FactionID { get; }
+        public string ResolvedEpilogueKey { get; }
+        public bool IsOpheliaEpilogue { get; }
+        public bool SubjectAlive { get; }
+    }
+
+    /// <summary>
+    /// Stage 4 確認後，奧菲莉雅失蹤事件。FT-09 §3.6.9。
+    /// </summary>
+    public readonly struct OnOpheliaMissingNightEvent
+    {
+        public OnOpheliaMissingNightEvent(int stageID)
+        {
+            StageID = stageID;
+        }
+
+        public int StageID { get; }
+    }
+
+    /// <summary>
+    /// 奧菲莉雅傷勢恢復後，回歸事件。FT-09 §3.6.9。
+    /// </summary>
+    public readonly struct OnOpheliaReturnedEvent
+    {
+        public OnOpheliaReturnedEvent(int adventurerInstanceID)
+        {
+            AdventurerInstanceID = adventurerInstanceID;
+        }
+
+        public int AdventurerInstanceID { get; }
+    }
+
+
     public readonly struct OnFactionScoreChangedEvent
     {
         public OnFactionScoreChangedEvent(int factionID, int oldScore, int newScore, int delta)

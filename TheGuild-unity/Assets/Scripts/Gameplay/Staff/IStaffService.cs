@@ -105,5 +105,11 @@ namespace TheGuild.Gameplay.Staff
         /// 取得職員狀態檢視。
         /// </summary>
         StaffStateView GetStaffStateView(int instanceID);
+
+        /// <summary>
+        /// 判斷職員模板（staffID）是否已被聘用（v3.1 P3.1-008，FT-09 消費）。
+        /// 不受 StaffState 影響；任一 instance 持有該 staffID 即回 true。
+        /// </summary>
+        bool IsStaffHired(int staffID);
     }
 }

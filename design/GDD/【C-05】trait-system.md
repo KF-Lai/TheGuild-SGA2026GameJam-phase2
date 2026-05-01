@@ -254,6 +254,8 @@ ApplyConditionTraits(outcome, traitIDs):
 >
 > **`triggeredConditionTraits` 追加規則**：機率類型（`on_success_gold_bonus` / `on_death_survive` / `on_fail_survive`）僅在 `Random.value < effectValue` 通過時追加；固定值類型（`on_fail_reputation` / `on_success_reputation_bonus`）只要 `effectType` 條件命中即追加。對齊 FT-04 §3.4「觸發成功的 traitID 由 C-05 追加至 outcome.triggeredConditionTraits」契約。
 
+> **v3.1 新增（P3.1-002）**：**`on_death_survive` 與 `on_fail_survive` 在 `ActiveMission.isScriptedDeath == 1` 時永遠不觸發**。FT-04 在傳入 `traitIDs` 前已執行過濾（FT-04 §3.4 守衛邏輯）——FT-04 移除所有 `effectTarget` 為 `on_death_survive` 或 `on_fail_survive` 的特質，再傳入 `ApplyConditionTraits`；C-05 本函式不感知 `isScriptedDeath`，過濾責任完全由 FT-04 承擔。設計理由：劇本必死的設計重量不應被 condition trait 救活。
+
 ## 5. 邊緣案例（Edge Cases）
 
 ### 5.1 資料載入
@@ -322,6 +324,15 @@ ApplyConditionTraits(outcome, traitIDs):
 | `condition` 類觸發機率（`effectValue` 為機率） | `0.05 ~ 0.30` | 低於 5% 玩家感知不到；高於 30% 特質效果過於頻繁，破壞驚喜感 |
 | `on_fail_reputation` / `on_success_reputation_bonus` 的 `effectValue` | `-5 ~ +5` | 超過 ±5 會使單次結算聲望波動過大，破壞聲望系統的積累感 |
 
+> **v3.1 新增（P3.1-002）**：⚠️ 需 design-review 確認
+>
+> **`behavior` 類安全範圍例外規則**：具名特殊角色（`isUnique=1` 且為敘事核心）可突破上述 `-0.30 ~ +0.20` 的標準安全範圍，允許至 `-0.40 ~ +0.30`。此例外須同時滿足以下條件：
+> 1. `AdventurerTemplate.isUnique == 1`
+> 2. 該角色有明確的敘事設計理由（在 narrative 文件中有對應角色描述）
+> 3. 此特質不進入任何隨機抽取群組（即不出現在 `TraitGroupTable.traitIDs` 中）
+>
+> **當前已知例外**：traitID=999「沉默」（奧菲莉雅專屬）— `effectValue=-0.40`（`willingness_all`），超出標準安全範圍 -0.10。設計理由：-0.40 確保奧菲莉雅完全不會主動接受任何委託，強化「需要玩家明確指派」的敘事設計意圖。
+
 ---
 
 ### 7.2 TraitGroupTable.csv
@@ -356,3 +367,12 @@ ApplyConditionTraits(outcome, traitIDs):
 | AC-TS-13 | `ApplyConditionTraits` 對持有 `on_fail_survive`（機率=1.0）的冒險者，成功結算（`isSuccess=true`）時，`isDead` 維持不變 |
 | AC-TS-14 | `ApplyConditionTraits` 對持有 `on_success_gold_bonus`（機率=1.0）的冒險者，成功結算後 `conditionGoldBonus` 增加 `outcome.baseReward × 0.5`（金流由 FT-05 消費此欄位執行，C-05 不直接套用 gold） |
 | AC-TS-15 | 新增一個特質至 CSV，`GetAllTraits()` 包含新特質，套用邏輯正確反映 `effectTarget` |
+| AC-TS-16 | traitID=999「沉默」載入後，`GetTrait(999).effectValue == -0.40`、`effectTarget == "willingness_all"`、`effectType == "behavior"` |
+| AC-TS-17 | traitID=999 不出現在任何 `TraitGroupTable.traitIDs` 中（不屬於隨機抽取群組） |
+| AC-TS-18 | FT-04 在 `isScriptedDeath == 1` 的任務結算時，傳入 `ApplyConditionTraits` 的 traitIDs 不包含 `effectTarget` 為 `on_death_survive` 或 `on_fail_survive` 的 traitID（驗證 FT-04 過濾邏輯；C-05 本身無此責任） |
+
+## 9. 變更歷史（Change Log）
+
+| 日期 | 版本 | 變更摘要 |
+|------|------|---------|
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-002：新增 traitID=999 沉默 + §4.4 isScriptedDeath 過濾規則 + §7.1 安全範圍突破。需 design-review 重跑（safe range 例外）|

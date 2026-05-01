@@ -245,6 +245,52 @@ namespace Tests.EditMode.Gameplay.Save
             Assert.AreEqual(1, degradable.InitializeCount);
         }
 
+        [Test]
+        public void Test_v31_AC_FT10_RegisterOphelia_OnNewGame()
+        {
+            FakeSaveable f03Resources = new FakeSaveable("f03Resources", true);
+            FakeSaveable c02Roster = new FakeSaveable("c02Roster", false)
+            {
+                InitializeWhenOwnerJsonNull = true
+            };
+
+            File.WriteAllText(
+                Path.Combine(_tempDir, "save.json"),
+                "{\"schemaMeta\":{\"schemaVersion\":\"1\",\"savedAtUtc\":\"2026-01-01T00:00:00Z\",\"gameOverState\":\"Active\",\"lastActiveTimestamp\":0}}"
+            );
+
+            SaveLoadBootstrap.Execute(
+                new List<ISaveable> { f03Resources, c02Roster },
+                _tempDir,
+                "save.json",
+                "save.backup",
+                3);
+
+            Assert.AreEqual(1, c02Roster.InitializeCount, "C-02 roster should be initialized on new game");
+        }
+
+        [Test]
+        public void Test_v31_AC_FT10_PersistFactionStoryFields()
+        {
+            FakeSaveable factionStory = new FakeSaveable("factionStorySaveData", false);
+            FakeSaveable f03Resources = new FakeSaveable("f03Resources", true);
+
+            string jsonWithFields = BuildRootJson(
+                "{}",
+                "{\"factionStoryV31_pendingMissingNight\":true,\"_totalAdventurerDeaths\":5,\"_blockedStages\":\"2,3\"}"
+            );
+            File.WriteAllText(Path.Combine(_tempDir, "save.json"), jsonWithFields);
+
+            BootstrapResult result = SaveLoadBootstrap.Execute(
+                new List<ISaveable> { f03Resources, factionStory },
+                _tempDir,
+                "save.json",
+                "save.backup",
+                3);
+
+            Assert.AreEqual(0, result.LoadedFromBackupIndex, "Should load from primary save");
+        }
+
         private void InjectSaveables(params ISaveable[] saveables)
         {
             SetField(_service, "_saveables", new List<ISaveable>(saveables));

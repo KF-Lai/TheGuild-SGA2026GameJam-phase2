@@ -25,6 +25,10 @@ namespace TheGuild.Gameplay.Adventurer
         /// <summary>Runtime 唯一 ID，由 AdventurerRoster 自增分配；0 = null sentinel。</summary>
         public int instanceID;
 
+        // === v3.1 patch P3.1-005：adventurerID 別名，供測試與 v3.1 下游系統使用 ===
+        /// <summary>instanceID 的別名，v3.1 對外 API 統一使用此名稱。</summary>
+        public int adventurerID => instanceID;
+
         /// <summary>來源模板 ID；0 = 隨機生成（無固定模板）。</summary>
         public int templateID;
 
@@ -60,6 +64,13 @@ namespace TheGuild.Gameplay.Adventurer
 
         /// <summary>FT-03 寫入；最近一次自主接單的 UTC timestamp；初始為 0。</summary>
         public long lastAutoPickupTimestamp;
+
+        // === v3.1 patch P3.1-005：GetCurrentStatus API ===
+        /// <summary>
+        /// 回傳當前狀態的大寫字串（如 "IDLE" / "DISPATCHED" / "WOUNDED" / "DEAD"）。
+        /// 供測試與 v3.1 下游系統識別狀態。
+        /// </summary>
+        public string GetCurrentStatus() => status.ToString().ToUpperInvariant();
     }
 
     /// <summary>

@@ -30,6 +30,10 @@ C-02 Adventurer Management 管理公會名冊（Roster）中所有冒險者的�
 - `isUnique` 唯一性驗證
 - `ISaveable` 持久化契約（序列化 / 還原）
 - `_nextInstanceID` 自增管理
+- **v3.1 新增（P3.1-005）** `RegisterUniqueAdventurer`：繞過容量/費用將 isUnique=1 模板加入名冊
+- **v3.1 新增（P3.1-005）** `DismissAdventurer` 放寬：Idle 狀態在 FT-07 審查處解鎖後可除名
+- **v3.1 新增（P3.1-005）** `OnAdventurerDismissed` 事件發布
+- **v3.1 新增（P3.1-005）** `GetRoster()` 奧菲莉雅優先排序（`OPHELIA_TEMPLATE_ID` 從 SystemConstants 取）
 
 **Out-of-Scope**
 - 招募邏輯（FT-01）
@@ -60,6 +64,10 @@ C-02 Adventurer Management 管理公會名冊（Roster）中所有冒險者的�
 | AC-AM-15 | EditMode 測試：`AdventurerTemplate` 中 `professionID` 在 ProfessionTable 找不到時，`LogError`，該模板不可被 `CreateFromTemplate` 使用 |
 | AC-AM-16 | CSV 載入：`AdventurerTemplate.csv` 零錯誤載入，`RecruitCostTable.csv` 7 列（F~S）全部命中 |
 | AC-AM-17 | `RestoreFromSave` 後名冊完整還原，`_nextInstanceID` 大於名冊中最大 `instanceID` |
+| AC-AM-18 | **v3.1 新增（P3.1-005）** EditMode 測試：`RegisterUniqueAdventurer(901)` 在空名冊上呼叫回傳 `true`；名冊含 templateID=901 Idle 實例；rosterCap 未阻擋 |
+| AC-AM-19 | **v3.1 新增（P3.1-005）** EditMode 測試：`RegisterUniqueAdventurer(901)` 在名冊已有 templateID=901 實例（任意狀態）時回傳 `false`，名冊無變動 |
+| AC-AM-20 | **v3.1 新增（P3.1-005）** EditMode 測試：`GetRoster()` 首個元素為 templateID=OPHELIA_TEMPLATE_ID；其餘依 `idleSinceTimestamp` 倒序 |
+| AC-AM-21 | **v3.1 新增（P3.1-005）** EditMode 測試：`DismissAdventurer` 對 Idle 冒險者：mock FT-07 已解鎖時回傳 `true` 且移除、發布 `OnAdventurerDismissed`；未解鎖時回傳 `false` |
 
 ---
 
@@ -110,8 +118,9 @@ C-02 Adventurer Management 管理公會名冊（Roster）中所有冒險者的�
 | FT-02 Mission Dispatch | 取得 Idle 冒險者列表；設定 Dispatched 狀態 | `IAdventurerRoster.GetByStatus(Idle)`、`IAdventurerRoster.UpdateStatus` |
 | FT-03 NPC Decision | 取得 Idle 冒險者清單；讀取 `idleSinceTimestamp`；寫入 `lastAutoPickupTimestamp` | `IAdventurerRoster.GetByStatus(Idle)`、`IAdventurerRoster.GetAdventurer`、`IAdventurerRoster.SetLastAutoPickupTimestamp` |
 | FT-04 Outcome Resolution | 結算後更新冒險者狀態 | `IAdventurerRoster.SetWounded`、`IAdventurerRoster.UpdateStatus` |
-| FT-09 Faction Story | 讀取 `factionID` 累積 | `IAdventurerRoster.GetAdventurer` |
-| FT-10 Save/Load | 序列化／反序列化名冊 | `ISaveable.Serialize()`、`ISaveable.RestoreFromSave()`、`ISaveable.InitializeAsNewGame()` |
+| FT-07 Guild Building | **v3.1 新增（P3.1-005）** `DismissAdventurer` Idle 路徑查詢審查處解鎖狀態 | `IBuildingService.IsBuildingUnlocked(buildingID)` |
+| FT-09 Faction Story | 讀取 `factionID` 累積；訂閱 `OnAdventurerDismissed` 識別奧菲莉雅特殊處理 | `IAdventurerRoster.GetAdventurer`；`EventBus`（`OnAdventurerDismissed`）|
+| FT-10 Save/Load | 序列化／反序列化名冊；新遊戲初始化呼叫 `RegisterUniqueAdventurer` | `ISaveable.Serialize()`、`ISaveable.RestoreFromSave()`、`ISaveable.InitializeAsNewGame()`、`IAdventurerRoster.RegisterUniqueAdventurer` |
 | P-02 Main UI | 顯示名冊列表、狀態、除名按鈕 | `IAdventurerRoster.GetRoster()`、`IAdventurerRoster.GetAdventurer`、`IAdventurerRoster.DismissAdventurer` |
 
 ### 2.5 跨系統事件契約
@@ -202,7 +211,7 @@ AdventurerRoster  ──實作──►  IAdventurerRoster
 
 | 方法 | 簽名 | 說明 |
 | --- | --- | --- |
-| GetRoster | `GetRoster() : IReadOnlyList<AdventurerInstance>` | 含所有狀態（含 Dead） |
+| GetRoster | `GetRoster() : IReadOnlyList<AdventurerInstance>` | 含所有狀態（含 Dead）；**v3.1 新增（P3.1-005）** 排序：① templateID == `SystemConstants.OPHELIA_TEMPLATE_ID` 永遠第一格；② 其餘依 `idleSinceTimestamp` 倒序（LINQ `OrderByDescending`） |
 | GetByStatus | `GetByStatus(AdventurerStatus status) : IReadOnlyList<AdventurerInstance>` | 精確篩選 |
 | GetAdventurer | `GetAdventurer(int instanceID) : AdventurerInstance` | 找不到回傳 `null` |
 | GetRosterCount | `GetRosterCount() : int` | 含 Dead |
@@ -211,7 +220,8 @@ AdventurerRoster  ──實作──►  IAdventurerRoster
 | AllocateInstanceID | `AllocateInstanceID() : int` | 由 `AdventurerRoster` 持有 `_nextInstanceID` 並提供原子分配；`AdventurerFactory.CreateFromTemplate` / `CreateRandomInstance` 透過此 API 取得唯一 ID（FSD-Codex-Reoprts-260427 T1-C02 裁決：allocator 歸屬 Roster 而非 Factory，便於 `RestoreFromSave` 重建 `_nextInstanceID = max(roster ID) + 1` 後一處生效） |
 | UpdateStatus | `UpdateStatus(int instanceID, AdventurerStatus newStatus, int missionInstanceID = 0) : void` | 維護 `currentMissionID` / `idleSinceTimestamp` 不變式 |
 | SetWounded | `SetWounded(int instanceID) : void` | 計算並寫入 `woundedUntilTimestamp`；清除 `currentMissionID` 與 `idleSinceTimestamp` |
-| DismissAdventurer | `DismissAdventurer(int instanceID) : bool` | 只允許 Dead 狀態 |
+| DismissAdventurer | `DismissAdventurer(int instanceID) : bool` | **v3.1 新增（P3.1-005）** 放寬：`Dead` 永遠可除名；`Idle` 僅當 `IBuildingService.IsBuildingUnlocked(reviewBuildingID)` 為 `true` 時可除名；成功時發布 `OnAdventurerDismissedEvent(instanceID)` |
+| RegisterUniqueAdventurer | **v3.1 新增（P3.1-005）** `RegisterUniqueAdventurer(int templateID) : bool` | 驗證 `isUnique=1` 且名冊無重複後，呼叫 `CreateFromTemplate` 並直接 `roster.Add`（跳過 `rosterCap` 防守）；供 FT-10 `InitializeAsNewGame` 呼叫；詳見 §5.4 流程 E |
 | TickWoundedRecovery | `TickWoundedRecovery() : void` | 供 AdventurerWoundedRecovery 呼叫；到期 Wounded → Idle |
 | SetLastAutoPickupTimestamp | `SetLastAutoPickupTimestamp(int instanceID, long timestamp) : void` | FT-03 寫入；instanceID 不存在時 `LogWarning` |
 | GetRecruitCost | `GetRecruitCost(string rank) : (int cost, int reputationReq)` | FT-01 查詢對應階級費用。**資料依賴**：`AdventurerRoster` 內部委派至 `AdventurerTemplateLoader._recruitCostDict`；Loader 載入 `RecruitCostTable.csv` 後透過建構注入（不另開 `IRecruitCostService`，§8.3 B-02 沿用） |
@@ -236,7 +246,7 @@ AdventurerRoster  ──實作──►  IAdventurerRoster
 | --- | --- | --- | --- |
 | `OnSecondTickEvent` | 訂閱（F-02 → C-02） | `long NowUTC`（typed struct） | `AdventurerWoundedRecovery` 呼叫 `TickWoundedRecovery` |
 | `OnAdventurerAddedEvent` | 發布（C-02 → FT-01 / FT-10 / P-02） | `int instanceID` | `AddAdventurer` 成功後發布；FT-10 標 dirty、P-02 重繪名冊 |
-| `OnAdventurerDismissedEvent` | 發布（C-02 → FT-10 / P-02） | `int instanceID` | `DismissAdventurer` 成功（Dead → 移除）後發布；不再復用 `OnAdventurerStatusChanged` 因 removal 不是狀態轉移 |
+| `OnAdventurerDismissedEvent` | 發布（C-02 → FT-09 / FT-10 / P-02） | `int instanceID` | **v3.1 新增（P3.1-005）** 觸發範圍擴大：`DismissAdventurer` 成功時發布（含 Dead 除名與 Idle 除名兩路徑）；FT-09 訂閱以識別奧菲莉雅特殊處理；不復用 `OnAdventurerStatusChanged` 因 removal 不是狀態轉移 |
 | `OnAdventurerRecovered` | 發布（C-02 → FT-02 / FT-03 / P-02） | `{ int instanceID }` | `TickWoundedRecovery` 中 Wounded → Idle 完成時；`AdventurerRoster` 發布 |
 | `OnAdventurerStatusChanged` | 發布（C-02 → P-02 / FT-03） | `{ int instanceID, AdventurerStatus prev, AdventurerStatus current }` | `UpdateStatus` / `SetWounded` / `DismissAdventurer` 後；`AdventurerRoster` 發布 |
 
@@ -542,3 +552,4 @@ class C02SaveDTO {
 | 日期 | Review 者 | 結構 | 邏輯 | GDD 對齊 | 備註 |
 | --- | --- | --- | --- | --- | --- |
 | 2026-04-27 | unity-specialist subagent | 通過 | 通過 | 通過 | 章節順序與編號符合 FSD-index 規範；4 個 Script 職責清晰不重疊；API / 事件 / 資料流前後一致；GDD §3.1~§3.5 + §4.1~§4.4a + §5.1~§5.3 + §6.4 全條對齊；邊緣案例 14 條全有對策；參數表格化清單涵蓋所有可調常數 |
+| 2026-04-30 | Claude Code 主體 | 待 patch | 待 patch | 待 patch | **v3.1 patch P3.1-005 + R2 同步紀錄（FSD review F4 補完）**：C-02 GDD 已寫入 v3.1 patch（RegisterUniqueAdventurer + DismissAdventurer 規則放寬 + OnAdventurerDismissed 事件 + GetRoster 排序奧菲莉雅永遠第一格 + **R2 SetWounded API 擴充 customDurationHours**）。FSD 主體 Script 設計待補：(1) §5.x SetWounded API 簽名同步為 `SetWounded(int instanceID, int? customDurationHours = null)`，內部公式為 `woundedUntilTimestamp = NowUTC + (customDurationHours ?? WOUNDED_RECOVERY_HOURS) × 3600`；(2) §1.3 AC-AM-09 補變體：`SetWounded(instanceID, customDurationHours: 12)` 後 `woundedUntilTimestamp == mockNow + 12 × 3600`；(3) §5.x 補 `RegisterUniqueAdventurer` / `GetRoster` 奧菲莉雅排序 / `DismissAdventurer` 放寬 / `OnAdventurerDismissed` 事件對應 Script 設計（部分由 Stage D1 patch 已寫入中間章節）。**R2 修正用途**：FT-09 OnOpheliaMissingNight 流程依此 API 擴充呼叫 12h 失蹤回復；既有呼叫者沿用 `SetWounded(instanceID)` 不變，向後相容。完整 patch 規格見 `_Reports/GDD-FSD-patch-v3.1-aurorae-faction.md` §3.1 + GDD review R2 修正紀錄。 |

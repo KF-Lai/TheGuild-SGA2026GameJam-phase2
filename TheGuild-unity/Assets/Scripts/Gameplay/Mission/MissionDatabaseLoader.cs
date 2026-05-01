@@ -19,11 +19,22 @@ namespace TheGuild.Gameplay.Mission
         private readonly int _factionNeutralID;
         private readonly Func<int, bool> _factionRouteValidator;
 
-        public MissionDatabaseLoader(int escortTypeID, int factionNeutralID, Func<int, bool> factionRouteValidator = null)
+        // === v3.1 patch P3.1-001 ===
+        /// <summary>
+        /// TraitTable FK 驗證器；null 表示 TraitTable 尚未整合，跳過 requiredTraitID FK 驗證。
+        /// 透過 MissionDatabaseService.SetTraitTableValidatorForTests 注入（測試用）。
+        /// 正式執行時由 MissionDatabaseService.InitializeDatabase 傳入 DataManager 查詢委派。
+        /// </summary>
+        private readonly Func<int, bool> _traitTableValidator;
+
+        public MissionDatabaseLoader(int escortTypeID, int factionNeutralID,
+            Func<int, bool> factionRouteValidator = null,
+            Func<int, bool> traitTableValidator = null)
         {
             _escortTypeID = escortTypeID;
             _factionNeutralID = factionNeutralID;
             _factionRouteValidator = factionRouteValidator;
+            _traitTableValidator = traitTableValidator;
         }
 
         public MissionDatabaseCache Build()
@@ -261,6 +272,9 @@ namespace TheGuild.Gameplay.Mission
                     // }
                 }
 
+                // === v3.1 patch P3.1-001：三欄位 validation ===
+                ValidateV31Fields(row);
+
                 if (dict.ContainsKey(row.missionID))
                 {
                     Debug.LogWarning($"[MissionDatabaseLoader] missionID={row.missionID} 重複，後者覆蓋前者。");
@@ -271,6 +285,38 @@ namespace TheGuild.Gameplay.Mission
             }
 
             return dict;
+        }
+
+        // === v3.1 patch P3.1-001 ===
+        /// <summary>
+        /// 驗證 MissionTemplate v3.1 新增的三個欄位，違規時 LogError 並重置為預設值 0。
+        /// GDD C-01 §5.1 Validation 規則。
+        /// </summary>
+        private void ValidateV31Fields(MissionTemplate row)
+        {
+            // Rule 1：isScriptedDeath=1 僅允許 categoryID=3
+            if (row.isScriptedDeath == 1 && row.categoryID != 3)
+            {
+                Debug.LogError(
+                    $"[MissionDatabaseLoader] missionID={row.missionID}: isScriptedDeath=1 但 categoryID={row.categoryID}（必須為 categoryID=3），已重置為 0。");
+                row.isScriptedDeath = 0;
+            }
+
+            // Rule 2：minDangerLevel 必須在 [0, 4]
+            if (row.minDangerLevel < 0 || row.minDangerLevel > 4)
+            {
+                Debug.LogError(
+                    $"[MissionDatabaseLoader] missionID={row.missionID}: minDangerLevel={row.minDangerLevel} 超出範圍 [0,4]，已重置為 0。");
+                row.minDangerLevel = 0;
+            }
+
+            // Rule 3：requiredTraitID FK 驗證（TraitTable 整合後生效；validator=null 時跳過驗證）
+            if (row.requiredTraitID > 0 && _traitTableValidator != null && !_traitTableValidator(row.requiredTraitID))
+            {
+                Debug.LogError(
+                    $"[MissionDatabaseLoader] missionID={row.missionID}: requiredTraitID={row.requiredTraitID} 在 TraitTable 中不存在，已重置為 0。");
+                row.requiredTraitID = 0;
+            }
         }
 
         private static void IndexTemplate(

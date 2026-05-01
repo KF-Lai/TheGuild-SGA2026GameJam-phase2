@@ -8,7 +8,8 @@
                        "TheGuild.Gameplay.MissionDispatch",
                        "TheGuild.Gameplay.WorldDanger",
                        "TheGuild.Gameplay.Outcome",
-                       "TheGuild.Core.SaveContract"
+                       "TheGuild.Core.SaveContract",
+                       "TheGuild.Gameplay.Adventurer"
                    ],
     "includePlatforms":  [
 

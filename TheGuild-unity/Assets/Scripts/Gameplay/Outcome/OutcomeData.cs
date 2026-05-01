@@ -2,6 +2,20 @@ using System;
 
 namespace TheGuild.Gameplay.Outcome
 {
+    // === v3.1 patch P3.1-003 ===
+    /// <summary>
+    /// FT-09 GetCurrentStyleTagBias() 回傳型別（v3.1 stub）。
+    /// FT-09 實作完成後可移至 TheGuild.Gameplay.FactionStory namespace 或共用 namespace。
+    /// 依賴方（FT-04 CalcAdjustedJitter）透過 FactionStoryService.Instance null-safe 存取，
+    /// FT-09 缺席時 fallback 回 StyleTag.Dark（jitter modifier 不生效）。
+    /// </summary>
+    public enum StyleTag
+    {
+        Dark,
+        Mixed,
+        Light
+    }
+
     /// <summary>
     /// FT-04 任務結算最終狀態列舉。
     /// GDD §3.1 / §3.5 五種最終結果之冒險者狀態面。

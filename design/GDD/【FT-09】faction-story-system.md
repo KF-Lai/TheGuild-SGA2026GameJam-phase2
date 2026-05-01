@@ -247,6 +247,10 @@ Jam 版**不支援 runtime 熱切換**：`_isEnabled` 在 Bootstrap 後不再變
 | `scoreThreshold` | int | 觸發此階段所需的陣營分數門檻（解鎖判定為 `currentScore >= scoreThreshold`，§3.4） |
 | `missionID` | int (FK → `MissionTemplate`) | 注入委託板的劇情委託 ID；**該 `MissionTemplate.categoryID` 必須 == `3`（faction_story）** |
 | `dialogueKey` | string (FK → `DialogueTable`，**owner 待定**) | 對話內容鍵（P-02 對話視窗讀取）；見下方註記 |
+| **v3.1 新增（P3.1-004）** | | |
+| `dialogueVariantMode` | string | 對話鍵解析模式（預設 `"none"`）；三值：`none` / `styletag_bias` / `ophelia_alive_dead`；解析邏輯見 §3.4.7 |
+| `specialEventKey` | string | 解鎖對話確認後供 P-02 發布特殊事件的鍵（預設 `""`）；Stage 4 = `"ophelia_missing"` |
+| `unlockBlockerCondition` | string | 分數達標時若條件評估為 true 則暫緩解鎖（預設 `""`）；Stage 5 = `"npc:ophelia:status==Idle"`；語法與機制見 §3.4.8 |
 
 **驗證規則**（DataManager 載入時）：
 
@@ -257,15 +261,17 @@ Jam 版**不支援 runtime 熱切換**：`_isEnabled` 在 Bootstrap 後不再變
 - `missionID` 在 `MissionTemplate` 找不到，或對應的 `categoryID != 3` → `StoryStageTableValidationException`，跳過
 - `dialogueKey` 在 `DialogueTable` 找不到 → `Debug.LogWarning`（不跳過階段，runtime fallback 顯示空對話框）
 
-**Jam 預設**（3 個階段，秩序路線）：
+**v3.1 新增（P3.1-004）**：Jam 正式預設值（5 個階段，奧蘿瑞女神陣營）：
 
-| stageID | factionID | stageIndex | scoreThreshold | missionID | dialogueKey |
-|---|---|---|---|---|---|
-| 1001 | 1 | 1 | 10 | 9001 | `story.order.stage1` |
-| 1002 | 1 | 2 | 30 | 9002 | `story.order.stage2` |
-| 1003 | 1 | 3 | 60 | 9003 | `story.order.stage3` |
+| stageID | factionID | stageIndex | scoreThreshold | missionID | dialogueKey | dialogueVariantMode | specialEventKey | unlockBlockerCondition |
+|---|---|---|---|---|---|---|---|---|
+| 1001 | 1 | 1 | 8 | 9001 | `story.aurorae.stage1` | none | "" | "" |
+| 1002 | 1 | 2 | 22 | 9002 | `story.aurorae.stage2` | none | "" | "" |
+| 1003 | 1 | 3 | 50 | 9003 | `story.aurorae.stage3` | styletag_bias | "" | "" |
+| 1004 | 1 | 4 | 120 | 9004 | `story.aurorae.stage4` | styletag_bias | ophelia_missing | "" |
+| 1005 | 1 | 5 | 200 | 9005 | `story.aurorae.stage5` | ophelia_alive_dead | "" | npc:ophelia:status==Idle |
 
-> 範例 threshold（10 / 30 / 60）對應「中前期 B+ 任務 7~10 單後解鎖第一階段」的節奏（依 §3.2.3 權重表，B 任務一單 +5 分）；最終值由 §7 與 playtest 校準。`missionID 9001~9003` 假設由 C-01 Mission Database 在內容階段提供（`categoryID=3`）。
+> threshold [8, 22, 50, 120, 200] 對應奧蘿瑞女神陣營路線設計節奏（依 §3.2.3 權重表校準）。`missionID 9001~9005` 由 C-01 Mission Database 在內容階段提供（`categoryID=3`，`isScriptedDeath=1` 僅限 Stage 5）。`dialogueVariantMode` / `specialEventKey` / `unlockBlockerCondition` 欄位解析規則詳見 §3.4.7 / §3.4.8 / §3.6.9。
 
 **`DialogueTable` owner 待定（Jam 範疇處理）**：
 
@@ -527,11 +533,136 @@ public readonly struct OnFactionStoryStageUnlocked
 
 | 訂閱者 | 用途 |
 |---|---|
-| **P-02 Main UI** | 開啟對話視窗，讀 `dialogueKey` 顯示文本 |
+| **P-02 Main UI** | 開啟對話視窗，讀 `resolvedDialogueKey` 顯示文本（v3.1 後 payload 改含解析後 key） |
 | **P-03 Notification System**（可選） | 推播桌面通知「新劇情解鎖」 **【→Log API待更新】** |
 | **FT-09 自身** | 不訂閱（解鎖邏輯由 §3.4.2 同步處理，無需事件回呼） |
 
 > P-02 / P-03 訂閱契約於 §6 反向依賴清單登記。
+
+---
+
+#### 3.4.7 dialogueKey 解析邏輯（v3.1 新增，P3.1-004）
+
+FT-09 在解鎖事件發布前，依 `StoryStageTable.dialogueVariantMode` 解析最終對話鍵，結果作為 `OnFactionStoryStageUnlocked.resolvedDialogueKey` 帶出：
+
+```
+ResolveDialogueKey(string baseKey, string mode):
+    SWITCH mode:
+        CASE "none":
+            return baseKey
+
+        CASE "styletag_bias":
+            bias = GetCurrentStyleTagBias()                          // §3.4.9
+            candidate = $"{baseKey}.{bias.ToString().ToLower()}"    // e.g. story.aurorae.stage3.light
+            return DialogueTable.Contains(candidate) ? candidate : baseKey
+
+        CASE "ophelia_alive_dead":
+            // Stage 5 解鎖時刻：奧菲莉雅尚未派遣，死活未定
+            // 此時只解析 styletag 維度，不解析死活維度
+            bias = GetCurrentStyleTagBias()
+            candidate = $"{baseKey}.{bias.ToString().ToLower()}"
+            return DialogueTable.Contains(candidate) ? candidate : baseKey
+            // 死活維度的二次解析在 Stage 5 劇情委託結算後，透過 OnFactionStoryStageEpilogue 事件（§3.6.8）
+
+        DEFAULT:
+            Debug.LogWarning("Unknown dialogueVariantMode={mode}, fallback to baseKey")
+            return baseKey
+```
+
+**設計原則（必須明文）**：
+> `dialogueVariantMode` 解析在事件發布前於 FT-09 內部完成；P-02 僅接收已解析的 `resolvedDialogueKey`，不持有 styleTag 判斷邏輯，不直接讀 `_factionScores`。
+
+---
+
+#### 3.4.8 unlockBlockerCondition 機制（v3.1 新增，P3.1-004）
+
+當 `StoryStageTable.unlockBlockerCondition != ""` 且分數達標時，FT-09 先評估 blocker 條件，阻止解鎖直到條件解除。
+
+**CheckStageUnlock 修改（在 §3.4.2 Step 3 解鎖邏輯前插入）**：
+
+```
+CheckStageUnlock(int factionID, int oldScore, int newScore):
+    Step 1: 取得該陣營的階段清單（依 stageIndex 升序）
+        stages = StoryStageTable.GetByFactionID(factionID).OrderBy(s => s.stageIndex)
+
+    Step 2: 取得當前已解鎖進度
+        currentMaxIndex = _unlockedStageIndices.GetValueOrDefault(factionID, 0)
+
+    Step 3: 線性掃過未解鎖的階段（stageIndex > currentMaxIndex）
+        FOR each stage IN stages WHERE stage.stageIndex > currentMaxIndex:
+            IF newScore < stage.scoreThreshold:
+                break  // threshold 嚴格遞增，後續必定未達標
+
+            // v3.1 新增（P3.1-004）：blocker 檢查
+            IF stage.unlockBlockerCondition != "":
+                blocked = EvaluateBlocker(stage.unlockBlockerCondition)
+                IF blocked:
+                    _blockedStages.Add(stage.stageID)
+                    // 不解鎖、不入隊、不發事件；等 TriggerDeferredStageCheck
+                    continue  // 繼續掃描後續階段（後續階段可能無 blocker）
+
+            // 正常解鎖流程（原 §3.4.2）
+            _unlockedStageIndices[factionID] = stage.stageIndex
+            _pendingDialogueStages.Enqueue(stage.stageID)
+            resolvedKey = ResolveDialogueKey(stage.dialogueKey, stage.dialogueVariantMode)  // §3.4.7
+            EventBus.Publish(new OnFactionStoryStageUnlocked(
+                stageID: stage.stageID, factionID: factionID,
+                stageIndex: stage.stageIndex, missionID: stage.missionID,
+                dialogueKey: stage.dialogueKey,
+                resolvedDialogueKey: resolvedKey  // v3.1 新增（P3.1-004）
+            ))
+```
+
+**EvaluateBlocker 解析語法**（Jam 版實作 1 種）：
+
+| 語法 | 範例 | 實作 |
+|---|---|---|
+| `"npc:{npcID}:status=={status}"` | `"npc:ophelia:status==Idle"` | 查 C-02 奧菲莉雅 instance：`var ophelia = C02.GetRoster().FirstOrDefault(a => a.templateID == SystemConstants.OPHELIA_TEMPLATE_ID); blocked = (ophelia?.status != AdventurerStatus.Idle);`（**2026-04-30 GDD review R3 修正**：原本引用不存在的 `C02.GetAdventurerStatus` API，改用 `GetRoster().FirstOrDefault(templateID==OPHELIA_TEMPLATE_ID)` 取得 instance；查無時 blocked = true 暫緩解鎖）|
+
+不識別語法 → `Debug.LogWarning("Unknown blocker syntax: {condition}")` + 視為無 blocker（不阻擋解鎖）。
+
+**TriggerDeferredStageCheck API**（v3.1 新增，P3.1-004）：
+
+由 `OnOpheliaReturned` handler（§3.6.9）呼叫，重新檢查 `_blockedStages` 中的所有 stageID；blocker 解除者補觸發正常解鎖流程：
+
+```
+TriggerDeferredStageCheck():
+    FOR each stageID IN _blockedStages.ToList():
+        stage = StoryStageTable.GetByStageID(stageID)
+        IF stage == null: continue
+        blocked = EvaluateBlocker(stage.unlockBlockerCondition)
+        IF NOT blocked:
+            _blockedStages.Remove(stageID)
+            _unlockedStageIndices[stage.factionID] = stage.stageIndex
+            _pendingDialogueStages.Enqueue(stageID)
+            resolvedKey = ResolveDialogueKey(stage.dialogueKey, stage.dialogueVariantMode)
+            EventBus.Publish(new OnFactionStoryStageUnlocked(..., resolvedDialogueKey: resolvedKey))
+```
+
+---
+
+#### 3.4.9 GetCurrentStyleTagBias() API（v3.1 新增，P3.1-004）
+
+```csharp
+public enum StyleTag { Dark, Mixed, Light }
+
+public StyleTag GetCurrentStyleTagBias()
+{
+    int score = GetCurrentFactionScore(1);  // factionID=1 女神陣營（Jam 版單路線）
+    if (score >= LIGHT_THRESHOLD) return StyleTag.Light;
+    if (score >= MIXED_THRESHOLD) return StyleTag.Mixed;
+    return StyleTag.Dark;
+}
+```
+
+**閾值來源**（`SystemConstants.csv`，§7 新增調參項）：
+- `LIGHT_THRESHOLD = 100`（safe range [80, 200]，不得低於 `MIXED_THRESHOLD + 30`）
+- `MIXED_THRESHOLD = 40`（safe range [20, 60]，不得高於 Stage 3 scoreThreshold=50）
+
+**性質宣告（必須明文）**：
+> 「styleTag 區間判定依賴 `currentScore`，由 §3.1 單向加分保證永不倒退。Jam 版範疇內，玩家進入 Light 區間後永遠不會退回 Mixed/Dark。本系統刻意不實作 hysteresis——任何「補救降分」需求應重新評估 §1 設計原則。」
+
+**重要實作紅線**：`GetCurrentStyleTagBias()` 每次呼叫即時讀 `_factionScores[1]`，不快取。快取會製造「Stage 3 解鎖時計算、Stage 4 呈現時用舊快照」的語意漏洞。
 
 ---
 
@@ -893,6 +1024,105 @@ FT-09 **不干涉**玩家對劇情委託的派遣節奏：
 
 ---
 
+#### 3.6.8 OnFactionStoryStageEpilogue 事件（v3.1 新增，P3.1-004）
+
+**觸發時機**：§3.6.2 `HandleOnMissionResolved` Step 9 後，識別 Stage 5（`categoryID=3`，`isScriptedDeath=1`）任務結算後，同 frame 發布：
+
+```csharp
+public readonly struct OnFactionStoryStageEpilogue
+{
+    public readonly int    stageID;
+    public readonly int    factionID;
+    public readonly string resolvedEpilogueKey;  // 格式見下方
+    public readonly bool   isOpheliaEpilogue;    // stageID == 1005 時為 true
+    public readonly bool   subjectAlive;          // outcome.isDead 取反
+}
+```
+
+**resolvedEpilogueKey 解析格式**（二次解析，疊加死活維度）：
+
+```
+"story.aurorae.stage5.epilogue.{styletag}.{alive|dead}"
+// 範例：
+//   "story.aurorae.stage5.epilogue.light.dead"
+//   "story.aurorae.stage5.epilogue.dark.alive"
+```
+
+`{styletag}` 取 `GetCurrentStyleTagBias().ToString().ToLower()`；`{alive|dead}` 取 `outcome.isDead ? "dead" : "alive"`。
+
+> **設計說明**：Stage 5 解鎖時（§3.4.7）只能解析 styletag 維度（奧菲莉雅尚未派遣）；死活維度的解析在此，作為第二次解析，透過 `OnFactionStoryStageEpilogue` 事件送給 P-02 播放 epilogue 文本。
+
+**訂閱者**：P-02（播放 Stage 5 epilogue 對話視窗）。
+
+**發布條件補充**：此事件僅在 `stage.dialogueVariantMode == "ophelia_alive_dead"` 的階段結算後發布（Jam 版即 stageID=1005）；其他階段結算仍走 §3.6.2 的 `OnFactionStoryStageResolved` 事件，不發此額外事件。
+
+---
+
+#### 3.6.9 OnOpheliaMissingNight / OnOpheliaReturned 事件（v3.1 新增，P3.1-004）
+
+**OnOpheliaMissingNight 觸發鏈**：
+
+1. P-02 收到 `OnFactionStoryStageUnlocked`，且 `stage.specialEventKey == "ophelia_missing"`
+2. P-02 顯示對話視窗；玩家確認後（`ConfirmDialogue` 完成出隊）
+3. P-02 發布 `OnOpheliaMissingNight`
+
+**OnOpheliaMissingNight 處理者**：
+
+| 處理者 | 動作 |
+|---|---|
+| **FT-09** | 內部記錄 `_opheliaMissingFlag = true`（持久化於 SaveData） |
+| **P-02** | 場景物件 sprite 更新（ophelia_chair → empty 等，依 SceneObjectStateTable） |
+| **FT-09 呼叫 C-02** | `C02.SetWounded(opheliaInstanceID, customDurationHours: OPHELIA_MISSING_RECOVERY_HOURS)`（**2026-04-30 GDD review R2 修正**：C-02 §3.5 SetWounded API 已擴充支援 optional 第二參數 `customDurationHours: int? = null`；null 時用 SystemConstants.WOUNDED_RECOVERY_HOURS）|
+
+**OnOpheliaReturned 觸發條件**：
+
+- C-02 `OnAdventurerRecovered` 發布，且 `instanceID == opheliaInstanceID`（奧菲莉雅 woundedUntilTimestamp 到期）
+- FT-09 訂閱 `OnAdventurerRecovered`，識別 opheliaInstanceID 後發布 `OnOpheliaReturned`
+
+**OnOpheliaReturned 處理者**：
+
+| 處理者 | 動作 |
+|---|---|
+| **FT-09** | 清除 `_opheliaMissingFlag`；呼叫 `TriggerDeferredStageCheck()`（§3.4.8） |
+| **P-02** | 場景物件 sprite 還原；顯示「她回來了」對話 |
+| **FT-09 呼叫 C-02** | 再次呼叫 `C02.SetWounded(opheliaInstanceID)`（不傳 customDurationHours，C-02 內部用標準 SystemConstants.WOUNDED_RECOVERY_HOURS=6h；**2026-04-30 GDD review R2 修正**）|
+
+> `OPHELIA_MISSING_RECOVERY_HOURS = 12`（safe range [6, 24]，§7 新增調參項）。`WOUNDED_RECOVERY_HOURS = 6`（標準受傷回復，來自 C-02 SystemConstants）。
+
+---
+
+#### 3.6.10 累積冒險者死亡計數（v3.1 新增，P3.1-004，FB-M2；2026-04-30 GDD review R1 修正）
+
+**新增 runtime 狀態**：`_totalAdventurerDeaths: int`（持久化於 SaveData；同 `factionStoryV31_totalAdventurerDeaths`）
+
+**機制**（**R1 修正後**）：FT-09 **不訂閱新事件**——FT-04 只發布 `OnMissionResolved(Outcome)` 事件，Outcome 含 `isDead: bool` 欄位（FT-04 §3.1）；FT-04 沒有獨立的 `OnAdventurerDied` 事件。FT-09 在既有 `HandleOnMissionResolved`（§3.6.2）中加入 `isDead` 計數邏輯即可。
+
+**§3.6.2 HandleOnMissionResolved 補充步驟**（在既有 Step 1~9 之後）：
+
+```
+HandleOnMissionResolved(Outcome outcome):
+    // ... 既有 Step 1~9 ...
+
+    // === v3.1 新增（P3.1-004，FB-M2）：累積冒險者死亡計數 ===
+    Step 10: IF outcome.isDead == true:
+                 _totalAdventurerDeaths += 1
+             // 不論任務 categoryID / factionID，所有冒險者死亡都計入
+             // （包含 isScriptedDeath=1 任務造成的死亡，例如 Stage 5 奧菲莉雅死亡也計入）
+```
+
+**消費點**（Stage 4 解鎖時）：
+
+```
+// §3.4.8 CheckStageUnlock 正常解鎖流程中，Stage 4（stageID=1004）解鎖後補充：
+IF stage.stageID == 1004 AND _totalAdventurerDeaths >= 5:
+    AppendGuildLogEntry("我數過了，你失去了五個")
+    // AppendGuildLogEntry：FT-09 的 guild log 寫入 API（文本由 writer agent 確認後填入）
+```
+
+> **設計說明（FB-M2）**：這是 FT-09 的「行為回響」機制——玩家的冒險者死亡歷史在劇情高潮時刻以公會誌留書形式浮現，強化「公會記錄一切」的敘事直覺。
+
+---
+
 ### 3.7 對外 API、事件契約與 Runtime 狀態（API Surface, Event Contracts & Runtime State）
 
 本節彙整 FT-09 對外的所有 API、發布 / 訂閱的事件、以及內部 runtime 狀態欄位的正式契約，作為 §4 公式 / §5 邊緣案例 / §6 依賴 / §8 驗收標準的引用基準。
@@ -1059,6 +1289,7 @@ public sealed class FactionStorySaveData
 | EC-10 | SaveData 反序列化異常 | 5 種子情境（整區塊缺失 / 欄位 null / JSON 損毀 / 未知 factionID / stageIndex 超範圍） | 不阻擋 Bootstrap；過濾 stale key；夾擠 stageIndex | §3 未涵蓋（完整展開） | [附錄 B.10](#appendix-b-10) |
 | EC-11 | 路線完結後計分 | 已完結路線繼續派該陣營任務 | 分數累積照常，但無新解鎖；RouteCompleted 不重發 | §3 未涵蓋（完整展開） | [附錄 B.11](#appendix-b-11) |
 | EC-12 | Bootstrap 時序失準 | DataManager / EventBus 未就緒，事件早於訂閱 | 降級 + LogError；事件遺失視為可接受 | 部分（§3.1.2 假設） | [附錄 B.12](#appendix-b-12) |
+| **EC-13** | **奧菲莉雅被解雇後 Stage 5 永久 blocked**（v3.1 新增，design-review 補強）| 玩家在 Stage 5 解鎖前透過 FT-07 審查處解雇奧菲莉雅（templateID=901） → C-02.GetRoster 查無 901 → §3.4.8 `EvaluateBlocker` 回 `ophelia?.status` 為 null → `blocked = true`，且因奧菲莉雅永遠不會回到名冊，Stage 5 永久 blocked | **設計自洽接受**：敘事上「沒有奧菲莉雅，沒有 Stage 5」自洽；陣營分數可累積至 200 但不觸發 Stage 5 解鎖。**不是 bug，是劇本設計**。實作者應理解此情境，**不可**為「規避 blocker」修改 R3 EvaluateBlocker 邏輯（如改為「查無時 blocked=false 解鎖讓他人去」會破壞 Stage 5「該我了」的敘事核心）。後續 P-03 可選實作「Stage 5 永久 blocked 通知」告知玩家此狀態 | §3.4.8（R3）/ §3.6.9 / FT-09 設計自洽性 | [附錄 B.13](#appendix-b-13) |
 
 ### 5.2 EC 覆蓋類型
 

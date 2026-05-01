@@ -203,6 +203,21 @@ namespace TheGuild.Gameplay.Staff
             return IsStaffSystemUnlockedInternal() ? _roster : s_emptyRoster;
         }
 
+        public bool IsStaffHired(int staffID)
+        {
+            // v3.1 P3.1-008：不依賴 IsStaffSystemUnlockedInternal()，直接查 _roster
+            foreach (KeyValuePair<int, StaffInstance> pair in _roster)
+            {
+                StaffInstance staff = pair.Value;
+                if (staff != null && staff.staffID == staffID)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public StaffStateView GetStaffStateView(int instanceID)
         {
             StaffStateView view = default;

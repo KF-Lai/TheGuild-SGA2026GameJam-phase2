@@ -4,6 +4,7 @@ using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.SaveContract;
 using TheGuild.Core.Time;
+using TheGuild.Gameplay.Building;
 using TheGuild.Gameplay.Profession;
 using TheGuild.Gameplay.Race;
 using TheGuild.Gameplay.Trait;
@@ -19,6 +20,10 @@ namespace TheGuild.Gameplay.Adventurer
     [DefaultExecutionOrder(110)]
     public sealed class AdventurerRoster : MonoBehaviour, ISaveable
     {
+        // === v3.1 patch P3.1-005：審查處 buildingID（FT-07 確認後如有變更從 SystemConstants 讀取）===
+        // buildingID=4（公會塔/審查處）；InitializeAsNewGame 時 level=1 即解鎖
+        private const int ScrutinyOfficeBuildingID = 4;
+
         private readonly List<AdventurerInstance> _roster = new List<AdventurerInstance>(32);
         private int _nextInstanceID = 1;
 
@@ -50,10 +55,56 @@ namespace TheGuild.Gameplay.Adventurer
 
         /// <summary>
         /// 取得名冊全部冒險者（含所有狀態，含 Dead）。
+        /// === v3.1 patch P3.1-005：排序規則 —— 奧菲莉雅（OPHELIA_TEMPLATE_ID）永遠第一格；
+        ///     其餘依 idleSinceTimestamp 倒序。OPHELIA_TEMPLATE_ID 從 SystemConstants 讀取。===
         /// </summary>
         public IReadOnlyList<AdventurerInstance> GetRoster()
         {
-            return _roster;
+            if (_roster.Count <= 1)
+            {
+                return _roster;
+            }
+
+            int opheliaTemplateID = DataManager.Instance != null
+                ? (int)DataManager.Instance.GetFloat("OPHELIA_TEMPLATE_ID")
+                : 901;
+
+            List<AdventurerInstance> sorted = new List<AdventurerInstance>(_roster.Count);
+
+            // 奧菲莉雅優先
+            AdventurerInstance ophelia = null;
+            for (int i = 0; i < _roster.Count; i++)
+            {
+                if (_roster[i].templateID == opheliaTemplateID)
+                {
+                    ophelia = _roster[i];
+                    break;
+                }
+            }
+
+            if (ophelia != null)
+            {
+                sorted.Add(ophelia);
+            }
+
+            // 其餘依 idleSinceTimestamp 倒序（值越大 = 越晚進入 Idle = 越新，排前面）
+            for (int i = 0; i < _roster.Count; i++)
+            {
+                if (_roster[i] != ophelia)
+                {
+                    sorted.Add(_roster[i]);
+                }
+            }
+
+            // 穩定排序：奧菲莉雅已在 index 0，其餘按 idleSinceTimestamp 倒序
+            if (sorted.Count > 1)
+            {
+                int startIdx = ophelia != null ? 1 : 0;
+                sorted.Sort(startIdx, sorted.Count - startIdx,
+                    Comparer<AdventurerInstance>.Create((a, b) => b.idleSinceTimestamp.CompareTo(a.idleSinceTimestamp)));
+            }
+
+            return sorted;
         }
 
         /// <summary>
@@ -88,6 +139,12 @@ namespace TheGuild.Gameplay.Adventurer
 
             return null;
         }
+
+        // === v3.1 patch P3.1-005：GetAdventurerByID 別名 ===
+        /// <summary>
+        /// GetAdventurer 的 v3.1 別名；依 adventurerID（= instanceID）查單筆；找不到回傳 null。
+        /// </summary>
+        public AdventurerInstance GetAdventurerByID(int adventurerID) => GetAdventurer(adventurerID);
 
         /// <summary>
         /// 名冊人數（含 Dead）。
@@ -157,6 +214,66 @@ namespace TheGuild.Gameplay.Adventurer
             return true;
         }
 
+        // === v3.1 patch P3.1-005：RegisterUniqueAdventurer API（§4.3b 偽碼實作）===
+        /// <summary>
+        /// 將唯一冒險者模板（isUnique=1）加入名冊，**繞過 rosterCap 容量上限**。
+        /// 用途：FT-10 InitializeAsNewGame 將奧菲莉雅放入初始名冊。
+        /// Guard：模板不存在、isUnique!=1、或名冊中已存在同 templateID → 回傳 false。
+        /// GDD §4.3b / v3.1 patch P3.1-005 §3.1.1。
+        /// </summary>
+        public bool RegisterUniqueAdventurer(int templateID)
+        {
+            if (_loader == null)
+            {
+                Debug.LogError("[C-02] RegisterUniqueAdventurer: _loader 為 null，無法驗證模板。");
+                return false;
+            }
+
+            AdventurerTemplate template = _loader.GetTemplate(templateID);
+            if (template == null)
+            {
+                Debug.LogWarning($"[C-02] RegisterUniqueAdventurer: templateID={templateID} 找不到模板，回傳 false。");
+                return false;
+            }
+
+            if (template.isUnique != 1)
+            {
+                Debug.LogWarning($"[C-02] RegisterUniqueAdventurer: templateID={templateID} isUnique={template.isUnique}，非唯一模板，回傳 false。");
+                return false;
+            }
+
+            // 已存在同 templateID 的實例（含 Dead）→ 拒絕
+            for (int i = 0; i < _roster.Count; i++)
+            {
+                if (_roster[i].templateID == templateID)
+                {
+                    Debug.LogWarning($"[C-02] RegisterUniqueAdventurer: templateID={templateID} 名冊中已存在（instanceID={_roster[i].instanceID}），回傳 false。");
+                    return false;
+                }
+            }
+
+            if (_factory == null)
+            {
+                Debug.LogError("[C-02] RegisterUniqueAdventurer: _factory 為 null，無法建立實例。");
+                return false;
+            }
+
+            AdventurerInstance instance = _factory.CreateFromTemplate(templateID);
+            if (instance == null)
+            {
+                Debug.LogError($"[C-02] RegisterUniqueAdventurer: CreateFromTemplate({templateID}) 回傳 null。");
+                return false;
+            }
+
+            // 設定 idleSinceTimestamp（加入時為 Idle）
+            instance.idleSinceTimestamp = GetNowUTC();
+
+            // 不檢查 rosterCap，直接加入
+            _roster.Add(instance);
+            EventBus.Publish(new OnAdventurerAddedEvent(instance.instanceID));
+            return true;
+        }
+
         /// <summary>
         /// 更新冒險者狀態，並維護 currentMissionID / idleSinceTimestamp 不變式。
         /// FSD §5.4 流程 B。
@@ -200,55 +317,78 @@ namespace TheGuild.Gameplay.Adventurer
         }
 
         /// <summary>
-        /// 將冒險者設為 Wounded（計算並寫入 woundedUntilTimestamp）。
-        /// 原狀態必須為 Dispatched，否則 LogWarning + return。
+        /// 將冒險者設為 Wounded（使用 WOUNDED_RECOVERY_HOURS 預設時長）。
+        /// === v3.1 patch P3.1-005 R2：向後相容舊呼叫；委派至 SetWounded(int, int?) ===
         /// FSD §5.4 流程 B。
         /// </summary>
-        public void SetWounded(int instanceID)
+        public void SetWounded(int instanceID) => SetWounded(instanceID, null);
+
+        // === v3.1 patch P3.1-005 R2：SetWounded 擴充 customDurationHours ===
+        /// <summary>
+        /// 將冒險者設為 Wounded（計算並寫入 woundedUntilTimestamp）。
+        /// v3.1 放寬：允許 Idle 或 Dispatched 狀態；Dead 狀態拒絕；Wounded 狀態更新時長。
+        /// customDurationHours 為 null 時使用 SystemConstants WOUNDED_RECOVERY_HOURS。
+        /// FSD §5.4 流程 B / v3.1 patch P3.1-005 R2。
+        /// </summary>
+        public void SetWounded(int instanceID, int? customDurationHours)
         {
             AdventurerInstance instance = GetAdventurer(instanceID);
             if (instance == null)
             {
-                Debug.LogWarning($"[AdventurerRoster] SetWounded: instanceID={instanceID} 不存在。");
+                Debug.LogWarning($"[C-02] SetWounded: instanceID={instanceID} 不存在。");
                 return;
             }
 
-            if (instance.status != AdventurerStatus.Dispatched)
+            // Dead 狀態永遠拒絕
+            if (instance.status == AdventurerStatus.Dead)
             {
-                Debug.LogWarning($"[AdventurerRoster] SetWounded: instanceID={instanceID} 狀態為 {instance.status}，非 Dispatched，無操作。");
+                Debug.LogWarning($"[C-02] SetWounded: instanceID={instanceID} 狀態為 Dead，不可設為 Wounded。");
                 return;
             }
 
             long now = GetNowUTC();
             if (now == 0)
             {
-                Debug.LogError("[AdventurerRoster] SetWounded: NowUTC=0，無法計算 woundedUntilTimestamp，無操作。");
+                Debug.LogError("[C-02] SetWounded: NowUTC=0，無法計算 woundedUntilTimestamp，無操作。");
                 return;
             }
 
-            if (DataManager.Instance == null)
+            float recoveryHours;
+            if (customDurationHours.HasValue)
             {
-                Debug.LogError("[AdventurerRoster] SetWounded: DataManager.Instance 為 null，無法讀取 WOUNDED_RECOVERY_HOURS，無操作。");
-                return;
+                recoveryHours = customDurationHours.Value;
             }
-
-            float recoveryHours = DataManager.Instance.GetFloat("WOUNDED_RECOVERY_HOURS");
-            if (recoveryHours <= 0f)
+            else
             {
-                Debug.LogError($"[AdventurerRoster] SetWounded: WOUNDED_RECOVERY_HOURS={recoveryHours} 非法，無操作（依 FSD §6.3 禁止 fallback 硬編碼）。");
-                return;
+                if (DataManager.Instance == null)
+                {
+                    Debug.LogError("[C-02] SetWounded: DataManager.Instance 為 null，無法讀取 WOUNDED_RECOVERY_HOURS，無操作。");
+                    return;
+                }
+
+                recoveryHours = DataManager.Instance.GetFloat("WOUNDED_RECOVERY_HOURS");
+                if (recoveryHours <= 0f)
+                {
+                    Debug.LogError($"[C-02] SetWounded: WOUNDED_RECOVERY_HOURS={recoveryHours} 非法，無操作（依 FSD §6.3 禁止 fallback 硬編碼）。");
+                    return;
+                }
             }
 
+            AdventurerStatus prevStatus = instance.status;
             instance.woundedUntilTimestamp = now + (long)(recoveryHours * 3600f);
             instance.status = AdventurerStatus.Wounded;
             instance.currentMissionID = 0;
             instance.idleSinceTimestamp = 0;
 
-            EventBus.Publish(new OnAdventurerStatusChangedEvent(instanceID, AdventurerStatus.Dispatched, AdventurerStatus.Wounded));
+            EventBus.Publish(new OnAdventurerStatusChangedEvent(instanceID, prevStatus, AdventurerStatus.Wounded));
         }
 
         /// <summary>
-        /// 除名冒険者；僅允許 Dead 狀態。
+        /// 除名冒險者。
+        /// GDD §3.4 規則 4 / === v3.1 patch P3.1-005 放寬 ===：
+        ///   - Dead 狀態：永遠可除名（既有規則）。
+        ///   - Idle 狀態：FT-07 審查處（buildingID=ScrutinyOfficeBuildingID）已解鎖時可除名。
+        ///   - Dispatched / Wounded：拒絕。
         /// FSD §5.1 / GDD §3.4 規則 4。
         /// </summary>
         public bool DismissAdventurer(int instanceID)
@@ -256,19 +396,50 @@ namespace TheGuild.Gameplay.Adventurer
             AdventurerInstance instance = GetAdventurer(instanceID);
             if (instance == null)
             {
-                Debug.LogWarning($"[AdventurerRoster] DismissAdventurer: instanceID={instanceID} 不存在。");
+                Debug.LogWarning($"[C-02] DismissAdventurer: instanceID={instanceID} 不存在。");
                 return false;
             }
 
-            if (instance.status != AdventurerStatus.Dead)
+            // Dead 狀態：永遠可除名（既有規則）
+            if (instance.status == AdventurerStatus.Dead)
             {
-                Debug.LogWarning($"[AdventurerRoster] DismissAdventurer: instanceID={instanceID} 狀態為 {instance.status}，非 Dead，回傳 false。");
-                return false;
+                _roster.Remove(instance);
+                EventBus.Publish(new OnAdventurerDismissedEvent(instanceID));
+                return true;
             }
 
-            _roster.Remove(instance);
-            EventBus.Publish(new OnAdventurerDismissedEvent(instanceID));
-            return true;
+            // === v3.1 patch P3.1-005：Idle 放寬規則 ===
+            if (instance.status == AdventurerStatus.Idle)
+            {
+                // 查詢 FT-07 審查處是否解鎖（level >= 1）
+                BuildingService buildingService = BuildingService.Instance;
+                bool scrutinyUnlocked = false;
+                if (buildingService != null)
+                {
+                    try
+                    {
+                        scrutinyUnlocked = buildingService.GetBuildingLevel(ScrutinyOfficeBuildingID) >= 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[C-02] DismissAdventurer({instanceID}): 查詢審查處等級失敗（{ex.Message}），視為未解鎖。");
+                    }
+                }
+
+                if (!scrutinyUnlocked)
+                {
+                    Debug.LogWarning($"[C-02] DismissAdventurer({instanceID}): Idle 冒險者除名失敗——FT-07 審查處（buildingID={ScrutinyOfficeBuildingID}）未解鎖。");
+                    return false;
+                }
+
+                _roster.Remove(instance);
+                EventBus.Publish(new OnAdventurerDismissedEvent(instanceID));
+                return true;
+            }
+
+            // Dispatched / Wounded → 拒絕
+            Debug.LogWarning($"[C-02] DismissAdventurer({instanceID}): 狀態 {instance.status} 不可除名。");
+            return false;
         }
 
         /// <summary>

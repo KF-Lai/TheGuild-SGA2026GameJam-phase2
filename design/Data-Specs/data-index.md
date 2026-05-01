@@ -153,3 +153,24 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 6. **MissionDifficultyTable.csv**（C-01 owner）為 2026-04-26 合併產出：跨 owner（C-01 / FT-02 / FT-09）共用，新增 / 調整欄位時須同步 C-01 §3.1 / FT-02 §3.2 / FT-09 §3.2.3 三處消費端說明。
 7. **ProfessionTable.csv**（C-03 owner）為 2026-04-26 擴充：跨 owner（C-03 / C-04 / C-05）共用，調整 `raceIDs` / `raceWeights` / `traitGroupIDs` 欄位時須與 C-04 / C-05 owner 同步意圖。
 8. **WorldDangerTable.csv**（C-06 owner）為 2026-04-26 合併產出：單系統內三組欄位整合（升級閘 / 任務池權重 / 債務上限），無跨 owner 協調成本。
+
+---
+
+## v3.1 Patch 影響紀錄（2026-04-30）
+
+奧蘿瑞女神陣營劇本（v3.1）對 CSV 表格影響彙整：
+
+| CSV | 影響類型 | 影響內容 | DataSpec 同步狀態 | CSV 同步狀態 |
+|---|---|---|---|---|
+| `MissionTemplate.csv` | 新增欄位 + 量產 | v3.1 三新欄位（isScriptedDeath / minDangerLevel / requiredTraitID）；missionID 從 26+3 擴充為 147（既有 1-26 + 9001-9005 陣營劇情 + 8001-8008 進階 + 7001-7008 高難 + 1001-1610 常規 100）| ✅ C-01-DS（P3.1-001） | ✅ 量產合併 |
+| `TraitTable.csv` | 新增 trait | traitID=999「沉默」（奧菲莉雅專屬，effectValue=-0.40 突破安全範圍） | ✅ C-05-DS（P3.1-002） | ✅ |
+| `SystemConstants.csv` | 新增 5 常數 | LIGHT_THRESHOLD=100 / MIXED_THRESHOLD=40 / OPHELIA_MISSING_RECOVERY_HOURS=12 / OPHELIA_TEMPLATE_ID=901 / STAGE5_MISSION_ID=9005 | ✅ F-01-DS（P3.1-A3） | ✅ |
+| `AdventurerTemplate.csv` | 量產替換 | 71 位（含奧菲莉雅 templateID=901）| 📐（DS 未專為 v3.1 patch） | ✅ 量產合併 |
+| `StaffTable.csv` | 新增欄位 + 量產 | v3.1 五個 Post-Jam 預埋欄位（personalityDesc / intimacyLevel / isLeavePossible / mood / personalEventIDs）；10 位（含米拉/譚恩/凱拉 + 7 充數） | ✅ FT-12-DS（P3.1-008） | ✅ 量產合併 |
+| `StoryStageTable.csv` | 新增欄位 + 預設資料 | v3.1 三新欄位（dialogueVariantMode / specialEventKey / unlockBlockerCondition）；5 行 Stage 1-5 預設資料 | ✅ FT-09-DS（P3.1-004） | ✅ 量產合併 |
+
+**完整 patch summary**：`design/_Reports/GDD-FSD-patch-v3.1-aurorae-faction.md`
+**執行紀錄**：`design/_Reports/GDD-FSD-patch-execution-plan-v3.1.md`
+**systems-index 登記**：P3.1-aurorae（含 P3.1-001 ~ P3.1-010）
+
+> 待後續實作：DialogueTable.csv（dialogueKey 對應文本，由各 stage / staff / ophelia 文檔規劃）。

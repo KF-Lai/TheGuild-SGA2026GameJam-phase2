@@ -4,12 +4,12 @@
 
 | 欄位 | 內容 |
 | --- | --- |
-| 對應 GDD | `【FT-04】outcome-resolution.md`（版本：2026-04-22） |
+| 對應 GDD | `【FT-04】outcome-resolution.md`（版本：v1.1，2026-04-30） |
 | 對應 Data-Specs | `【FT-04-DS】reputation-delta-table.md`（`ReputationDeltaTable.csv`）<br>`【F-01-DS】system-constants.md`（`SystemConstants.csv`，消費端：`DEATH_RATE_ON_SUCCESS_MULTIPLIER`）<br>`【C-01-DS】mission-difficulty-table.md`（`MissionDifficultyTable.csv`，消費端：`baseReward`） |
 | 撰寫者 | unity-specialist subagent |
 | Review 者 | — |
-| 狀態 | 審查中 |
-| 最近更新 | 2026-04-27 |
+| 狀態 | 審查中（v3.1 patch 進行中，需 design-review 重跑） |
+| 最近更新 | 2026-04-30 |
 
 ---
 
@@ -265,7 +265,18 @@ EventBus → OutcomeResolutionService.OnMissionCompleted(activeMissionID)
     │           // 填入 missionDifficulty, missionTypeID, missionFactionID
     │           // baseReward = IMissionDatabaseService.GetBaseReward(template.difficulty)
     │           // triggeredConditionTraits = new int[0]
-    ├─ 步驟 5：RollSuccessAndDeath(outcome, activeMission)
+    ├─ 步驟 5：RollSuccessAndDeath(outcome, activeMission, template)   // v3.1：加入 template 參數
+    │           // === isScriptedDeath short-circuit（v3.1 新增，P3.1-003）===
+    │           // ⚠️ 需 design-review 重跑 + EditMode 測試確認（改主路徑）
+    │           if template.isScriptedDeath == 1:
+    │               outcome.isSuccess         = false
+    │               outcome.isDead            = true
+    │               outcome.isWounded         = false
+    │               outcome.adjustedDeathRate = 1.0f
+    │               outcome.successRoll       = -1.0f   // 哨兵值：標記「未擲骰」，Debug UI 可識別
+    │               outcome.deathRoll         = -1.0f
+    │               return  // 完全跳過下方亂數消耗，避免影響 seed-based 測試
+    │           // 原始擲骰邏輯（不變）
     │           outcome.successRoll = Random.Range(0f, 1f)
     │           outcome.isSuccess   = outcome.successRoll < activeMission.finalSuccessRate
     │           if outcome.isSuccess:
@@ -281,9 +292,19 @@ EventBus → OutcomeResolutionService.OnMissionCompleted(activeMissionID)
     │           outcome.reputationDelta = baseDelta
     ├─ 步驟 7：ApplyConditionTraits(outcome, adventurer.traitIDs)   // FT-04 內部 method
     │           // FSD-Codex-Reoprts-260427 CT-06：condition 套用責任歸屬 FT-04，不依賴 C-05 ApplyConditionTraits
-    │           // 偽碼：
+    │           // === isScriptedDeath 守衛邏輯（v3.1 新增，P3.1-003）===
+    │           // traitIDs 傳入前先過濾，排除 on_death_survive / on_fail_survive
+    │           //   effectiveTraitIDs = (activeMission.isScriptedDeath == 1)
+    │           //       ? adventurer.traitIDs.Where(id =>
+    │           //             ITraitService.GetTrait(id)?.effectTarget != "on_death_survive" &&
+    │           //             ITraitService.GetTrait(id)?.effectTarget != "on_fail_survive")
+    │           //       : adventurer.traitIDs
+    │           // 理由：劇本必死不可被 survive trait 救活；過濾必須在套用前完成，
+    │           //       不得在 condition 計算後再 override isDead=true（語意混亂）
+    │           //
+    │           // 偽碼（使用 effectiveTraitIDs）：
     │           //   triggered = []
-    │           //   foreach traitID in traitIDs：
+    │           //   foreach traitID in effectiveTraitIDs：
     │           //     trait = ITraitService.GetTrait(traitID); if null → continue
     │           //     if trait.effectType != "condition" → continue
     │           //     if !RollCondition(trait, outcome) → continue   // 依 trait.proc / probability 判定
@@ -393,9 +414,9 @@ GetBaseDelta(difficulty, isSuccess):
 | §3.1 Outcome 資料結構（15 欄位） | §5.3 `Outcome` DTO | 對齊 | 欄位一一對應，型別與說明完整 |
 | §3.2 結算流程（管線步驟 1-12） | §5.4 內部資料流 | 對齊 | 12 步驟完整映射，順序約束與關鍵原則全部保留 |
 | §3.2 跨系統時序註記（Bankruptcy × Reputation） | §5.4 步驟 10 說明 | 對齊 | 已在資料流備註「AddReputation 可能觸發 F-03 破產狀態轉移，Game Over 由 FT-06 控制」 |
-| §3.3 兩次獨立擲骰 | §5.4 步驟 5 | 對齊 | `successRoll` / `deathRoll` 獨立亂數；成功折扣公式對齊 |
-| §3.4 condition 特質套用（5 種 effectTarget） | §5.4 步驟 7 偽碼 | 對齊 | FT-04 自行實作 `ApplyConditionTraits`（CT-06 裁決）；只透過 C-05 `GetTrait(id)` 取定義，不依賴 `ITraitService.ApplyConditionTraits` |
-| §3.5 5 種最終結果映射（MapFinalStatus） | §5.4 步驟 8 | 對齊 | 3-bool 映射表與 `MapFinalStatus` 邏輯完整對應 |
+| §3.3 兩次獨立擲骰（v3.1 patch）| §5.4 步驟 5 | 對齊（v3.1 更新）| `successRoll` / `deathRoll` 獨立亂數；成功折扣公式對齊。**v3.1 新增**：函式簽名加入 `template` 參數；開頭插入 `isScriptedDeath` short-circuit（哨兵值 `-1.0`）。⚠️ 需 design-review 重跑 + EditMode 測試確認。 |
+| §3.4 condition 特質套用（v3.1 patch）| §5.4 步驟 7 偽碼 | 對齊（v3.1 更新）| FT-04 自行實作 `ApplyConditionTraits`（CT-06 裁決）。**v3.1 新增**：呼叫前依 `isScriptedDeath` 過濾 `on_death_survive` / `on_fail_survive`，防止劇本必死被救活。 |
+| §3.5 5 種最終結果映射（v3.1 patch）| §5.4 步驟 8 | 對齊（v3.1 更新）| 3-bool 映射表與 `MapFinalStatus` 邏輯完整對應。**v3.1 新增**：`isScriptedDeath=1` 路徑說明（金流/聲望設計建議）補入 GDD §3.5，FSD 此步驟邏輯不變（仍依 isDead/isWounded 推導）。 |
 | §3.6 聲望計算（查表 + condition 疊加） | §5.4 步驟 6 / `OutcomeReputationCalculator` | 對齊 | `ApplyBaseReputationDelta` 先於 condition，條件 `+=` 疊加 |
 | §3.7 冒險者狀態更新（UpdateStatus / SetWounded） | §5.4 步驟 9 | 對齊 | switch 三分支對應 Idle / Wounded / Dead；呼叫簽名與 C-02 § 3.5 對齊 |
 | §3.8 事件發布與 ActiveMission 清理 | §5.4 步驟 11-12 | 對齊 | Publish 先於 RemoveActiveMission；訂閱者表格對應 GDD §3.8 |
@@ -408,6 +429,7 @@ GDD §4.1（擲骰公式）與 §4.2（聲望 delta 公式）採**完整對應�
 - §4.1：`successRoll < finalSuccessRate` 判定與 `adjustedDeathRate = finalDeathRate × multiplier`，對應 §5.4 步驟 5
 - §4.2：`baseDelta + conditionDelta` 累加模式，對應 §5.4 步驟 6-7
 - §4.3 範例 A/B/C：作為 DoD 測試用例來源（§1.3）
+- **§4.4 styleTag jitter modifier（v3.1 新增）**：`CalcAdjustedJitter` 為預留點，待 FT-09 patch 確認後整合至 pipeline。FSD 目前不新增對應 Script，留待 FT-09 FSD 完成後補充實作規格。
 
 ### 8.3 未能實現的規則與修改建議
 
@@ -434,6 +456,7 @@ GDD §4.1（擲骰公式）與 §4.2（聲望 delta 公式）採**完整對應�
 | --- | --- | --- | --- |
 | 2026-04-27 | `【FT-04】outcome-resolution.md` | §3.4 | FSD 回註：`on_success_gold_bonus` 的 `conditionGoldBonus` 欄位命名已在 FSD §5.3 與 C-05 § 4.4 對齊確認；FT-04 不呼叫 `AddGold`，金流全由 FT-05 從 `OnMissionResolved.conditionGoldBonus` 消費 |
 | 2026-04-27 | `【FT-04】outcome-resolution.md` | §8 AC-OR-02 | FSD 回註：CT-08 裁決將 `DEATH_RATE_ON_SUCCESS_MULTIPLIER` 缺失預設改為 `0.5`（與 FSD §5.4 / §7 一致）；GDD 原文「`1.0`」應於下次 GDD 修訂同步更新 |
+| 2026-04-30 | `【FT-04】outcome-resolution.md` | §3.3 §3.4 §3.5 §4.4 | FSD 回註（v3.1 patch P3.1-003）：§3.3 RollSuccessAndDeath 補 isScriptedDeath short-circuit；§3.4 ApplyConditionTraits 補 survive trait 過濾守衛；§3.5 補 isScriptedDeath 死亡結算路徑說明（金流/聲望選項）；§4.4 新增 styleTag jitter modifier 公式（預留點，待 FT-09 patch 實作）。FSD §5.4 步驟 5 / 7 偽碼已同步更新。⚠️ 主路徑改動，需 design-review 重跑。 |
 
 ### 8.5 衝突處理紀錄
 
@@ -466,3 +489,4 @@ GDD §4.1（擲骰公式）與 §4.2（聲望 delta 公式）採**完整對應�
 | 日期 | Review 者 | 結構 | 邏輯 | GDD 對齊 | 備註 |
 | --- | --- | --- | --- | --- | --- |
 | 2026-04-27 | unity-specialist subagent | 通過 | 通過 | 通過 | 正向 FSD（無既有 Outcome Script）；FSD 未拆分（4 Script）；無真實衝突；建議項 B-01（Outcome 物件引用修改風險）/ B-02（空介面層取捨）不阻礙實作；待主體複核後轉「已完成」 |
+| 2026-04-30 | game-designer | 待重跑 | 待重跑 | 需更新 | v3.1 patch P3.1-003：RollSuccessAndDeath 補 isScriptedDeath short-circuit + §3.4 ApplyConditionTraits 過濾規則 + §4.x styleTag jitter modifier + §3.5 Death 結算路徑說明。需 design-review 重跑（改主路徑）。 |

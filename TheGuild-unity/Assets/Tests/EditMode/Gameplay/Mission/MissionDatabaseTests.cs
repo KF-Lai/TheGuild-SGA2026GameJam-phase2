@@ -181,9 +181,63 @@ namespace Tests.EditMode.Gameplay.Mission
             Assert.IsNull(service.GetTypeName(99));
         }
 
+        [Test]
+        public void Test_v31_AC_MD_17_isScriptedDeath_InvalidCategoryID_LogsErrorAndResets()
+        {
+            // AC-MD-17：CSV 中 isScriptedDeath=1, categoryID=0（非 3）→ LogError，欄位重置為 0
+            Dictionary<string, string> overrides = new Dictionary<string, string>
+            {
+                { "MissionTemplate", _baseTables["MissionTemplate"].Replace("isScriptedDeath,0,0,0,0,0,0", "isScriptedDeath,0,1,0,0,0,0") }
+            };
+
+            LogAssert.Expect(LogType.Error, new Regex("isScriptedDeath.*categoryID.*重置為 0|isScriptedDeath.*必須.*categoryID=3"));
+            MissionDatabaseService service = CreateService(overrides);
+
+            MissionTemplate invalidTemplate = service.GetTemplate(1002);
+            Assert.IsNotNull(invalidTemplate);
+            Assert.AreEqual(0, invalidTemplate.isScriptedDeath);
+            Assert.AreEqual(0, invalidTemplate.categoryID);
+        }
+
+        [Test]
+        public void Test_v31_AC_MD_18_minDangerLevel_OutOfRange_LogsErrorAndResets()
+        {
+            // AC-MD-18：CSV 中 minDangerLevel=5（範圍外 [0,4]）→ LogError，重置為 0
+            Dictionary<string, string> overrides = new Dictionary<string, string>
+            {
+                { "MissionTemplate", _baseTables["MissionTemplate"].Replace("minDangerLevel,0,0,0,0,0,0", "minDangerLevel,0,5,0,0,0,0") }
+            };
+
+            LogAssert.Expect(LogType.Error, new Regex("minDangerLevel.*範圍.*重置為 0|minDangerLevel.*\\[0,4\\]"));
+            MissionDatabaseService service = CreateService(overrides);
+
+            MissionTemplate invalidTemplate = service.GetTemplate(1002);
+            Assert.IsNotNull(invalidTemplate);
+            Assert.AreEqual(0, invalidTemplate.minDangerLevel);
+        }
+
+        [Test]
+        public void Test_v31_AC_MD_19_requiredTraitID_UnknownID_LogsErrorAndResets()
+        {
+            // AC-MD-19：CSV 中 requiredTraitID=9999（不存在於 TraitTable）→ LogError，重置為 0
+            // traitTableValidator 回傳 false（模擬 TraitTable 中找不到 9999）
+            Dictionary<string, string> overrides = new Dictionary<string, string>
+            {
+                { "MissionTemplate", _baseTables["MissionTemplate"].Replace("requiredTraitID,0,0,0,0,0,0", "requiredTraitID,0,9999,0,0,0,0") }
+            };
+
+            LogAssert.Expect(LogType.Error, new Regex("requiredTraitID.*TraitTable|requiredTraitID.*不存在"));
+            MissionDatabaseService service = CreateService(overrides, traitTableValidator: id => false);
+
+            MissionTemplate invalidTemplate = service.GetTemplate(1002);
+            Assert.IsNotNull(invalidTemplate);
+            Assert.AreEqual(0, invalidTemplate.requiredTraitID);
+        }
+
         private MissionDatabaseService CreateService(
             Dictionary<string, string> tableOverrides = null,
-            Func<int, bool> factionRouteValidator = null)
+            Func<int, bool> factionRouteValidator = null,
+            Func<int, bool> traitTableValidator = null)
         {
             Dictionary<string, string> tableMap = new Dictionary<string, string>(_baseTables, StringComparer.Ordinal);
             if (tableOverrides != null)
@@ -212,6 +266,7 @@ namespace Tests.EditMode.Gameplay.Mission
             ReflectionHelper.InvokeInstance(dm, "InitializeForTests");
 
             MissionDatabaseService.SetFactionRouteValidatorForTests(factionRouteValidator);
+            MissionDatabaseService.SetTraitTableValidatorForTests(traitTableValidator); // === v3.1 patch P3.1-001 ===
             GameObject serviceGo = new GameObject("MissionDatabaseService_C01_Test");
             MissionDatabaseService service = serviceGo.AddComponent<MissionDatabaseService>();
             service.InitializeForTests();

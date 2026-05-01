@@ -339,6 +339,7 @@ FT-02.SuccessRateCalculator.Calculate(traitIDs, typeID)
 | `ApplyConditionTraits` 中 effectTarget 為未知值（runtime 呼叫） | FT-04 執行套用邏輯時 `Debug.LogWarning`，跳過該特質，繼續處理其他特質（C-05 載入期已過濾，此為 FT-04 防衛層）。**FSD-Codex-Reoprts-260427 CT-06 裁決：condition 套用責任歸屬 FT-04**；C-05 不暴露 `ApplyConditionTraits` API | FT-04（C-05 不負責套用） | FT-04 FSD §5.4 步驟 7 偽碼 |
 | traitIDs 列表中有重複 traitID | C-02 `BuildTraitList` 已對最終列表執行 `Distinct()`，此情況不傳入本系統 | C-02 | C-02 FSD §7 |
 | `on_death_survive` 與 `on_fail_survive` 同時存在 | 按 traitIDs 順序依次執行；先觸發者將 `isDead` 改 `false` 後，後者條件 `outcome.isDead` 為 false 自然跳過，無衝突（GDD §4.4 備註已說明） | FT-04（C-05 只提供資料） | FT-04 FSD 規劃 |
+| **v3.1 新增（P3.1-002）**：`isScriptedDeath == 1` 任務的 condition trait 過濾 | FT-04 在呼叫 `ApplyConditionTraits` 前執行過濾：移除所有 `effectTarget` 為 `on_death_survive` 或 `on_fail_survive` 的 traitID，再傳入篩選後的 `filteredTraitIDs`。C-05 `ApplyConditionTraits` 本身不感知 `isScriptedDeath`，過濾責任完全由 FT-04 承擔（GDD §4.4 備註 / FT-04 §3.4 守衛邏輯）。設計理由：劇本必死的設計重量不應被 condition trait 救活；不在 C-05 層過濾是為了保持 C-05 純靜態查詢的系統邊界。 | FT-04（C-05 不負責過濾）；詳見 FT-04 §3.4 | FT-04 FSD §5.4：斷言傳入 `ApplyConditionTraits` 的 traitIDs 不含 `on_death_survive` / `on_fail_survive` 當 `isScriptedDeath == 1` |
 
 ---
 
@@ -384,6 +385,12 @@ FT-02.SuccessRateCalculator.Calculate(traitIDs, typeID)
 | 日期 | 衝突摘要 | 涉及 GDD/FSD | 最終決議 |
 | --- | --- | --- | --- |
 | 2026-04-27 | 無衝突發現。時間單位：C-05 GDD 無涉及秒/分/小時的計時欄位，不適用時間單位規則。跨系統邊界：effectTarget 合法清單與 FT-02/03/04 套用邏輯在 GDD §4.2~§4.4 對齊，無矛盾。 | — | 無需處理 |
+
+### 8.6 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+| --- | --- | --- |
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-002：新增 traitID=999 沉默 + §4.4 isScriptedDeath 過濾規則 + §7.1 安全範圍突破。需 design-review 重跑（safe range 例外）|
 
 ---
 

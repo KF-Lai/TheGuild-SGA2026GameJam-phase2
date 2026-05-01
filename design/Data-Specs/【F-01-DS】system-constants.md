@@ -19,6 +19,9 @@
   - FT-04 OutcomeResolution：`DEATH_RATE_ON_SUCCESS_MULTIPLIER`
   - FT-05 GuildGoldFlow：`COMMISSION_RATE`、`PENALTY_RATE`
   - FT-10 SaveLoadSystem：`SAVE_AUTO_INTERVAL_SEC`、`SAVE_BACKUP_COUNT`、`SAVE_FILE_NAME`、`SAVE_BAK_PREFIX`、`SAVE_GAMEOVER_PREFIX`
+  - FT-09 FactionStorySystem：`LIGHT_THRESHOLD`、`MIXED_THRESHOLD`（v3.1）
+  - C-02 AdventurerManagement：`OPHELIA_MISSING_RECOVERY_HOURS`、`OPHELIA_TEMPLATE_ID`（v3.1，奧菲莉雅失蹤恢復與初始化）
+  - C-01 MissionDatabase：`STAGE5_MISSION_ID`（v3.1）
 
 ## 欄位定義
 
@@ -82,6 +85,16 @@
 | SAVE_BAK_PREFIX | string | — | save.bak | FT-10 backup 檔名前綴（實際檔名 `{prefix}{i}` for i ∈ [1, N]）| FT-10 |
 | SAVE_GAMEOVER_PREFIX | string | — | save_gameover_ | FT-10 終末檔前綴（實際檔名 `{prefix}{unixTimestamp}.json`）| FT-10 |
 
+> **v3.1 新增（P3.1-A3）**：以下 5 個常數由女神陣營劇本實作引發。對應系統：FT-09（前 3 個）/ C-02 + FT-10（OPHELIA_TEMPLATE_ID）/ FT-09 + C-01（STAGE5_MISSION_ID）。
+
+| key | 型別 | 範圍 | 預設值 | 用途 | 消費者 |
+|---|---|---|---|---|---|
+| LIGHT_THRESHOLD | int | [80, 200] | 100 | FT-09 styleTag bias 進入 Light 區間的最小分數；不得低於 MIXED_THRESHOLD + 30 | FT-09 |
+| MIXED_THRESHOLD | int | [20, 60] | 40 | FT-09 styleTag bias 進入 Mixed 區間的最小分數；不得高於 Stage 3 scoreThreshold=50 | FT-09 |
+| OPHELIA_MISSING_RECOVERY_HOURS | int | [6, 24] | 12 | Stage 4 奧菲莉雅失蹤至回來的現實小時數；供 C-02 `SetWounded` woundedUntilTimestamp 計算 | C-02、FT-09 |
+| OPHELIA_TEMPLATE_ID | int | 固定值 901 | 901 | 奧菲莉雅 AdventurerTemplate ID；FT-10 Bootstrap 依此 ID 呼叫 `RegisterUniqueAdventurer`；**禁止修改** | C-02、FT-10 |
+| STAGE5_MISSION_ID | int | >9000 | 9005 | Stage 5 劇情委託 missionID（量產時填入正確值；當前 MissionTemplate 9001-9003 為 Phase 1 設計，9005 為 v3.1 新增） | FT-09、C-01 |
+
 ## 範例
 
 ```csv
@@ -95,3 +108,9 @@ description,每日重置 UTC 小時（0~23）,離線時間上限（7 天 = 60480
 # 下面這條暫時關掉（測試用）
 #STARTING_DEBT,500,起始負債
 ```
+
+## 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-A3：新增 5 系統常數（LIGHT_THRESHOLD / MIXED_THRESHOLD / OPHELIA_MISSING_RECOVERY_HOURS / OPHELIA_TEMPLATE_ID / STAGE5_MISSION_ID） |

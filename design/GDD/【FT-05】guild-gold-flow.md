@@ -741,6 +741,32 @@ Input:    OnStaffSalaryDue(totalAmount = 90)
 
 ---
 
+### 5.7 SelectMissionFromPool 篩選邊緣案例（v3.1 新增，P3.1-007）
+
+**Case 5.7.1** — 所有候選在 3 次 fallback 後仍為空
+
+- **觸發**：C-06 危險度極低（E 期，index=0），大量高難度模板設有 `minDangerLevel ≥ 1`，且 weights 每次採樣都命中這些難度 tier
+- **行為**：`retryCount` 累計到 4 時進入 `> 3` 分支，`Debug.LogWarning("[FT-05] SelectMissionFromPool: exhausted 3 retries, skip generation")`，回傳 `null`；FT-02 收到 `null` 後不生成新委託（不影響已存在的委託板）
+- **理由**：3 次上限防止無限迴圈；`LogWarning` 而非 `LogError`，因此為設計預期的邊界情況（資料設計問題，非程式 bug）
+
+**Case 5.7.2** — C-06 未實作（null）
+
+- **行為**：`GetCurrentLevel()` 呼叫降級回傳 `null` / 預設值時，`DangerLevelToIndex` 回傳 `0`（E 期）；`candidates.Where(t => t.minDangerLevel <= 0)` 僅保留 `minDangerLevel = 0` 的模板
+- **理由**：保守降級策略——只顯示無限制模板，避免閘值未知時意外暴露高門檻任務
+- **注意**：若所有模板皆設有 `minDangerLevel ≥ 1`，此情境會觸發 Case 5.7.1 的 3 次 fallback；設計師須確保 E 期有足夠 `minDangerLevel = 0` 的模板存在
+
+**Case 5.7.3** — `minDangerLevel` 超出合法範圍（非 [0,4]）
+
+- **行為**：C-01 DataManager 於載入時依 P3.1-001 Validation 規則重置為 0 並 `Debug.LogError`；FT-05 `SelectMissionFromPool` 執行時已無非法值
+- **理由**：輸入驗證在資料層（C-01）執行，FT-05 不重複驗證；信任 DataManager 契約
+
+**Case 5.7.4** — weights 採樣到不存在模板的難度 tier
+
+- **行為**：`MissionTemplateTable.WhereDifficulty(difficulty)` 回傳空列表；觸發 fallback（與 minDangerLevel 過濾後空列表相同處理路徑）
+- **理由**：fallback 機制通用於「tier 無模板」和「tier 被過濾為空」兩種情況，不需分別處理
+
+---
+
 ## 6. 依賴關係（Dependencies）
 
 ### 6.1 上游依賴（Upstream Dependencies）
@@ -756,6 +782,8 @@ Input:    OnStaffSalaryDue(totalAmount = 90)
 | FT-02 Mission Dispatch / FT-03 NPC Decision / (未來) FT-11 Offline Resolver | Event | 發布 `OnCommissionAccepted` | 無此事件 → 無預收流程（結算仍可運作，但金流語義殘缺） |
 | Core.EventBus | 基礎設施 | 訂閱 / 發布 | 無（必備） |
 | C-05 Trait System（間接透過 FT-04） | 資料 | `Outcome.conditionGoldBonus` 源頭 | 無 trait → `conditionGoldBonus = 0` |
+| C-01 MissionTemplate | 資料 | `minDangerLevel` 欄位（**v3.1 新增，P3.1-001**）；SelectMissionFromPool §9 以此過濾候選模板 | 欄位不存在 → 預設視為 0（無限制），不影響結算管線 |
+| C-06 Danger Level System | API | `GetCurrentLevel()` / `GetPoolWeights()`；SelectMissionFromPool §9 以此採樣難度與取得當前危險度索引 | `null` → `currentDangerIndex = 0`（E 安全期），所有模板皆可出現 |
 
 ---
 
@@ -985,3 +1013,107 @@ FT-05 假設實作為 `MonoBehaviour`，於 `OnEnable` 訂閱事件、`OnDisable
 ### 8.6 備註：待驗證事項（Deferred Verification）
 
 - **無 hardcoded 金流比例字面量**：`grep` 審查 FT-05 程式碼中 `0.20` / `0.10` / `0.22` 等字面量不應出現於金流計算路徑（應全部來自 `SystemConstants`）——列為 `/design-review` 或後續 code review 階段的人工審查項目，**不列為本 GDD 強制驗收**。
+
+---
+
+### 8.7 委託池生成篩選
+
+**v3.1 新增（P3.1-007）**
+
+**AC-16 minDangerLevel 過濾（正向）**
+- Given C-06 currentDangerLevel = C（index=2），MissionTemplateTable 含 A/B/C 難度模板，其中有 `minDangerLevel=3`（B 難度）的模板
+- When SelectMissionFromPool 以 weights 採樣選中 B 難度
+- Then B 難度候選列表排除 `minDangerLevel=3` 的模板（index 2 < 3）；從剩餘 `minDangerLevel ≤ 2` 的 B 難度模板中隨機選取
+
+**AC-17 minDangerLevel 過濾（fallback）**
+- Given C-06 currentDangerLevel = E（index=0），所有 SS/SSS 難度模板 `minDangerLevel ≥ 1`
+- When SelectMissionFromPool weights 採樣選中 SS 難度
+- Then 過濾後 candidates 為空，觸發 fallback 重採；最多重採 3 次；若 3 次皆為空，`Debug.LogWarning`，本次跳過生成（無新委託入板）
+
+---
+
+## 9. 委託池生成篩選（SelectMissionFromPool）
+
+> **v3.1 新增（P3.1-007）**
+>
+> 本章節定義 FT-05 負責的委託池模板選取流程。委託板注入邏輯（`OnCommissionPosted` 發布、數量上限）屬 FT-02 職責，本節僅覆蓋**模板選取**的篩選與 fallback 規則。
+
+### 9.1 概述
+
+SelectMissionFromPool 在每次需要生成新委託時被呼叫（由 FT-02 觸發）。流程分四步：
+
+1. 依 C-06 提供的難度權重隨機採樣難度 tier
+2. 從 C-01 MissionTemplateTable 取出該 tier 的所有模板候選
+3. **v3.1 新增**：以 C-01 `minDangerLevel` 欄位過濾不符合當前世界危險度的模板
+4. 若過濾後候選為空，fallback 到下一 tier 重採（上限 3 次）
+
+### 9.2 詳細規則
+
+```
+SelectMissionFromPool():
+    retryCount = 0
+
+    LOOP:
+        // 步驟 1：weights 採樣難度 tier（既有邏輯，不受 v3.1 影響）
+        difficulty = SampleDifficultyByWeights(C06.GetPoolWeights())
+
+        // 步驟 2：取該 tier 模板候選
+        candidates = MissionTemplateTable.WhereDifficulty(difficulty)
+
+        // 步驟 3：minDangerLevel 過濾（v3.1 新增）
+        currentDangerIndex = DangerLevelToIndex(C06.GetCurrentLevel())
+        candidates = candidates.Where(t => t.minDangerLevel <= currentDangerIndex)
+
+        // 步驟 4：候選非空則選取
+        IF NOT candidates.IsEmpty:
+            RETURN candidates.RandomPick()
+
+        // 步驟 4b：候選為空，fallback 重採
+        retryCount++
+        IF retryCount > 3:
+            Debug.LogWarning("[FT-05] SelectMissionFromPool: exhausted 3 retries, skip generation")
+            RETURN null  // 本次不生成委託
+
+        // 繼續下一次迴圈（重新採樣難度）
+```
+
+**篩選順序說明**（不可調換）：
+
+- 步驟 1 必須先於步驟 3——先以 weights 決定難度偏好，再以 minDangerLevel 過濾，確保難度分布意圖完整保留
+- 步驟 3 不修改 weights——過濾是在採樣結果上加一層防護，不回寫 C-06 的權重表
+
+### 9.3 DangerLevelToIndex 對照表
+
+| C-06 DangerLevel 枚舉 | index（minDangerLevel 比較值）|
+|---|---|
+| E（安全期） | 0 |
+| D（微亂） | 1 |
+| C（暗湧） | 2 |
+| B（危急） | 3 |
+| A（末日前夕） | 4 |
+
+`minDangerLevel = 0` 代表無限制，所有危險度均可出現。
+
+### 9.4 設計理由
+
+- SS/SSS 等高難度模板可透過 `minDangerLevel` 限制在特定劇情節點後才出現，避免玩家開局即看到無法完成的任務
+- fallback 上限 3 次防止無限迴圈；`null` 回傳意味本次委託板刷新跳過，不影響其他邏輯
+- 篩選不影響既有 weights 採樣邏輯，對金流結算管線（§3.2~§3.8）零影響
+
+### 9.5 依賴
+
+| 依賴 | 欄位 / API | 說明 |
+|---|---|---|
+| C-01 MissionTemplate | `minDangerLevel`（v3.1 新增於 P3.1-001）| 過濾閾值；0 = 無限制 |
+| C-06 Danger Level | `GetCurrentLevel()` / `GetPoolWeights()` | 當前危險度索引與難度採樣權重 |
+
+---
+
+## 10. 變更歷史（Change Log）
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-22 | v1.0 | 初版建立。系統 ID 確立為 FT-05，命名由 Commission Flow 更新為 Guild Gold Flow。§1~§8 全節完成。 |
+| 2026-04-23 | v1.1 | §1 新增 Scope Note（Jam vs Phase 2 分界）；§3.3 補委託結算管線不可調換順序說明；設計決策備忘 8 條定案。 |
+| 2026-04-27 | v1.2 | GDD P-001 patch：§3.2 / §3.9.1 / §3.9.2 / §6.3 全部 source 型別由 `CommissionSource` 改為 `DispatchSource`（與 FT-02 §3.6a 對齊）；FT-12 §6.4 反向依賴已登記。 |
+| 2026-04-30 | v1.3 | **v3.1 patch P3.1-007**：新增 §9 SelectMissionFromPool — 補 minDangerLevel 篩選邏輯（先 weights 採樣，再過濾，最多 3 次 fallback 重採）。新增 §8.7 AC-16 / AC-17（minDangerLevel 過濾驗收標準）。新增依賴 C-01 `minDangerLevel` 欄位（已在 P3.1-001 加入）。 |

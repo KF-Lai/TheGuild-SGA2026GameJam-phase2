@@ -489,3 +489,4 @@ C-01 FSD 沿用 GDD 既有共識：
 | --- | --- | --- | --- | --- | --- |
 | 2026-04-27 | unity-specialist subagent | 通過 | 通過 | 通過（含 3 項待裁決事項） | §8.5 登記時間單位衝突；P-01 需使用者裁決；P-02/P-03 為建議項，不阻礙實作 |
 | 2026-04-27 | Claude Code 主體（覆核 patch） | 通過 | 通過 | 通過 | P-01 覆核：F-02 GDD §3.1.2 + FT-02 GDD line 112 已將「分鐘」明確標為 Tech Debt 共識；非衝突，FSD 沿用即合規。§8.3 P-01 / §8.5 衝突紀錄已修正措辭。 |
+| 2026-04-30 | Claude Code 主體 | 待 patch | 待 patch | 待 patch | **v3.1 patch P3.1-001 同步紀錄（FSD review F1 補完）**：C-01 GDD + DS 已寫入 v3.1 patch（MissionTemplate 新增 `isScriptedDeath` / `minDangerLevel` / `requiredTraitID` 三欄位 + §5.1 三條 Validation 規則 + §8 AC-MD-17~19）。FSD 主體 Script 設計待補：(1) §3.x C01TemplateLoader 載入時補三欄位 Validation 邏輯（依 GDD §5.1 規則：`isScriptedDeath==1 && categoryID!=3` / `minDangerLevel ∉ [0,4]` / `requiredTraitID FK 不存在` → LogError 重置為 0）；(2) §5.x 對 MissionTemplate 取值 API 補三新欄位 getter；(3) §8.1 GDD 對齊清單追加三欄位映射 + AC-MD-17~19 對應 DoD。完整 patch 規格見 `_Reports/GDD-FSD-patch-v3.1-aurorae-faction.md` §2.1。 |

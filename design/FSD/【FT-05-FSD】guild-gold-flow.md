@@ -64,6 +64,8 @@ FT-05 Guild Gold Flow 是公會所有金流操作的統一執行者。系統訂�
 | AC-15a | `OnEnable` 訂閱 4 個 In 事件；`OnDisable` 取消；重複 enable/disable 無 listener leak | PlayMode 生命週期測試 |
 | AC-15b | FT-07 / FT-12 = null 時，AC-4 / AC-5 仍通過（預設率不變） | EditMode 降級測試 |
 | AC-15c | CSV 修改 `COMMISSION_RATE=0.30` 後，`commissionGoldAmount` 由 120 變 180（無需改程式） | 手動驗證：改 CSV → 重啟 → 觀察結算結果 |
+| AC-16 **v3.1 新增（P3.1-007）** | C-06 currentDangerLevel = C（index=2），MissionTemplateTable 含 `minDangerLevel=3` 的 B 難度模板；SelectMissionFromPool 採樣 B 難度後，`minDangerLevel=3` 模板被排除；從 `minDangerLevel ≤ 2` 的 B 難度模板中選取 | EditMode mock MissionTemplateTable + C-06（index=2），驗證結果 templateID 不在 minDangerLevel=3 的集合內 |
+| AC-17 **v3.1 新增（P3.1-007）** | C-06 currentDangerLevel = E（index=0），所有 SS/SSS 模板 `minDangerLevel ≥ 1`；SelectMissionFromPool 重採 3 次後仍空，回傳 `null`，console 出現 `[FT-05] SelectMissionFromPool: exhausted 3 retries` Warning | EditMode mock：C-06 index=0，全部模板 minDangerLevel=1；驗證回傳 null 且 LogWarning 次數 = 1（不重複） |
 
 ---
 
@@ -89,7 +91,8 @@ FT-05 Guild Gold Flow 是公會所有金流操作的統一執行者。系統訂�
 | §5 邊緣案例（§5.1~§5.6） | 輸入驗證、時序異常、數值極值、降級、破產互動、訂閱者異常 |
 | §6 依賴關係（§6.1~§6.5） | 上下游依賴、事件契約矩陣、反向依賴登記清單、開發序 |
 | §7 可調參數（§7.1~§7.4） | `COMMISSION_RATE` / `PENALTY_RATE`、外部 Knob、隱藏常數、平衡指引 |
-| §8 驗收標準（§8.1~§8.6） | AC-1~AC-15c |
+| §8 驗收標準（§8.1~§8.7） | AC-1~AC-17（**§8.7 AC-16/AC-17 為 v3.1 新增**）|
+| §9 委託池生成篩選（**v3.1 新增，P3.1-007**）| SelectMissionFromPool 四步流程與 fallback 規則；DangerLevelToIndex 對照表；設計理由 |
 
 ### 2.2 Data-Specs 引用
 
@@ -112,6 +115,8 @@ FT-05 Guild Gold Flow 是公會所有金流操作的統一執行者。系統訂�
 | FT-02 / FT-03 / 未來 FT-11 | Event（`OnCommissionAccepted`） | 發布預收觸發事件 | 無此事件 → 無預收流程，結算仍可執行但語義殘缺 |
 | EventBus | 基礎設施（`EventBus.Subscribe` / `Publish`） | 訂閱 In 事件；發布 Out 事件 | 無（必備） |
 | C-05 Trait System（間接透過 FT-04） | 資料（`Outcome.conditionGoldBonus`） | 特質獎勵通道（通用加法，成敗皆加） | 無 trait → `conditionGoldBonus = 0` |
+| C-01 MissionTemplate | 資料（`minDangerLevel` 欄位，**v3.1 新增，P3.1-001**） | SelectMissionFromPool §9 以此過濾候選；0 = 無限制 | 欄位缺失 → DataManager 預設 0；FT-05 不額外防禦 |
+| C-06 Danger Level System | API（`GetCurrentLevel()` / `GetPoolWeights()`，**v3.1 新增**）| SelectMissionFromPool §9 採樣難度 tier + 取危險度索引 | `null` → `currentDangerIndex = 0`（E 期），僅 `minDangerLevel=0` 模板可出現 |
 
 ### 2.4 下游被依賴系統
 
@@ -381,6 +386,63 @@ ExecuteGoldFlow(breakdown)    // breakdown 為 Commission/Maintenance/Salary 之
     └─ breakdown.bankruptcyStateAfter  = _resourceService.GetBankruptcyWarningState()
 ```
 
+#### 管線 E — 委託池模板選取（SelectMissionFromPool，**v3.1 新增，P3.1-007**）
+
+> 本管線由 FT-02 呼叫，FT-05 負責模板篩選邏輯（金流結算管線不受影響）。
+
+```
+GoldFlowService.SelectMissionFromPool()
+    retryCount = 0
+    LOOP:
+        // 步驟 1：weights 採樣難度 tier
+        difficulty = SampleDifficultyByWeights(_dangerLevelService?.GetPoolWeights()
+                                                ?? DefaultWeights)
+
+        // 步驟 2：取該 tier 模板候選
+        candidates = _dataManager.GetAll<MissionTemplate>()
+                                 .Where(t => t.difficulty == difficulty)
+
+        // 步驟 3：minDangerLevel 過濾（v3.1 新增）
+        currentDangerIndex = DangerLevelToIndex(_dangerLevelService?.GetCurrentLevel())
+        candidates = candidates.Where(t => t.minDangerLevel <= currentDangerIndex)
+
+        // 步驟 4a：非空則隨機選取
+        IF candidates.Any():
+            return candidates.ElementAt(Random.Range(0, candidates.Count()))
+
+        // 步驟 4b：空列表，fallback 重採
+        retryCount++
+        IF retryCount > 3:
+            Debug.LogWarning("[FT-05] SelectMissionFromPool: exhausted 3 retries, skip generation")
+            return null
+
+        // 繼續下一次迴圈
+```
+
+**DangerLevelToIndex 實作**：
+
+```csharp
+private int DangerLevelToIndex(DangerLevel? level)
+{
+    // 降級：null → E（0）
+    return level switch
+    {
+        DangerLevel.E => 0,
+        DangerLevel.D => 1,
+        DangerLevel.C => 2,
+        DangerLevel.B => 3,
+        DangerLevel.A => 4,
+        _              => 0  // null 或未知值 → 0（保守降級）
+    };
+}
+```
+
+**注意事項**：
+
+- `SelectMissionFromPool` 回傳 `null` 時 FT-02 不生成新委託，不觸發任何金流事件
+- `_dangerLevelService` 依賴 C-06，採與 FT-07 / FT-12 相同的 null-check 降級策略（C-06 未實作時安全回退至 E 期行為）
+- 步驟 3 不修改 C-06 的 weights 表，只在採樣結果上過濾；weights 採樣邏輯與結算管線（管線 A~D）完全隔離
+
 ---
 
 ## 6. 資料表使用與參數化（Data Table Usage & Parameterization）
@@ -433,6 +495,10 @@ ExecuteGoldFlow(breakdown)    // breakdown 為 Commission/Maintenance/Salary 之
 | §5.6.1 P-02 / P-03 訂閱者拋例外 | 不 try-catch；例外向上至 EventBus 層 | `GoldFlowService`（Publish 端不吞錯） | 設計原則；EventBus 層處理訂閱者隔離 |
 | §5.6.2 訂閱者修改 breakdown 物件 | 不防禦（不 deep copy、不凍結）；訂閱者自律原則 | `GoldFlowService` | 設計決策；若未來出問題考慮改 immutable struct |
 | §5.6.3 發布時訂閱者尚未註冊 | 正常發布；EventBus 決定 drop 或 queue；FT-05 不 replay | `GoldFlowService` | 設計原則；訂閱者初始化順序為 Core / EventBus 職責 |
+| §5.7.1 3 次 fallback 後仍無候選（**v3.1 P3.1-007**）| `retryCount > 3` 時 `Debug.LogWarning`，回傳 `null`；FT-02 不生成委託 | `GoldFlowService.SelectMissionFromPool` | AC-17；EditMode mock 全部模板 minDangerLevel=1 + C-06 index=0 |
+| §5.7.2 C-06 未實作（null）| `DangerLevelToIndex(null) = 0`；僅 `minDangerLevel=0` 模板可出現；若無則觸發 §5.7.1 fallback | `GoldFlowService.DangerLevelToIndex` | EditMode：_dangerLevelService = null，驗證 currentDangerIndex = 0 |
+| §5.7.3 `minDangerLevel` 超出 [0,4]（**C-01 Validation 已處理**）| C-01 DataManager 載入時重置為 0 並 `LogError`；FT-05 執行時已無非法值 | `GoldFlowService`（不需額外防禦）| 屬 DataManager / C-01 的職責；FT-05 信任契約 |
+| §5.7.4 weights 採樣到無模板的 tier | `candidates` 直接為空，走 fallback 路徑（與 minDangerLevel 過濾後空列表同邏輯） | `GoldFlowService.SelectMissionFromPool` | EditMode：移除某 tier 所有模板後觸發採樣；驗證 fallback 計數正確 |
 
 ---
 
@@ -452,6 +518,7 @@ ExecuteGoldFlow(breakdown)    // breakdown 為 Commission/Maintenance/Salary 之
 | §3.8 破產狀態轉移快照機制 | §5.4 共用機制 ExecuteGoldFlow | 對齊 | 四步流程完整；狀態轉移對照表見 GDD §3.8（FSD 未重複，由 §7 邊緣案例對應） |
 | §3.9 事件契約（§3.9.1~§3.9.2） | §2.5、§5.2 | 對齊 | In/Out 8 個事件 payload 完整列舉；訂閱者責任說明 |
 | §3.10 查詢 API | §5.1 | 對齊 | 明確宣告無對外查詢 API |
+| §9 委託池生成篩選（**v3.1 新增，P3.1-007**） | §5.4 管線 E（v3.1 新增） | 對齊 | SelectMissionFromPool 四步流程（weights 採樣 → 取候選 → minDangerLevel 過濾 → fallback 重採最多 3 次） |
 
 ### 8.2 公式對齊或替代說明
 
@@ -501,6 +568,15 @@ GDD §4 公式（有效率公式與淨額公式）直接採用，無替代。
 無真實衝突。
 
 GDD §3.1.2 + FT-02 GDD §3.5 line 112 的「分鐘」Tech Debt 已由任務提示確認為三系統共識，非時間單位衝突，FT-05 不涉及任何分鐘單位處理，無須處理。
+
+---
+
+## 附錄 C — 變更歷史（Change Log）
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-27 | v1.0 | 初版建立。unity-specialist subagent 自檢通過；Claude Code 主體 GDD P-001 對齊 patch（DispatchSource enum 統一）。 |
+| 2026-04-30 | v1.1 | **v3.1 patch P3.1-007**：§1.3 新增 AC-16 / AC-17（minDangerLevel 篩選驗收標準）；§2.1 補 §9 章節引用；§2.3 補 C-01 / C-06 上游依賴；§5.4 新增管線 E（SelectMissionFromPool 偽碼 + DangerLevelToIndex 實作）；§7 補 §5.7.1~§5.7.4 邊緣案例對策；§8.1 補 §9 對齊項。 |
 
 ---
 

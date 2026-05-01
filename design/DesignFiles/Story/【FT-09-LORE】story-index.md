@@ -38,13 +38,15 @@ _管控者：narrative-director（主體）_
 | 陣營劇本（5 Stage） | 5 份 | `【FT-09-LORE】stage-1.md` ~ `stage-5.md` | ✅ | 2026-04-30 |
 | 奧菲莉雅文字需求 | 1 份 | `【FT-09-LORE】ophelia-text.md` | ✅ | 2026-04-30 |
 | 職員文字需求 | 1 份 | `【FT-09-LORE】staff-text.md` | ✅ | 2026-04-30 |
-| 陣營劇情委託 CSV | 5 行（含進階委託 8 行）| `【FT-09-LORE】mission-faction-story.csv`（待合併至 `MissionTemplate.csv`）| ✅ | 2026-04-30 |
-| 高難委託 CSV | SS 5 + SSS 3 = 8 行 | `【FT-09-LORE】mission-high-difficulty.csv`（待合併）| ✅ | 2026-04-30 |
-| 常規委託 CSV | 100 行（F~A 各 15 + S 10）| `【FT-09-LORE】mission-regular.csv`（待合併）| ✅ | 2026-04-30 |
-| 冒險者量產 CSV | 71 行（70 常規 + 奧菲莉雅）| `【FT-09-LORE】adventurer-templates.csv`（待合併至 `AdventurerTemplate.csv`）| ✅ | 2026-04-30 |
-| 一般職員量產 CSV | 10 行（含米拉/譚恩/凱拉）| `【FT-09-LORE】staff-templates.csv`（待合併至 `StaffTable.csv`）| ✅ | 2026-04-30 |
-| 沉默 trait | 1 行 | 待寫入 `TraitTable.csv`（traitID=999；規格見 patch summary §2.2）| ⬜ | 待後續實作 |
-| 對話文本表 | 多行 | 待寫入 `DialogueTable.csv`（dialogueKey 已由各 stage / staff / ophelia 文檔規劃）| ⬜ | 待後續實作 |
+| 陣營劇情委託 CSV | 5 行（含進階委託 8 行）| `【FT-09-LORE】mission-faction-story.csv` → ✅ 已合併至 `MissionTemplate.csv`（9001-9005 + 8001-8008）| ✅ | 2026-04-30 |
+| 高難委託 CSV | SS 5 + SSS 3 = 8 行 | `【FT-09-LORE】mission-high-difficulty.csv` → ✅ 已合併（7001-7008）| ✅ | 2026-04-30 |
+| 常規委託 CSV | 100 行（F~A 各 15 + S 10）| `【FT-09-LORE】mission-regular.csv` → ✅ 已合併（1001-1610）| ✅ | 2026-04-30 |
+| 冒險者量產 CSV | 71 行（70 常規 + 奧菲莉雅）| `【FT-09-LORE】adventurer-templates.csv` → ✅ 已合併至 `AdventurerTemplate.csv` | ✅ | 2026-04-30 |
+| 一般職員量產 CSV | 10 行（含米拉/譚恩/凱拉）| `【FT-09-LORE】staff-templates.csv` → ✅ 已合併至 `StaffTable.csv` | ✅ | 2026-04-30 |
+| StoryStageTable CSV | 5 行（Stage 1-5 預設資料）| ✅ 已寫入 `StoryStageTable.csv`（含 dialogueVariantMode / specialEventKey / unlockBlockerCondition）| ✅ | 2026-04-30 |
+| 沉默 trait | 1 行 | ✅ 已寫入 `TraitTable.csv`（traitID=999）| ✅ | 2026-04-30 |
+| SystemConstants 5 新常數 | 5 行 | ✅ 已寫入 `SystemConstants.csv`（LIGHT_THRESHOLD / MIXED_THRESHOLD / OPHELIA_MISSING_RECOVERY_HOURS / OPHELIA_TEMPLATE_ID / STAGE5_MISSION_ID）| ✅ | 2026-04-30 |
+| 對話文本表 | 多行 | 待寫入 `DialogueTable.csv`（dialogueKey 已由各 stage / staff / ophelia 文檔規劃；待 P-02 解除暫停或獨立 dialogue owner GDD 定案後實作）| ⬜ | 待後續實作 |
 
 ---
 
@@ -63,14 +65,14 @@ _管控者：narrative-director（主體）_
 
 所有非 CSV 欄位的「**敘事標註**」一律以 `#` 前綴：
 
-| 標籤 | 用途 |
-|---|---|
-| `# 文字:` | 純文字呈現（玩家直接讀的對話/描述） |
-| `# 美術:` | 美術靜態素材需求（紙條視覺、立繪、場景物件） |
-| `# 動畫:` | 動態演出需求（茶杯冷卻過渡、字跡浮現、相框變化） |
-| `# 音效:` | 音效需求（紙條飄落聲、椅子拖動、敲門） |
-| `# 待補:` | 待後續補完的內容 |
-| `# 機制:` | 機制觸發條件說明（不出現於玩家面前） |
+| 用途                       | 標籤      |
+| ------------------------ | ------- |
+| 純文字呈現（玩家直接讀的對話/描述）       | `# 文字:` |
+| 美術靜態素材需求（紙條視覺、立繪、場景物件）   | `# 美術:` |
+| 動態演出需求（茶杯冷卻過渡、字跡浮現、相框變化） | `# 動畫:` |
+| 音效需求（紙條飄落聲、椅子拖動、敲門）      | `# 音效:` |
+| 待後續補完的內容                 | `# 待補:` |
+| 機制觸發條件說明（不出現於玩家面前）       | `# 機制:` |
 
 ### 3.3 文字長度上限
 
@@ -126,3 +128,4 @@ _管控者：narrative-director（主體）_
 |---|---|---|
 | 2026-04-30 | v0.1 | 初版索引建立。命名規範定案（奧蘿瑞 / 米拉 / 譚恩 / 凱拉）；量產數量表確認；CSV 規格與標籤系統定案 |
 | 2026-04-30 | v0.2 | 完成全部量產任務（陣營劇本 5 Stage / 奧菲莉雅文字 / 職員文字 / 委託 CSV 121 個 / 冒險者 CSV 71 位 / 一般職員 CSV 10 位）。GDD/FSD Patch summary 已登記至 systems-index P3.1-aurorae。haiku 量產 + 2 次審稿循環完成。待後續實作：(1) 沉默 trait 寫入 TraitTable.csv；(2) DialogueTable.csv 文本對應；(3) Patch summary 各項依優先級寫入主體 GDD（FT-09 / C-01 / FT-04 / C-05 / 等 10 個）|
+| 2026-04-30 | v0.3 | **Stage A~G 執行完成**：(A) 底層 schema patch（C-01 / C-05 / SystemConstants）；(B) FT-04 結算 patch（isScriptedDeath short-circuit + jitter modifier）；(C) FT-09 大幅修改（StoryStageTable 3 新欄位 + ResolveDialogueKey + GetCurrentStyleTagBias + Epilogue + Blocker 機制 + Ophelia 事件）；(D) C-02 / FT-10 / FT-05 / FT-12 P1 patch；(F) **CSV 量產合併**（DS-designer sonnet 執行 + 自行 review 全項通過）—— MissionTemplate 147 個 / AdventurerTemplate 71 位 / StaffTable 10 位 / StoryStageTable 5 個 / TraitTable + 999 / SystemConstants + 5 常數；(G) 跨文件一致性收尾（FSD-index §九 / data-index v3.1 patch 紀錄 / STORY-INDEX 進度更新）。**GDD review** 發現並修正 R1（FT-09 訂閱不存在事件）/ R2（C-02 SetWounded API 擴充）/ R3（FT-09 EvaluateBlocker 改用 GetRoster）。**FSD review** 發現並修正 F1（C-01 FSD 缺 v3.1 同步）/ F4（C-02 FSD 缺 R2 同步）+ FT-09 FSD 補 R1/R3 修正同步。剩餘工作：(1) DialogueTable.csv 文本（待 P-02 / dialogue owner 定案）；(2) FT-09 / FT-10 / FT-12 FSD 完整 Script 設計（待 Codex）；(3) design-review 重跑 4 項 P0（C-05 / FT-04 / FT-09 / C-02 含 R2）；(4) FT-07 / P-02 待後續確認 |

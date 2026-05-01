@@ -101,7 +101,10 @@ Dead ─── 終態
 1. `Dispatched` 狀態的冒險者**不可**再次派遣，也**不可**被除名
 2. `Wounded` 狀態的冒險者**不可**被派遣；FT-03 NPC Decision 在 willingness 計算前直接跳過 `Wounded` 冒險者；恢復計時由 F-02 Time System 的 timestamp 比較驅動（含離線時間）
 3. `Dead` 狀態的冒險者**占用名冊容量**直到被手動除名；FT-01 Recruitment 在判斷名冊是否滿員時，`Dead` 狀態的冒險者仍計入人數
-4. `DismissAdventurer` 僅允許對 `Dead` 狀態的冒險者呼叫；對其他狀態呼叫時回傳 `false` 並 `Debug.LogWarning`
+4. **v3.1 新增（P3.1-005）** `DismissAdventurer` 放寬規則：
+   - `Dead` 狀態：**永遠可除名**（既有規則）
+   - `Idle` 狀態：**僅當 FT-07 審查處（buildingID 待 D2/D4 verify FT-07 確認）已解鎖時可除名**（`FT07.IsBuildingUnlocked(reviewBuildingID)` 回傳 `true`）
+   - 其他狀態（`Dispatched` / `Wounded`）：呼叫時回傳 `false` 並 `Debug.LogWarning`，無操作
 5. **招募池刷新規則**：在刷新招募池時，若某具名 NPC 的 `templateID` 在名冊中存在（含 `Dead` 狀態），則該模板永不刷入招募池（由 FT-01 Recruitment 呼叫 `CreateFromTemplate` 時由 C-02 isUnique 檢查攔截）
 6. **`idleSinceTimestamp` 維護規則**：
    - 任何狀態**轉入 `Idle`**（含初始加入名冊時 status = Idle）：`idleSinceTimestamp = F02.NowUTC`
@@ -116,15 +119,16 @@ Dead ─── 終態
 
 | API | 簽名 | 說明 |
 |-----|------|------|
-| 取得全名冊 | `GetRoster() : IReadOnlyList<AdventurerInstance>` | 含所有狀態（含 Dead） |
+| 取得全名冊 | `GetRoster() : IReadOnlyList<AdventurerInstance>` | 含所有狀態（含 Dead）；**v3.1 新增（P3.1-005）** 排序規則：① `templateID == OPHELIA_TEMPLATE_ID`（從 SystemConstants 取）永遠排第一格；② 其餘依 `idleSinceTimestamp` 倒序 |
 | 依狀態篩選 | `GetByStatus(AdventurerStatus status) : IReadOnlyList<AdventurerInstance>` | 供 FT-02、P-02 使用 |
 | 單筆查詢 | `GetAdventurer(int instanceID) : AdventurerInstance` | 找不到回傳 `null` |
 | 名冊人數 | `GetRosterCount() : int` | 含 Dead；供 FT-01 判斷滿員 |
 | 名冊是否滿員 | `IsRosterFull(int rosterCap) : bool` | `GetRosterCount() >= rosterCap` |
 | 加入名冊 | `AddAdventurer(AdventurerInstance instance) : bool` | 滿員回傳 `false`；若該 instance 的 `templateID != 0` 且為 `isUnique=1`，並且名冊中已有同 `templateID` 的 instance（含 Dead 狀態）→ 回傳 `false` 並 `Debug.LogWarning`；否則加入名冊、維護 `idleSinceTimestamp`（若 status = Idle 則設為 `NowUTC`），回傳 `true`。FT-01 呼叫 |
 | 更新狀態 | `UpdateStatus(int instanceID, AdventurerStatus newStatus, int missionInstanceID = 0) : void` | FT-02 / FT-04 呼叫。行為：(1) 若 `newStatus == Dispatched`：設 `currentMissionID = missionInstanceID`，清除 `idleSinceTimestamp = 0`；(2) 若 `newStatus == Idle`：清除 `currentMissionID = 0`，設 `idleSinceTimestamp = NowUTC`；(3) 其他 newStatus（Wounded / Dead）：清除 `currentMissionID = 0`，清除 `idleSinceTimestamp = 0`。呼叫方負責確保 newStatus 的合法性（§3.4 狀態機）；C-02 內部維護 `currentMissionID` 與 `idleSinceTimestamp` 的不變式 |
-| 設定 Wounded | `SetWounded(int instanceID) : void` | 狀態轉為 `Wounded`；計算並寫入 `woundedUntilTimestamp`（當前時間 + `WOUNDED_RECOVERY_HOURS × 3600`）；自動清除 `currentMissionID = 0`、`idleSinceTimestamp = 0` |
-| 除名 | `DismissAdventurer(int instanceID) : bool` | 僅允許 Dead 狀態；成功移除回傳 `true` |
+| 設定 Wounded | `SetWounded(int instanceID, int? customDurationHours = null) : void` | 狀態轉為 `Wounded`；計算並寫入 `woundedUntilTimestamp`（當前時間 + `(customDurationHours ?? WOUNDED_RECOVERY_HOURS) × 3600`）；自動清除 `currentMissionID = 0`、`idleSinceTimestamp = 0`。**v3.1 新增（2026-04-30 GDD review R2）**：增加 optional `customDurationHours` 參數供 FT-09 OnOpheliaMissingNight 流程設定 12h 失蹤回復時長（OPHELIA_MISSING_RECOVERY_HOURS）；既有呼叫者沿用 `SetWounded(instanceID)` 不變，向後相容 |
+| 除名 | `DismissAdventurer(int instanceID) : bool` | **v3.1 新增（P3.1-005）** 放寬：`Dead` 狀態永遠可除名；`Idle` 狀態僅當 FT-07 審查處已解鎖時可除名；成功移除回傳 `true`，除名成功時發布 `OnAdventurerDismissed(instanceID)` |
+| 登錄唯一冒險者 | **v3.1 新增（P3.1-005）** `RegisterUniqueAdventurer(int templateID) : bool` | 繞過名冊容量與費用檢查，直接將 `isUnique=1` 的模板實例化並加入名冊；供 FT-10 `InitializeAsNewGame` 呼叫（奧菲莉雅初始化）；詳見 §4.3b |
 | 從模板建立 | `CreateFromTemplate(int templateID) : AdventurerInstance` | 由 FT-01 呼叫；isUnique 驗證在此執行 |
 | 隨機建立 | `CreateRandomInstance(string rank, int professionID, int raceID, int[] traitIDs) : AdventurerInstance` | 由 FT-01 §4.5 Phase 2 呼叫；分配 instanceID 但**不加入名冊**（需再呼叫 `AddAdventurer`）；templateID 固定為 `0`（無固定模板）。isUnique 相關欄位不適用（templateID=0），呼叫方直接呼叫 `AddAdventurer` 加入名冊即可 |
 | 寫入自主接單時間戳 | `SetLastAutoPickupTimestamp(int instanceID, long timestamp) : void` | 由 FT-03 §3.3 寫入；instanceID 不存在時 `Debug.LogWarning`，無操作 |
@@ -221,6 +225,28 @@ CreateRandomInstance(rank, professionID, raceID, traitIDs):
 
 ---
 
+### 4.3b RegisterUniqueAdventurer 偽代碼（v3.1 新增，P3.1-005）
+
+```
+RegisterUniqueAdventurer(templateID):
+    template = DataManager.Get<AdventurerTemplate>(templateID)
+    if template == null → return false, Debug.LogError
+    if template.isUnique != 1 → return false, Debug.LogWarning
+    if roster.Any(a => a.templateID == templateID) → return false, Debug.LogWarning
+    instance = CreateFromTemplate(templateID)   // 內部組裝欄位；isUnique 已在上方守衛確認
+    roster.Add(instance)                        // 直接加入，不檢查 rosterCap
+    idleSinceTimestamp = F02.NowUTC             // 加入時狀態 = Idle，設定 timestamp
+    return true
+```
+
+**設計說明**：
+- 繞過 `rosterCap` 上限，確保奧菲莉雅（templateID = `OPHELIA_TEMPLATE_ID`）一定能進入名冊
+- 繞過費用檢查（無需呼叫 F-03 扣除金幣）
+- 呼叫方限定為 FT-10 `InitializeAsNewGame`；執行時序須在名冊清空後、FT-01 候選池初始化前（見 FT-10 Bootstrap 順序紅線）
+- `isUnique=1` 驗證不可省略，防止誤傳非唯一角色的 templateID
+
+---
+
 ### 4.4 特質合集建立（BuildTraitList）
 
 ```
@@ -257,7 +283,10 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | `AddAdventurer` 時名冊已滿 | 回傳 `false`，`Debug.LogWarning`；不加入 |
 | `AddAdventurer` 時 isUnique 衝突（templateID != 0、isUnique=1、且名冊中已有同 templateID 實例，含 Dead 狀態） | 回傳 `false`，`Debug.LogWarning`；不加入名冊（與 `CreateFromTemplate` §4.3 isUnique 語意一致） |
 | `UpdateStatus` 傳入不存在的 `instanceID` | `Debug.LogWarning`，無操作 |
-| `DismissAdventurer` 對 `Idle` / `Dispatched` / `Wounded` 狀態呼叫 | 回傳 `false`，`Debug.LogWarning`；不移除 |
+| `DismissAdventurer` 對 `Idle` 狀態呼叫，但 FT-07 審查處未解鎖 | 回傳 `false`，`Debug.LogWarning`；不移除 |
+| `DismissAdventurer` 對 `Dispatched` / `Wounded` 狀態呼叫 | 回傳 `false`，`Debug.LogWarning`；不移除 |
+| `RegisterUniqueAdventurer` 傳入 `isUnique=0` 的 templateID | 回傳 `false`，`Debug.LogWarning`；不加入名冊 |
+| `RegisterUniqueAdventurer` 傳入已在名冊中（任何狀態）的 templateID | 回傳 `false`，`Debug.LogWarning`；不重複加入 |
 | `SetWounded` 對非 `Dispatched` 狀態呼叫 | `Debug.LogWarning`，無操作（狀態轉換只允許從 Dispatched 進入 Wounded） |
 | `CreateFromTemplate` 但 `isUnique=1` 且同 `templateID` 已在名冊中（含 Dead） | 回傳 `null`，`Debug.LogWarning` |
 | `TickWoundedRecovery` 呼叫時 F-02 timestamp 取得失敗（回傳 0） | `Debug.LogError`，跳過本次 Tick，不修改任何狀態 |
@@ -294,7 +323,8 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | FT-02 Mission Dispatch | 取得可派遣（Idle）冒險者列表；設定 Dispatched 狀態（含 currentMissionID） | `GetByStatus(Idle)`、`UpdateStatus(instanceID, Dispatched, missionInstanceID)` |
 | FT-03 NPC Decision | 取得 Idle 冒險者清單計算 willingness；寫入 lastAutoPickupTimestamp；讀取 idleSinceTimestamp | `GetByStatus(Idle)`、`SetLastAutoPickupTimestamp`（寫入）、`GetAdventurer`（讀取 idleSinceTimestamp） |
 | FT-04 Outcome Resolution | 結算後更新冒險者狀態（Idle / Wounded / Dead） | `SetWounded`、`UpdateStatus` |
-| FT-10 Save/Load | 序列化／反序列化整個名冊 | `GetRoster()`、`AddAdventurer` |
+| FT-07 Guild Building | **v3.1 新增（P3.1-005）** `DismissAdventurer` Idle 放寬條件：查詢審查處是否已解鎖 | `IsBuildingUnlocked(buildingID)` |
+| FT-10 Save/Load | 序列化／反序列化整個名冊；新遊戲初始化時呼叫 `RegisterUniqueAdventurer` | `GetRoster()`、`AddAdventurer`、`RegisterUniqueAdventurer` |
 | P-02 Main UI | 顯示名冊列表、狀態、除名按鈕 | `GetRoster()`、`GetAdventurer`、`DismissAdventurer` |
 
 ---
@@ -353,6 +383,7 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | 參數 | 預設值 | 安全範圍 | 影響 |
 |------|--------|---------|------|
 | `WOUNDED_RECOVERY_HOURS` | `6` | `2 ~ 24` | Wounded 冒險者的恢復等待時間；過短失去懲罰感，過長讓玩家名冊長期空缺，建議搭配名冊容量一起評估 |
+| `OPHELIA_TEMPLATE_ID` | `901` | 固定值，不可修改 | **v3.1 新增（P3.1-005）** 奧菲莉雅的模板 ID；`GetRoster()` 排序與 `RegisterUniqueAdventurer` 驗證依此識別；修改此值需同步更新 `AdventurerTemplate.csv` 對應行 |
 
 ---
 
@@ -389,3 +420,15 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | AC-AM-13 | `GetByStatus(Idle)` 只回傳 status = `Idle` 的冒険者 |
 | AC-AM-14 | `UpdateStatus` 傳入不存在的 `instanceID` 時，出現 `LogWarning`，名冊無任何變動 |
 | AC-AM-15 | `AdventurerTemplate` 中 `professionID` 在 ProfessionTable 找不到時，啟動出現 `LogError`，該模板不可被 `CreateFromTemplate` 使用 |
+| AC-AM-18 | **v3.1 新增（P3.1-005）** `RegisterUniqueAdventurer(901)` 在空名冊上呼叫，回傳 `true`；名冊中出現 templateID=901 的實例，status=Idle；名冊容量未計入 rosterCap 防守 |
+| AC-AM-19 | **v3.1 新增（P3.1-005）** `RegisterUniqueAdventurer(901)` 在名冊已有 templateID=901 實例（任意狀態）時回傳 `false`，名冊無變動 |
+| AC-AM-20 | **v3.1 新增（P3.1-005）** `GetRoster()` 回傳列表中，templateID=901 的冒險者永遠排第一格；其餘冒險者依 `idleSinceTimestamp` 倒序排列 |
+| AC-AM-21 | **v3.1 新增（P3.1-005）** `DismissAdventurer` 對 `Idle` 冒險者：FT-07 審查處已解鎖時回傳 `true` 並移除，同時發布 `OnAdventurerDismissed(instanceID)`；未解鎖時回傳 `false` |
+
+---
+
+## 9. 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|------|------|---------|
+| 2026-04-30 | v3.1 | v3.1 patch P3.1-005：新增 `RegisterUniqueAdventurer` API + `DismissAdventurer` Rule 4 放寬（審查處解鎖後 Idle 可除名）+ `OnAdventurerDismissed` 事件 + `GetRoster` 排序奧菲莉雅永遠第一格。涉及章節：§3.4 Rule 4、§3.5、§4.3b、§5.2、§6.2、§7.1、§8。 |

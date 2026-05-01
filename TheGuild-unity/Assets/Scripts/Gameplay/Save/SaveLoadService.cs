@@ -142,6 +142,35 @@ namespace TheGuild.Gameplay.Save
         {
             BootstrapResult result = SaveLoadBootstrap.Execute(_saveables, _directoryPath, _saveFileName, _backupPrefix, _backupCount);
 
+            // === v3.1 patch P3.1-006：奧菲莉雅初始化 Step X ===
+            // 位置：Bootstrap 完成後、OnLoadCompleted 發布前
+            // 觸發條件：無存檔（首次遊玩）或全 backup 失敗（LoadedFromBackupIndex == -1），代表各 owner 已走 InitializeAsNewGame() 路徑
+            // 目的：新遊戲開局即將奧菲莉雅（templateID=OPHELIA_TEMPLATE_ID）放入名冊，繞過容量上限
+            // 規範源：GDD FT-10 §3.B Step X；P3.1-006 §3.2.1
+            if (result.LoadedFromBackupIndex == -1)
+            {
+                try
+                {
+                    int opheliaTemplateID = ReadIntOrDefault("OPHELIA_TEMPLATE_ID", 901);
+                    if (AdventurerRoster.Instance != null)
+                    {
+                        bool registered = AdventurerRoster.Instance.RegisterUniqueAdventurer(opheliaTemplateID);
+                        if (!registered)
+                        {
+                            Debug.LogError($"[FT-10] Bootstrap Step X: RegisterUniqueAdventurer({opheliaTemplateID}) 失敗——無法將奧菲莉雅放入名冊。Bootstrap 繼續。");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("[FT-10] Bootstrap Step X: AdventurerRoster.Instance 為 null，無法初始化奧菲莉雅。Bootstrap 繼續。");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[FT-10] Bootstrap Step X: RegisterUniqueAdventurer 發生例外，Bootstrap 繼續。ex={ex.Message}");
+                }
+            }
+
             if (result.Failure != null)
             {
                 EventBus.Publish(new OnLoadFailedEvent(result.Failure.Message));

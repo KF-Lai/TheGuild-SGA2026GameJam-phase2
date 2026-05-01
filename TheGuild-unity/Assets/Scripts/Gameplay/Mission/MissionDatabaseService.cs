@@ -18,6 +18,10 @@ namespace TheGuild.Gameplay.Mission
 
         private static Func<int, bool> _factionRouteValidatorForTests;
 
+        // === v3.1 patch P3.1-001 ===
+        /// <summary>TraitTable FK 驗證器（測試注入用）；null 時跳過 requiredTraitID FK 驗證。</summary>
+        private static Func<int, bool> _traitTableValidatorForTests;
+
         private IReadOnlyDictionary<int, MissionTemplate> _templateByID = new Dictionary<int, MissionTemplate>();
         private IReadOnlyDictionary<string, MissionDifficultyData> _difficultyByKey =
             new Dictionary<string, MissionDifficultyData>(StringComparer.Ordinal);
@@ -164,9 +168,16 @@ namespace TheGuild.Gameplay.Mission
             _factionRouteValidatorForTests = validator;
         }
 
+        // === v3.1 patch P3.1-001 ===
+        internal static void SetTraitTableValidatorForTests(Func<int, bool> validator)
+        {
+            _traitTableValidatorForTests = validator;
+        }
+
         internal static void ResetForTests()
         {
             _factionRouteValidatorForTests = null;
+            _traitTableValidatorForTests = null; // === v3.1 patch P3.1-001 ===
             if (Instance != null)
             {
 #if UNITY_EDITOR
@@ -238,7 +249,8 @@ namespace TheGuild.Gameplay.Mission
             MissionDatabaseLoader loader = new MissionDatabaseLoader(
                 _escortTypeID,
                 _factionNeutralID,
-                _factionRouteValidatorForTests);
+                _factionRouteValidatorForTests,
+                _traitTableValidatorForTests); // === v3.1 patch P3.1-001 ===
             MissionDatabaseCache cache = loader.Build();
 
             _templateByID = cache.TemplateByID;

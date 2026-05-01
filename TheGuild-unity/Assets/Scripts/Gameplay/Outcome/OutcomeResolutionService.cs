@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Gameplay.Adventurer;
+using TheGuild.Gameplay.FactionStory;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch;
 using TheGuild.Gameplay.MissionDispatch.Events;
@@ -26,6 +28,11 @@ namespace TheGuild.Gameplay.Outcome
 
         // 成功時死亡率折扣係數，來自 SystemConstants.DEATH_RATE_ON_SUCCESS_MULTIPLIER
         private float _deathRateMultiplier;
+
+        // === v3.1 patch P3.1-003：FT-09 StyleTag bias hook（FT-09 實作完成前 fallback Dark）===
+        // FT-09 缺席時此 Func 始終回傳 StyleTag.Dark，CalcAdjustedJitter 的 Light 分支不生效。
+        // FT-09 完成後可替換此 Func 以對接 FactionStoryService.GetCurrentStyleTagBias()。
+        internal Func<StyleTag> StyleTagBiasProvider = () => StyleTag.Dark;
 
         /// <summary>全域單例。</summary>
         public static OutcomeResolutionService Instance { get; private set; }
@@ -149,13 +156,13 @@ namespace TheGuild.Gameplay.Outcome
             Outcome outcome = BuildOutcomeSnapshot(activeMission, template);
 
             // 步驟 5：執行兩次獨立擲骰，判定成功/死亡/受傷
-            RollSuccessAndDeath(outcome, activeMission);
+            RollSuccessAndDeath(outcome, activeMission, template);
 
             // 步驟 6：從 ReputationDeltaTable 取基礎聲望 delta
             outcome.reputationDelta = _calculator.GetBaseDelta(outcome.missionDifficulty, outcome.isSuccess);
 
             // 步驟 7：套用 condition 特質修正（FSD CT-06 裁決：FT-04 為 owner，不依賴 C-05 ApplyConditionTraits）
-            ApplyConditionTraits(outcome, adventurer.traitIDs);
+            ApplyConditionTraits(outcome, adventurer.traitIDs, activeMission);
 
             // 步驟 8：映射最終冒險者狀態（三布林 → OutcomeStatus）
             outcome.finalStatus = MapFinalStatus(outcome);
@@ -205,9 +212,22 @@ namespace TheGuild.Gameplay.Outcome
         /// 順序：successRoll → isSuccess → adjustedDeathRate → deathRoll → isDead → isWounded。
         /// 兩骰完全獨立，改變 successRoll 不影響 deathRoll（FSD §5.4 / GDD §3.3）。
         /// finalSuccessRate / finalDeathRate 若超出 [0,1] 先 clamp 並 LogWarning（FSD §7 §5.2）。
+        /// isScriptedDeath=1 時 short-circuit，不擲骰直接設哨兵值（v3.1 patch P3.1-003）。
         /// </summary>
-        private void RollSuccessAndDeath(Outcome outcome, ActiveMission activeMission)
+        private void RollSuccessAndDeath(Outcome outcome, ActiveMission activeMission, MissionTemplate template)
         {
+            // === v3.1 patch P3.1-003：isScriptedDeath short-circuit ===
+            if (template.isScriptedDeath == 1)
+            {
+                outcome.isSuccess         = false;
+                outcome.isDead            = true;
+                outcome.isWounded         = false;
+                outcome.adjustedDeathRate = 1.0f;
+                outcome.successRoll       = -1.0f;  // 哨兵值（正常 [0,1)），標記未擲骰
+                outcome.deathRoll         = -1.0f;
+                return;
+            }
+
             // 入口 clamp：FT-02 派遣時已 clamp，但仍可能因資料異常超界
             float clampedSuccess = Mathf.Clamp01(activeMission.finalSuccessRate);
             if (!Mathf.Approximately(clampedSuccess, activeMission.finalSuccessRate))
@@ -245,12 +265,31 @@ namespace TheGuild.Gameplay.Outcome
         /// FT-04 內部 method（FSD CT-06 裁決：FT-04 為 owner，不依賴 C-05 ApplyConditionTraits）。
         /// 對每個 traitID 取得定義後判定 effectType == "condition" 並擲骰觸發機率。
         /// 重要：on_death_survive 可將 isDead 改為 false；後續 MapFinalStatus 會以修改後值映射。
+        /// isScriptedDeath=1 時禁止 on_death_survive / on_fail_survive 觸發（v3.1 patch P3.1-003）。
         /// </summary>
-        private static void ApplyConditionTraits(Outcome outcome, int[] traitIDs)
+        private void ApplyConditionTraits(Outcome outcome, int[] traitIDs, ActiveMission activeMission)
         {
             if (traitIDs == null || traitIDs.Length == 0)
             {
                 return;
+            }
+
+            // === v3.1 patch P3.1-003：isScriptedDeath 守衛 ===
+            // 劇本必死任務禁止 on_death_survive / on_fail_survive 觸發
+            MissionTemplate activeTemplate = MissionDatabaseService.Instance != null
+                ? MissionDatabaseService.Instance.GetTemplate(activeMission.missionID)
+                : null;
+            if (activeTemplate != null && activeTemplate.isScriptedDeath == 1)
+            {
+                traitIDs = traitIDs.Where(traitID =>
+                {
+                    TraitData trait = TraitService.Instance != null
+                        ? TraitService.Instance.GetTrait(traitID)
+                        : null;
+                    return trait != null
+                        && !string.Equals(trait.effectTarget, "on_death_survive", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(trait.effectTarget, "on_fail_survive", StringComparison.OrdinalIgnoreCase);
+                }).ToArray();
             }
 
             // 預分配容量避免熱路徑 alloc；通常特質數量不多
@@ -397,6 +436,32 @@ namespace TheGuild.Gameplay.Outcome
         }
 
         // ── 私有方法 ──────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// === v3.1 patch P3.1-003：styleTag jitter modifier (FB-M1) ===
+        /// 依當前 styleTag bias / dangerLevel / mission.factionID 調整 jitter。
+        /// bias=Light + dangerLevel >= 2 (C 暗湧) + mission.factionID=1 (女神陣營) → baseJitter - 0.04f
+        /// 其他情境回傳 baseJitter（不變）。
+        /// 設計用途：FB-M1「玩家最近運氣特別差」的機制感受來源。
+        /// 依賴 FT-09 GetCurrentStyleTagBias()——透過 StyleTagBiasProvider hook（line ~35），
+        /// FT-09 缺席時 fallback 回 StyleTag.Dark，此公式不生效。
+        /// 注意：v3.1 階段此方法為**預留方法**，待 FT-09 實作完成後由呼叫端串接 jitter pipeline。
+        /// </summary>
+        internal float CalcAdjustedJitter(float baseJitter, MissionTemplate mission, int currentDangerLevelIndex)
+        {
+            StyleTag bias = StyleTagBiasProvider != null
+                ? StyleTagBiasProvider.Invoke()
+                : StyleTag.Dark;
+
+            if (bias == StyleTag.Light
+                && currentDangerLevelIndex >= 2
+                && mission.factionID == 1)
+            {
+                return baseJitter - 0.04f;
+            }
+
+            return baseJitter;
+        }
 
         /// <summary>
         /// Singleton 初始化：DontDestroyOnLoad → 建立 calculator → 讀取常數。

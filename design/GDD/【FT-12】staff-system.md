@@ -192,10 +192,17 @@ StaffInstance {                                      // ↓ 持久化欄位（FT
 | `slotBuildingIDs` | CSV list of int | 合格 slot 候選清單（多選 = 二擇一指派；空或全 `0` = 無 slot 指派能力） |
 | `uiFlagIDs` | CSV list of enum | UI 功能旗標清單（enum 值定義於 `StaffUIFlag` 白名單；純布林開關，**不走 effect 聚合**） |
 | `uiFlagBuildingIDs` | CSV list of int | 平行於 `uiFlagIDs`，該旗標所需的 `assignedBuildingID`（不等於該值則 flag 不啟用） |
+| `personalityDesc` | string | **v3.1 新增（P3.1-008）** 人格描述（Jam 版填寫但不被任何系統消費；Post-Jam 親密度系統設計參考）；schema 必填，空值填 `""` |
+| `intimacyLevel` | int | **v3.1 新增（P3.1-008）** Post-Jam 親密度系統預留；Jam 版全 `0`，DataManager 載入預設 `0` |
+| `isLeavePossible` | int (0/1) | **v3.1 新增（P3.1-008）** Post-Jam 自願離職可能性預留；Jam 版全 `0`，DataManager 載入預設 `0` |
+| `mood` | int | **v3.1 新增（P3.1-008）** Post-Jam 心情系統預留，safe range [0, 4]；Jam 版全 `0`，DataManager 載入預設 `0` |
+| `personalEventIDs` | int[] | **v3.1 新增（P3.1-008）** Post-Jam 個人事件 FK 清單（→ PersonalEventTable.csv，Post-Jam 新建）；Jam 版填單一 `0`，DataManager 載入後過濾為空陣列 |
 
 > DevLog 中使用的 `tags` / `tagValues` 命名於本節正式改名為 `effectIDs` / `effectValues`，以反映「不只是分類標籤，還攜帶數值」。概念層仍可稱「effect tag」。
 >
 > `uiFlagIDs` / `uiFlagBuildingIDs` 為本節新增欄位（2026-04-24），解決「純 UI 功能型 slot 加成」無法與 float-typed effect 統一表達的問題——走獨立聚合路徑（§3.4.6），不污染 `effectIDs` / `effectValues` 的數值型別。
+>
+> **v3.1 新增（P3.1-008）** 5 個 Post-Jam 預埋欄位（`personalityDesc` / `intimacyLevel` / `isLeavePossible` / `mood` / `personalEventIDs`）Jam 版 DataManager 載入時以預設值填入，不 panic；任何缺欄視為使用預設值，不拋 `StaffTableValidationException`。
 
 **`effectIDs` / `effectValues` 數量上限（依 rarity）**：
 
@@ -485,6 +492,25 @@ IsSuccessRatePreviewEnabled() → bool:
 - **無疊加上限需求**：bool 無法疊加，所以無 `EFFECT_MAX_*` 類常數
 - **DataManager 驗證**：`uiFlagIDs.Count == uiFlagBuildingIDs.Count`，且每個 `uiFlagBuildingIDs[i]` 必須存在於該職員的 `slotBuildingIDs` 中（否則 UI flag 永遠無法啟用，資料表錯誤）
 
+#### 3.4.7 IsStaffHired API（v3.1 新增（P3.1-008））
+
+**用途**：FT-09 Faction Story System 在進入 Stage 對話處理前查詢，決定是否疊加特定職員對話層（例如米拉 staffID=501 的 Stage 反應）。
+
+```csharp
+public bool IsStaffHired(int staffID)
+{
+    return _activeRoster.Any(s => s.staffID == staffID);
+}
+```
+
+**語意說明**：
+
+- 以 `staffID`（模板 ID）查詢，只要名冊中存在任一 `StaffInstance` 持有該 `staffID` 即回 `true`
+- 系統未解鎖時（`FT07.IsStaffSystemUnlocked() == false`）仍依此 API 查詢（名冊若有資料即回 `true`）；FT-09 消費方自行決定是否在系統未解鎖時調用
+- 不受職員 `currentState` 影響（Working / Reallocating / OnLeave 皆算「已雇用」）
+- **不**等同於「職員在崗位上」——效果是否生效依 §3.4.1 狀態生效規則
+
+**消費者**：FT-09 Faction Story System（`IsStaffHired` 查詢，§3.x）
 
 ---
 
@@ -1307,6 +1333,7 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | 5 | P-02 Main UI | 訂閱 5 事件 + 名冊 UI / 指派 UI / 解雇確認 | 玩家可見的職員管理介面 |
 | 6 | P-03 Notification | 訂閱 OnStaffHired / OnStaffFired / OnStaffStateChanged（轉假時） | 桌面通知 |
 | 7 | FT-10 Save/Load | `ISaveable` 實作（§6.7） | 序列化 StaffInstance[] / lastSalaryTimestamp |
+| 8 | FT-09 Faction Story System | **v3.1 新增（P3.1-008）** 查詢 `IsStaffHired(int staffID)`（§3.4.7）| Stage 對話前判斷特定職員是否在名冊，決定是否疊加職員專屬對話層（例如米拉 staffID=501 的 Stage 反應）|
 
 ### 6.3 事件契約
 
@@ -1433,6 +1460,16 @@ UI flag 走獨立聚合路徑（§3.4.6 OR 語意），**不**進 effectIDs / ef
 
 uiFlag 為純布林、無 effectValue、無疊加上限（OR 聚合天然封頂為 true）。
 
+#### 7.1.4 Post-Jam 預埋欄位安全範圍（v3.1 新增（P3.1-008））
+
+| 欄位 | Jam 安全範圍 | Post-Jam 說明 |
+|---|---|---|
+| `personalityDesc` | 任意 string；Jam 版僅設計參考，不消費 | Post-Jam 親密度系統設計依據 |
+| `intimacyLevel` | `0`（固定）| Post-Jam 安全範圍待設計 |
+| `isLeavePossible` | `0`（固定）| Post-Jam 安全範圍 `[0, 1]` |
+| `mood` | `0`（固定）| Post-Jam 安全範圍 `[0, 4]` |
+| `personalEventIDs` | 單一 `0`（空列表）| Post-Jam FK → PersonalEventTable.csv（Post-Jam 新建） |
+
 ### 7.2 系統常數（StaffTuning.csv / SystemConstants.csv）
 
 | key | 預設值 | 安全範圍 | 影響 |
@@ -1554,3 +1591,9 @@ uiFlag 為純布林、無 effectValue、無疊加上限（OR 聚合天然封頂�
 > 註：AC-36（OnDailyReset 觸發薪水時 perStaffSalary 組裝 < 5ms）為 Phase 2 效能 AC，已移至 §8.6 Phase 2 區塊。
 
 ---
+
+## 9. 變更歷史（Change Log）
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-30 | v3.1 | v3.1 patch P3.1-008：新增 IsStaffHired API（§3.4.7）+ StaffTable 5 個 Post-Jam 預埋欄位（personalityDesc/intimacyLevel/isLeavePossible/mood/personalEventIDs）+ 米拉 501/譚恩 502/凱拉 503 三位敘事核心職員 CSV 預設資料規格。|

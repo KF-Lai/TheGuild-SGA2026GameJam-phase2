@@ -1,0 +1,33 @@
+{
+  "name": "Tests.EditMode.Gameplay.Adventurer",
+  "rootNamespace": "Tests.EditMode.Gameplay.Adventurer",
+  "references": [
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Race",
+    "TheGuild.Gameplay.Trait",
+    "TheGuild.Gameplay.Guild",
+    "TheGuild.Gameplay.Building",
+    "TheGuild.Gameplay.Staff",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Time",
+    "TheGuild.Core.Events",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

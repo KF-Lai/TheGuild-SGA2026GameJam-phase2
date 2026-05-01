@@ -21,12 +21,16 @@ C# 資料類別簽名（`TheGuild.Gameplay.FactionStory.StoryStageData`）：
 
 ```csharp
 public sealed class StoryStageData {
-    public int    stageID;          // PK
-    public int    factionID;        // FK → FactionRouteTable
+    public int    stageID;                  // PK
+    public int    factionID;                // FK → FactionRouteTable
     public int    stageIndex;
     public int    scoreThreshold;
-    public int    missionID;        // FK → MissionTemplate（categoryID == 3）
-    public string dialogueKey;      // FK → DialogueTable（弱約束；owner 待定）
+    public int    missionID;                // FK → MissionTemplate（categoryID == 3）
+    public string dialogueKey;              // FK → DialogueTable（弱約束；owner 待定）
+    // v3.1 新增（P3.1-004）
+    public string dialogueVariantMode;      // 預設 "none"；三值：none / ophelia_alive_dead / styletag_bias
+    public string specialEventKey;          // 預設 ""；Stage 4 = "ophelia_missing"
+    public string unlockBlockerCondition;   // 預設 ""；Stage 5 = "npc:ophelia:status==Idle"
 }
 ```
 
@@ -38,6 +42,10 @@ public sealed class StoryStageData {
 | `scoreThreshold` | int | ✓ | ≥ 1，同 `factionID` 內嚴格遞增 | 觸發此階段所需的陣營分數門檻（`currentScore >= scoreThreshold` 時解鎖） |
 | `missionID` | int | ✓ | > 0（FK → `MissionTemplate`，`categoryID == 3`） | 注入委託板的劇情委託 ID |
 | `dialogueKey` | string | ✓ | — | 對話內容鍵（FK → `DialogueTable`，owner 待定，§3.2.2）；未找到時 `Debug.LogWarning` + 空對話框 fallback |
+| **v3.1 新增（P3.1-004）** | | | | |
+| `dialogueVariantMode` | string | — | `"none"` / `"styletag_bias"` / `"ophelia_alive_dead"` | 對話鍵解析模式（預設 `"none"`）；解析邏輯見 GDD §3.4.7 |
+| `specialEventKey` | string | — | 任意字串；Stage 4 = `"ophelia_missing"` | 解鎖對話確認後供 P-02 發布特殊事件的鍵（預設 `""`）；P-02 在 ConfirmDialogue 後讀此值決定是否發布 `OnOpheliaMissingNight` |
+| `unlockBlockerCondition` | string | — | 任意條件語法字串；Stage 5 = `"npc:ophelia:status==Idle"` | 分數達標時若此條件為真則暫緩解鎖（預設 `""`）；語法與解析邏輯見 GDD §3.4.8 |
 
 ## 約束 / 不變量
 
@@ -47,6 +55,8 @@ public sealed class StoryStageData {
 - 同 `factionID` 內 `scoreThreshold` 必須嚴格遞增（`stageIndex=1` < `stageIndex=2` < ...）；違反 → 拋例外（§3.2.2）
 - `missionID` 在 `MissionTemplate` 找不到，或對應 `categoryID != 3` → 拋 `StoryStageTableValidationException`，跳過（§3.2.2）
 - `dialogueKey` 在 `DialogueTable` 找不到 → `Debug.LogWarning`，不跳過階段，runtime 顯示空對話框（§3.2.2）
+- **v3.1 新增（P3.1-004）**：`dialogueVariantMode` 不在 `{"none", "styletag_bias", "ophelia_alive_dead"}` 三值內 → `Debug.LogWarning`，退為 `"none"` fallback，不跳過階段
+- **v3.1 新增（P3.1-004）**：`specialEventKey` / `unlockBlockerCondition` 欄位缺失時視為空字串（`""`），不拋例外（向後相容舊資料）
 
 ## Cross-ref
 
@@ -55,6 +65,10 @@ public sealed class StoryStageData {
 | `factionID` | `FactionRouteTable.factionID` | FK 強約束（載入時驗證，§3.2.2）|
 | `missionID` | `MissionTemplate.missionID` | FK 強約束（載入時驗證 `categoryID == 3`，§3.2.2）|
 | `dialogueKey` | `DialogueTable`（key，owner 待定） | 弱約束（找不到時 LogWarning + fallback，不跳過階段，§3.2.2）|
+| **v3.1 新增（P3.1-004）** | | |
+| `dialogueVariantMode` | 無外部 FK；三值枚舉，由 FT-09 runtime 解析 | 無約束（非法值退為 `"none"`）|
+| `specialEventKey` | 由 P-02 消費；`"ophelia_missing"` 對應 `OnOpheliaMissingNight` 事件 | 弱約束（P-02 未識別的 key 靜默忽略）|
+| `unlockBlockerCondition` | `"npc:{npcID}:status=={status}"` 語法；C-02 冒險者 instance 狀態查詢 | 弱約束（Jam 版僅實作 1 種語法；不識別語法 → LogWarning + 視為無 blocker）|
 
 ## 變更注意事項
 
@@ -66,17 +80,25 @@ public sealed class StoryStageData {
 
 ## 範例
 
-```csv
-# === StoryStageTable — 陣營劇情階段 ===
-# 對應 §3.2.2 Jam 預設值（秩序路線 3 個階段）
-# threshold=[10, 30, 60]：B 任務一單 +5 分，第 2~3 單成功後解鎖 stage1
+**v3.1 新增（P3.1-004）**：完整 5 行預設資料（奧蘿瑞女神陣營路線）
 
-stageID,1001,1002,1003
-factionID,1,1,1
-stageIndex,1,2,3
-scoreThreshold,10,30,60
-missionID,9001,9002,9003
-dialogueKey,story.order.stage1,story.order.stage2,story.order.stage3
+```csv
+# === StoryStageTable — 陣營劇情階段（奧蘿瑞女神陣營，v3.1 正式版）===
+# factionID=1：女神陣營（秩序路線）
+# threshold=[8, 22, 50, 120, 200]：依各難度 factionScoreDelta 校準
+# dialogueVariantMode：stage3/4 使用 styletag_bias；stage5 使用 ophelia_alive_dead
+# specialEventKey：stage4 觸發 ophelia_missing 事件
+# unlockBlockerCondition：stage5 等待奧菲莉雅 status==Idle
+
+stageID,1001,1002,1003,1004,1005
+factionID,1,1,1,1,1
+stageIndex,1,2,3,4,5
+scoreThreshold,8,22,50,120,200
+missionID,9001,9002,9003,9004,9005
+dialogueKey,story.aurorae.stage1,story.aurorae.stage2,story.aurorae.stage3,story.aurorae.stage4,story.aurorae.stage5
+dialogueVariantMode,none,none,styletag_bias,styletag_bias,ophelia_alive_dead
+specialEventKey,"","","",ophelia_missing,""
+unlockBlockerCondition,"","","","",npc:ophelia:status==Idle
 ```
 （每個欄位一列；轉置格式規範見 [`.claude/rules/data-files.md`](../../.claude/rules/data-files.md)）
 
@@ -86,6 +108,16 @@ dialogueKey,story.order.stage1,story.order.stage2,story.order.stage3
 
 | 旋鈕 | Jam 預設 | 安全範圍 | 影響玩法 |
 |---|---|---|---|
-| `scoreThreshold`（秩序路線） | [10, 30, 60] | [1, ∞)；同陣營嚴格遞增 | 整體放大 → 解鎖更慢；間距均勻 → 節奏穩定；太低（如 [1,2,3]）→ 開局多階段對話視窗連發（§7.2.2）|
-| `missionID`（範例難度） | 9001(B 級), 9002(A 級), 9003(SS 級) | 必須是 `categoryID=3` 的合法 `missionID`；對應難度 delta ≤ 下階段 buffer | 難度過高 → 玩家無法完成；過低 → 缺乏挑戰（§7.2.3）|
-| 每陣營階段數 | 3 | [1, 10]；推薦 3~5 | 太少 → 路線完結太快敘事密度不足；> 5 → 文本量超出 Jam 可生成範圍（§7.2.5）|
+| `scoreThreshold`（秩序路線） | [8, 22, 50, 120, 200] | [1, ∞)；同陣營嚴格遞增 | 整體放大 → 解鎖更慢；間距均勻 → 節奏穩定；太低（如 [1,2,3]）→ 開局多階段對話視窗連發（§7.2.2）|
+| `missionID`（範例難度） | 9001~9005 | 必須是 `categoryID=3` 的合法 `missionID`；對應難度 delta ≤ 下階段 buffer | 難度過高 → 玩家無法完成；過低 → 缺乏挑戰（§7.2.3）|
+| 每陣營階段數 | 5 | [1, 10]；推薦 3~5 | 太少 → 路線完結太快敘事密度不足；> 5 → 文本量超出 Jam 可生成範圍（§7.2.5）|
+| **v3.1 新增（P3.1-004）** | | | |
+| `dialogueVariantMode` | `"none"` | `{"none", "styletag_bias", "ophelia_alive_dead"}` | 決定解鎖時刻的對話鍵解析維度；`styletag_bias` 提供三種 dark/mixed/light 變體；`ophelia_alive_dead` 在 Stage 5 結算後二次解析死活維度 |
+| `specialEventKey` | `""` | 任意字串；目前實作值為 `"ophelia_missing"` | 觸發奧菲莉雅失蹤流程；空字串 = 無特殊事件 |
+| `unlockBlockerCondition` | `""` | 任意條件語法字串；Jam 版實作 `"npc:{id}:status=={status}"` | 空字串 = 無 blocker；blocker 阻擋解鎖至條件解除 |
+
+## 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-30 | v3.1 | v3.1 patch P3.1-004：StoryStageTable 新增 3 欄位（dialogueVariantMode/specialEventKey/unlockBlockerCondition）+ 5 行預設資料（奧蘿瑞女神陣營 Stage 1-5）+ 對應約束、Cross-ref、安全範圍。需 design-review 重跑（最大 patch）。|

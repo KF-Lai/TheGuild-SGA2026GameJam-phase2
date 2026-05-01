@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Core.SaveContract;
+using TheGuild.Gameplay.Adventurer;
 using TheGuild.Gameplay.FactionStory.Events;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch;
@@ -33,6 +35,23 @@ namespace TheGuild.Gameplay.FactionStory
         internal static Func<int, MissionTemplate> MissionTemplateProviderForTests;
         internal static Func<string, int> FactionScoreDeltaProviderForTests;
         internal static Action<int> WorldDangerNotifierForTests;
+
+        // === v3.1 patch P3.1-004：測試鉤子 ===
+        /// <summary>測試用：注入 IReadOnlyList&lt;AdventurerInstance&gt; 代替 AdventurerRoster.GetRoster()。</summary>
+        internal static Func<IReadOnlyList<AdventurerInstance>> RosterProviderForTests;
+        /// <summary>測試用：攔截 DialogueTable.Contains(key) 查詢。</summary>
+        internal static Func<string, bool> DialogueTableContainsForTests;
+
+        // === v3.1 patch P3.1-004：runtime 狀態 ===
+        private bool _pendingMissingNight;
+        private int _totalAdventurerDeaths;
+        private readonly HashSet<int> _blockedStages = new HashSet<int>();
+
+        /// <summary>SystemConstants 快取：每次 Bootstrap 或 Restore 後讀取。</summary>
+        private int _opheliaTemplateID = 901;
+        private int _lightThreshold = 100;
+        private int _mixedThreshold = 40;
+        private int _ophelia_missing_recovery_hours = 12;
 
         public static FactionStoryService Instance { get; private set; }
 
@@ -159,6 +178,35 @@ namespace TheGuild.Gameplay.FactionStory
 
             _scoreAccumulator.TryDequeuePendingIfMatches(stageID);
             EventBus.Publish(new OnFactionStoryDialogueConfirmedEvent(stage.stageID, stage.factionID, stage.missionID));
+
+            // === v3.1 patch P3.1-004：specialEventKey 處理（Stage 4 Ophelia missing）===
+            if (!string.IsNullOrEmpty(stage.specialEventKey) && stage.specialEventKey == "ophelia_missing")
+            {
+                _pendingMissingNight = true;
+                EventBus.Publish(new OnOpheliaMissingNightEvent(stage.stageID));
+
+                // 呼叫 C-02 SetWounded(opheliaInstanceID, customDurationHours: OPHELIA_MISSING_RECOVERY_HOURS)
+                int opheliaTemplateID = (int)DataManager.Instance.GetFloat("OPHELIA_TEMPLATE_ID");
+                int opheliaMissingHours = (int)DataManager.Instance.GetFloat("OPHELIA_MISSING_RECOVERY_HOURS");
+                if (AdventurerRoster.Instance != null)
+                {
+                    var roster = AdventurerRoster.Instance.GetRoster();
+                    AdventurerInstance ophelia = null;
+                    for (int i = 0; i < roster.Count; i++)
+                    {
+                        if (roster[i].templateID == opheliaTemplateID) { ophelia = roster[i]; break; }
+                    }
+                    if (ophelia != null)
+                    {
+                        AdventurerRoster.Instance.SetWounded(ophelia.instanceID, opheliaMissingHours);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[FactionStoryService] specialEventKey=ophelia_missing 觸發，但奧菲莉雅不在名冊。");
+                    }
+                }
+            }
+
             return ConfirmDialogueResult.OK;
         }
 
@@ -259,6 +307,9 @@ namespace TheGuild.Gameplay.FactionStory
             MissionTemplateProviderForTests = null;
             FactionScoreDeltaProviderForTests = null;
             WorldDangerNotifierForTests = null;
+            // === v3.1 patch P3.1-004：清除 v31 測試鉤子 ===
+            RosterProviderForTests = null;
+            DialogueTableContainsForTests = null;
 
             if (Instance != null)
             {
@@ -288,6 +339,9 @@ namespace TheGuild.Gameplay.FactionStory
             }
 
             _factionNeutralID = DataManager.Instance.GetInt(FactionStoryConstants.FACTION_NEUTRAL_ID_KEY);
+
+            // === v3.1 patch P3.1-004：讀取 SystemConstants（找不到 key 時保留預設值）===
+            LoadSystemConstants();
 
             bool tableReady;
             try
@@ -415,6 +469,10 @@ namespace TheGuild.Gameplay.FactionStory
             }
 
             EventBus.Subscribe<OnMissionResolvedEvent>(HandleOnMissionResolved);
+
+            // === v3.1 patch P3.1-004：訂閱 C-02 OnAdventurerRecoveredEvent（奧菲莉雅回來偵測）===
+            EventBus.Subscribe<OnAdventurerRecoveredEvent>(HandleOnAdventurerRecovered);
+
             _isSubscribed = true;
         }
 
@@ -426,7 +484,36 @@ namespace TheGuild.Gameplay.FactionStory
             }
 
             EventBus.Unsubscribe<OnMissionResolvedEvent>(HandleOnMissionResolved);
+
+            // === v3.1 patch P3.1-004：取消訂閱 C-02 OnAdventurerRecovered ===
+            EventBus.Unsubscribe<OnAdventurerRecoveredEvent>(HandleOnAdventurerRecovered);
+
             _isSubscribed = false;
+        }
+
+        // === v3.1 patch P3.1-004：奧菲莉雅回來事件 handler ===
+        /// <summary>
+        /// C-02 OnAdventurerRecovered 觸發時識別是否為奧菲莉雅；若是則：
+        /// (1) 清除 _pendingMissingNight flag
+        /// (2) 發布 OnOpheliaReturnedEvent
+        /// (3) 呼叫 TriggerDeferredStageCheck（Stage 5 unlockBlockerCondition 可能解除）
+        /// </summary>
+        private void HandleOnAdventurerRecovered(OnAdventurerRecoveredEvent evt)
+        {
+            if (!_isEnabled) return;
+
+            int opheliaTemplateID = (int)DataManager.Instance.GetFloat("OPHELIA_TEMPLATE_ID");
+            if (AdventurerRoster.Instance == null) return;
+
+            var ophelia = AdventurerRoster.Instance.GetAdventurer(evt.instanceID);
+            if (ophelia == null || ophelia.templateID != opheliaTemplateID) return;
+
+            // 識別為奧菲莉雅
+            _pendingMissingNight = false;
+            EventBus.Publish(new OnOpheliaReturnedEvent(evt.instanceID));
+
+            // 重新檢查 _blockedStages（Stage 5 npc:ophelia:status==Idle 解除）
+            TriggerDeferredStageCheck();
         }
 
         private bool HasAnyNonZeroFactionScoreDelta()

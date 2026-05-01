@@ -2,10 +2,10 @@
 
 _建立時間：2026-04-26_
 _狀態：設計完成（已通過 2026-04-27 /design-review，修正 C1~C4 / I1 / I2）_
-_最後更新：2026-04-27_
+_最後更新：2026-04-30（v3.1 patch P3.1-006）_
 _系統 ID：FT-10_
 
-**狀態**：§1 ~ §8 全部寫入並通過 design-review。下一步：(a) §6.4 反向依賴 15 個 GDD 由使用者統一安排批次更新；(b) 進入 Codex 工項書建立階段。
+**狀態**：§1 ~ §8 全部寫入並通過 design-review。v3.1 patch P3.1-006 已套用（Bootstrap 補奧菲莉雅初始化 Step、SaveData schema 標註 FT-09 v3.1 三個新持久化欄位）。下一步：(a) §6.4 反向依賴 15 個 GDD 由使用者統一安排批次更新；(b) 進入 Codex 工項書建立階段。
 
 ---
 
@@ -200,6 +200,13 @@ FT-10 在玩家層面幾乎是隱形系統——好的存讀檔體驗是「**讓
 }
 ```
 
+> **v3.1 新增（P3.1-006）：`factionStorySaveData` 子區塊內新增三個持久化欄位**（由 FT-09 owner 透過 `ISaveable.Serialize()` / `RestoreFromSave()` 管理；FT-10 僅確保 schema 標註存在、backup rotation 與 Game Over 封存覆蓋這些欄位）：
+> - `factionStoryV31_pendingMissingNight: bool` — FT-09 Stage 4 奧菲莉雅失蹤 flag
+> - `factionStoryV31_totalAdventurerDeaths: int` — FT-09 累積冒險者死亡計數（FB-M2 消費）
+> - `factionStoryV31_blockedStages: List<int>` — FT-09 因 `unlockBlockerCondition` 暫緩解鎖的 stageID 列表
+>
+> 上述欄位屬 FT-09 `FactionStorySaveData` 子區塊內部定義（見 FT-09 §3.7.4），FT-10 不直接讀寫其值。
+
 > **`ft03Decision` 為薄層 ISaveable**（對齊 FT-03 §6.4）:FT-03 自身**無 instance 級別持久化欄位**（`idleSinceTimestamp` / `lastAutoPickupTimestamp` 由 C-02 `AdventurerInstance` 一併序列化）,故 root 範例顯示為空物件 `{}`,實際 `Serialize()` 回傳 `"{}"`。允許省略此 key——若省略,Bootstrap Step C 對 FT-03 呼叫 `RestoreFromSave(null)` 等同 `InitializeAsNewGame()`,僅重新訂閱事件。
 
 **`schemaMeta` 欄位**（FT-10 擁有）：
@@ -325,9 +332,16 @@ Phase D: F-02 離線計算交棒
 
 Phase E: Bootstrap 完成（統一以 OnLoadCompleted / OnLoadFailed 收尾）
   ├─ 無 save file（首次遊玩）：各 owner 透過 InitializeAsNewGame() 預設初始化
+  │                            ↓ 依 §3.3.3 拓撲順序逐 owner 呼叫
+  │                            Step X【v3.1 新增（P3.1-006）】:
+  │                              位置：C-02 InitializeAsNewGame() 完成後、FT-01 InitializeAsNewGame() 前
+  │                              呼叫：C02.RegisterUniqueAdventurer(SystemConstants.OPHELIA_TEMPLATE_ID)
+  │                              目的：新遊戲開局即將奧菲莉雅（templateID=901）放入名冊，繞過容量上限
+  │                              失敗處理：若呼叫回傳 false（templateID 901 在 AdventurerTemplate 找不到），
+  │                                        Debug.LogError 並繼續後續初始化，不阻塞遊戲啟動
   │                            → 發布 OnLoadCompleted(loadedFromBackupIndex = -1)
   ├─ 全部 backup 失敗：先發布 OnLoadFailed(ex)
-  │                    → 各 owner 透過 InitializeAsNewGame() 預設初始化
+  │                    → 各 owner 透過 InitializeAsNewGame() 預設初始化（含 Step X，同上）
   │                    → 再發布 OnLoadCompleted(loadedFromBackupIndex = -1)
   └─ 任一 candidate 載入成功：發布 OnLoadCompleted(loadedFromBackupIndex ∈ [0, N])
 

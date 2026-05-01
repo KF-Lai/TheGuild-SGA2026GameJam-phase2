@@ -33,10 +33,17 @@
 | `slotBuildingIDs` | int[] | ✓ | buildingID ≥ 1；無 slot 能力 = `0` | 合格 slot 候選清單（`\|` 分隔）；空或全 `0` = 無 slot 指派能力（§3.2）|
 | `uiFlagIDs` | string[] | ✓ | `StaffUIFlag` 白名單；空 = `""` | UI 功能旗標清單（`\|` 分隔 enum 名稱；白名單：`SuccessRatePreview`，§3.2）|
 | `uiFlagBuildingIDs` | int[] | ✓ | buildingID ≥ 1；空 = `0` | 平行於 `uiFlagIDs`，旗標啟用所需的 `assignedBuildingID`（§3.2）|
+| `personalityDesc` | string | ✓（schema 必填，空值填 `""`） | — | **v3.1 新增（P3.1-008）** 人格描述文字；Jam 版填寫但不被任何系統消費（Post-Jam 親密度系統設計參考）|
+| `intimacyLevel` | int | — | 預設 `0` | **v3.1 新增（P3.1-008）** Post-Jam 親密度系統預留；Jam 版全填 `0`，DataManager 缺欄時視為 `0` |
+| `isLeavePossible` | int (0/1) | — | 預設 `0` | **v3.1 新增（P3.1-008）** Post-Jam 自願離職可能性預留；Jam 版全填 `0`，DataManager 缺欄時視為 `0` |
+| `mood` | int | — | 預設 `0`；safe range [0, 4] | **v3.1 新增（P3.1-008）** Post-Jam 心情系統預留；Jam 版全填 `0`，DataManager 缺欄時視為 `0` |
+| `personalEventIDs` | int[] | — | 預設 `0`（空列表）| **v3.1 新增（P3.1-008）** Post-Jam 個人事件 FK 清單（→ PersonalEventTable.csv，Post-Jam 新建）；Jam 版填單一 `0`，DataManager 解析後過濾為空陣列 |
 
 > `effectIDs` / `uiFlagIDs` 為 string enum 名稱，不做 int 轉型；`effectValues` / `slotBuildingIDs` / `uiFlagBuildingIDs` 由 DataManager 拆分後轉型。
 >
-> **多值欄位空值規約**：`int[]` 多值欄位（`slotBuildingIDs` / `uiFlagBuildingIDs`）空值填單一 `0`，DataManager 解析後過濾為空陣列（依 `data-files.md` 通則）；`string[]` 多值欄位（`effectIDs` / `effectValues` / `uiFlagIDs`）空值填 `""`，DataManager 拆分後得空陣列。
+> **多值欄位空值規約**：`int[]` 多值欄位（`slotBuildingIDs` / `uiFlagBuildingIDs` / `personalEventIDs`）空值填單一 `0`，DataManager 解析後過濾為空陣列（依 `data-files.md` 通則）；`string[]` 多值欄位（`effectIDs` / `effectValues` / `uiFlagIDs`）空值填 `""`，DataManager 拆分後得空陣列。
+>
+> **v3.1 新增（P3.1-008）** 5 個 Post-Jam 預埋欄位（`personalityDesc` / `intimacyLevel` / `isLeavePossible` / `mood` / `personalEventIDs`）在 Jam 版 CSV 載入時 DataManager 不會 panic——`int` 類型缺欄預設 `0`、`string` 類型缺欄預設 `""`；不拋 `StaffTableValidationException`。
 
 ## 約束 / 不變量
 

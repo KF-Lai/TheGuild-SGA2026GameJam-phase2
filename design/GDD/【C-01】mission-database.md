@@ -27,6 +27,9 @@ C-01 Mission Database 是遊戲中所有任務資料的統一存取接口，架�
 | `typeID` | `int` (FK → MissionTypeTable) | 任務類型 |
 | `factionID` | `int` (FK → FactionRouteTable) | 陣營歸屬；`0` = neutral（不計入任何陣營分數） |
 | `categoryID` | `int` (FK → MissionCategoryTable) | 任務類別，決定進入哪個池 |
+| `isScriptedDeath` | `int` (0/1) | **v3.1 新增（P3.1-001）** 1 = 強制必死任務（FT-04 short-circuit 擲骰）；**僅允許於 `categoryID = 3` 模板**，否則 DataManager 載入時 `Debug.LogError` 並重置為 `0`；預設 `0` |
+| `minDangerLevel` | `int` | **v3.1 新增（P3.1-001）** 最小世界危險度索引（E=0, D=1, C=2, B=3, A=4）；FT-05 `SelectMissionFromPool` 以此過濾，`0` = 無限制；預設 `0` |
+| `requiredTraitID` | `int` (FK → C-05 TraitTable) | **v3.1 新增（P3.1-001）** 派遣前置條件：冒險者需持有此 `traitID`；`0` = 無限制；FT-02 / FT-03 派遣驗證消費；預設 `0` |
 
 **MissionDifficultyTable**（難度 → 所有按難度查找的數值，PK = `difficulty`，9 行覆蓋 F~SSS 全難度）
 
@@ -154,6 +157,9 @@ IsValidCombination(difficulty, typeID):
 | `MissionDifficultyTable` 缺少某難度的行 | `Debug.LogError`，該難度的 `GetBaseReward` / `GetBaseDuration` 回傳 `0`、`GetBaseDeathRate` 回傳 `0.0`、`GetFactionScoreDelta` 回傳 `0` |
 | `MissionDifficultyTable.baseDeathRate` 不在 `[0.0, 1.0]` | `Debug.LogError`，clamp 至範圍內 |
 | `MissionDifficultyTable.factionScoreDelta < 0` | `Debug.LogError`，視為 `0`（對齊舊 FT-09 EC 行為） |
+| **v3.1 新增（P3.1-001）** `isScriptedDeath == 1` 且 `categoryID != 3` | `Debug.LogError` 記錄 `missionID`，重置 `isScriptedDeath` 為 `0`；模板仍載入，不跳過 |
+| **v3.1 新增（P3.1-001）** `minDangerLevel` 不在 `[0, 4]` | `Debug.LogError` 記錄 `missionID` 與實際值，重置為 `0` |
+| **v3.1 新增（P3.1-001）** `requiredTraitID > 0` 且 `TraitTable` 中找不到對應 `traitID` | `Debug.LogError` 記錄 `missionID` 與 `requiredTraitID`，重置為 `0` |
 
 ### 5.2 查詢階段
 
@@ -240,3 +246,13 @@ Mission Database 依賴 F-01 DataManager，DataManager 不依賴 Mission Databas
 | AC-MD-14 | 死亡率查詢 | `GetBaseDeathRate("F")` 回傳 `0.02`；`GetBaseDeathRate("SSS")` 回傳 `0.70` |
 | AC-MD-15 | 陣營加分查詢 | `GetFactionScoreDelta("F")` 回傳 `1`；`GetFactionScoreDelta("SSS")` 回傳 `30` |
 | AC-MD-16 | 缺失行 fallback | CSV 移除 `difficulty="B"` 行，啟動 `LogError`；`GetBaseReward("B")` 回傳 `0`、`GetBaseDeathRate("B")` 回傳 `0.0`、`GetFactionScoreDelta("B")` 回傳 `0` |
+| AC-MD-17 | **v3.1 新增（P3.1-001）** `isScriptedDeath` 非法欄位組合 | CSV 中加入一筆 `isScriptedDeath=1, categoryID=0` 的模板，啟動後 Console 出現 `LogError`，`isScriptedDeath` 被重置為 `0`，模板仍可查詢 |
+| AC-MD-18 | **v3.1 新增（P3.1-001）** `minDangerLevel` 範圍外 | CSV 中加入一筆 `minDangerLevel=5` 的模板，啟動後 `LogError`，該欄位被重置為 `0` |
+| AC-MD-19 | **v3.1 新增（P3.1-001）** `requiredTraitID` FK 驗證 | CSV 中加入一筆 `requiredTraitID=9999`（不存在），啟動後 `LogError`，該欄位被重置為 `0` |
+
+## 九、變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|------|------|---------|
+| 2026-04-19 | v1.0 | 初版建立 |
+| 2026-04-30 | v1.1 | v3.1 patch P3.1-001：MissionTemplate 新增 `isScriptedDeath` / `minDangerLevel` / `requiredTraitID` 三欄位 + §5.1 Validation 規則（三條）+ §8 驗收標準 AC-MD-17~19。完整 patch summary 見 `design/_Reports/GDD-FSD-patch-v3.1-aurorae-faction.md` |

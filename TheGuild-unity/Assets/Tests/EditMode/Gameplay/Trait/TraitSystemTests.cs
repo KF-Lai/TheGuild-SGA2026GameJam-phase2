@@ -216,6 +216,76 @@ namespace Tests.EditMode.Gameplay.Trait
             Assert.AreEqual(4, groups[2].groupID);
         }
 
+        [Test]
+        public void Test_v31_AC_TS_16_SilentTrait_999_EffectValuesCorrect()
+        {
+            // AC-TS-16：traitID=999 載入後 effectValue == -0.40、effectTarget == "willingness_all"、effectType == "behavior"
+            // 新增沉默 trait 到 TraitTable
+            string traitTableWith999 = _baseTables["TraitTable"] + "\n999,沉默,她不主動接受委託，需要玩家明確指派,behavior,willingness_all,-0.40";
+
+            TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWith999 } });
+
+            TraitData trait = service.GetTrait(999);
+            Assert.IsNotNull(trait);
+            Assert.AreEqual(999, trait.traitID);
+            Assert.AreEqual("沉默", trait.name);
+            Assert.AreEqual("behavior", trait.effectType);
+            Assert.AreEqual("willingness_all", trait.effectTarget);
+            Assert.AreEqual(-0.40f, trait.effectValue, 0.0001f);
+        }
+
+        [Test]
+        public void Test_v31_AC_TS_17_SilentTrait_999_NotInGroups()
+        {
+            // AC-TS-17：traitID=999 不出現在任何 TraitGroupTable.traitIDs 中
+            string traitTableWith999 = _baseTables["TraitTable"] + "\n999,沉默,她不主動接受委託，需要玩家明確指派,behavior,willingness_all,-0.40";
+
+            TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWith999 } });
+
+            // 檢查所有 trait group，確保 999 不在任何一個中
+            TraitGroupData group1 = service.GetTraitGroup(1);
+            TraitGroupData group2 = service.GetTraitGroup(2);
+            TraitGroupData group3 = service.GetTraitGroup(3);
+            TraitGroupData group4 = service.GetTraitGroup(4);
+
+            Assert.IsNotNull(group1);
+            Assert.IsFalse(group1.TraitIDs.Contains(999));
+
+            if (group2 != null)
+            {
+                Assert.IsFalse(group2.TraitIDs.Contains(999));
+            }
+            if (group3 != null)
+            {
+                Assert.IsFalse(group3.TraitIDs.Contains(999));
+            }
+            if (group4 != null)
+            {
+                Assert.IsFalse(group4.TraitIDs.Contains(999));
+            }
+        }
+
+        [Test]
+        public void Test_v31_AC_TS_18_isScriptedDeath_FiltersSurviveTraits()
+        {
+            // AC-TS-18：C-05 驗證過濾邏輯（該測試屬 FT-04 範疇，C-05 只驗證 trait 資料正確）
+            // 本測試確認 effectTarget == "on_death_survive" 與 "on_fail_survive" 的 trait 在 TraitTable 中定義正確
+            string traitTableWithSurvive = _baseTables["TraitTable"] + "\n10,死亡倖存,死後能活著,condition,on_death_survive,1.0\n11,失敗倖存,失敗後活著,condition,on_fail_survive,1.0";
+
+            TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWithSurvive } });
+
+            TraitData surviveOnDeath = service.GetTrait(10);
+            TraitData surviveOnFail = service.GetTrait(11);
+
+            Assert.IsNotNull(surviveOnDeath);
+            Assert.AreEqual("on_death_survive", surviveOnDeath.effectTarget);
+            Assert.AreEqual("condition", surviveOnDeath.effectType);
+
+            Assert.IsNotNull(surviveOnFail);
+            Assert.AreEqual("on_fail_survive", surviveOnFail.effectTarget);
+            Assert.AreEqual("condition", surviveOnFail.effectType);
+        }
+
         private TraitService CreateService(Dictionary<string, string> tableOverrides = null)
         {
             Dictionary<string, string> tableMap = new Dictionary<string, string>(_baseTables, StringComparer.Ordinal);
