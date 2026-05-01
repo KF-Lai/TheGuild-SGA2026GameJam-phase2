@@ -1139,6 +1139,7 @@ IF stage.stageID == 1004 AND _totalAdventurerDeaths >= 5:
 | 取已解鎖階段 index | `GetUnlockedStageIndex(int factionID) : int` | return `-1` | §3.4 |
 | 確認對話 | `ConfirmDialogue(int stageID) : ConfirmDialogueResult` | return `STORY_SYSTEM_DISABLED` | §3.5.2 |
 | 取待確認階段數 | `GetPendingDialogueCount() : int` | return `0` | §3.5 |
+| 取待確認階段清單 | `GetPendingDialogueStages() : IReadOnlyList<int>` | return empty list | §3.5（2026-05-01 補：供 P-02 bootstrap 復原 `_pendingStageDialogueQueue` 用，read-only snapshot 對應 FIFO head→tail 順序）|
 | 路線是否完結 | `IsRouteCompleted(int factionID) : bool` | return `false` | §3.6 |
 
 > 上述為唯讀查詢 + 唯一可變動操作 `ConfirmDialogue`。FT-09 不對外暴露分數修改 / 階段重置 / 強制觸發等 API（Jam 版範疇）。
@@ -1384,7 +1385,7 @@ FT-09 在 runtime 訂閱 / 呼叫以下系統：
 | 項目 | 內容 |
 |---|---|
 | **訂閱事件**（5 個） | `OnFactionScoreChanged`（可選）、`OnFactionStoryStageUnlocked`、`OnFactionStoryDialogueConfirmed`、`OnFactionStoryStageResolved`、`OnFactionRouteCompleted` |
-| **呼叫 API** | `FT-09.ConfirmDialogue(stageID)` + `FT-02.Dispatch(instanceID, missionID, source=PlayerManual)`（劇情委託派遣） |
+| **呼叫 API** | `FT-09.ConfirmDialogue(stageID)`、`FT-09.GetUnlockedStageIndex(factionID)`、`FT-09.GetCurrentFactionScore(factionID)`、`FT-09.GetCurrentStyleTagBias()`、`FT-09.GetPendingDialogueStages()`（2026-05-01 補：bootstrap 復原 P-02 `_pendingStageDialogueQueue` 用，§3.7.1）+ `FT-02.Dispatch(instanceID, missionID, source=PlayerManual)`（劇情委託派遣） |
 | **對端職責** | (a) 對話視窗管理（FIFO 順序彈窗，依 `_pendingDialogueStages`）；(b) 委託板 UI（顯示 `categoryID = 3` 任務的視覺差異）；(c) 結算面板（讀 `OnFactionStoryStageResolved` 播 epilogue）；(d) 路線完結 UI |
 | **對端文件** | P-02 GDD **待設計**；§6.4 列為「FT-09 對話視窗 + 委託板 UI 需求依據」 |
 | **時序保證** | P-02 須依事件順序呼叫 `ConfirmDialogue`（隊首匹配，§3.5.2 Step 2）；違反回 `INVALID_STAGE_ID`（EC-8） |

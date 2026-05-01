@@ -1,6 +1,6 @@
 # DIP-index：反向依賴（Dependency Inversion / 雙向引用）登記索引
 
-_最後更新：2026-04-27（A 區全部完成）_
+_最後更新：2026-05-01（A 區全部完成；B-1 P-02 已完成移至 C-10；P-02 五輪 design-review APPROVED 後跨系統 10 個 GDD patch 全部對齊）_
 _用途：彙整各已通過 design-review 的 GDD 在 §6.4 / §6.6 / §6.3 中列出的「對端 GDD 須補的反向依賴」，作為 `/review-DIP` skill 的工作清單來源_
 
 ---
@@ -129,8 +129,8 @@ _用途：彙整各已通過 design-review 的 GDD 在 §6.4 / §6.6 / §6.3 中
 
 | # | 來源 | 目標 | 暫停原因 |
 |---|---|---|---|
-| B-1 | FT-05 §6.4, FT-09 §6.4, FT-10 §6.4 | P-02 Main UI Framework | P-02 GDD 尚未撰寫，待對方設計時統一登記訂閱契約 |
-| B-2 | FT-05 §6.4, FT-09 §6.4, FT-10 §6.4 | P-03 Notification System | P-03 GDD 尚未撰寫 |
+| ~~B-1~~ | ~~FT-05 §6.4, FT-09 §6.4, FT-10 §6.4~~ | ~~P-02 Main UI Framework~~ | **✅ 2026-05-01 完成**：P-02 GDD v0.6 已通過五輪 design-review APPROVED；§6.1 完整列出 17 個上游系統依賴（含 FT-05 / FT-09 / FT-10）；FT-05 / FT-09 / FT-10 §6 已對齊 P-02 反向引用。詳見 §C 的 C-10 條目 |
+| B-2 | FT-05 §6.4, FT-09 §6.4, FT-10 §6.4 | P-03 Notification System | P-03 GDD §6 已存在（Pkg-4 補強後），但其他 §3-§8 待完成；現有 §6 已列 FT-05 / FT-06 訂閱 + P-02 host 綁定 |
 | B-3 | FT-05 §6.4 | FT-11 Offline Resolver | FT-11 GDD 尚未撰寫，待 Post-Jam 設計時登記為 `OnCommissionAccepted(source = OfflineAutoPick)` 發布者 |
 
 ---
@@ -148,6 +148,7 @@ _用途：彙整各已通過 design-review 的 GDD 在 §6.4 / §6.6 / §6.3 中
 | C-7 | FT-07 §6.3 | FT-01 | §6.1 上游：`GetRosterCap()` 來源改 FT-07；新增 FT-07 `GetRecruitRefreshInterval()` | — |
 | C-8 | FT-07 §6.3 | FT-02 | §6.1 上游：`GetMaxMissions()` 來源改 FT-07 `GetMaxConcurrentMissions()` | — |
 | C-9 | FT-09 §6.4 | FT-04 / C-01 / C-06 / F-01 / FT-02 / FT-08 / FT-12 / systems-index | 7/9 對端登記完成（見 FT-09 §6.4 表）| — |
+| C-10 | P-02 §6.3（v0.6） | FT-12 / FT-08 / P-01 / P-03 / FT-09 / FT-04 / C-02 / FT-07 / F-03 / C-06 | **P-02 五輪 design-review APPROVED 後跨系統 patch 全部對齊**：(1) FT-12 §3.6.7 補 GetActiveRoster + GetRosterCap；(2) FT-08 §3.3.4 補 GetCurrentCandidates + GetCurrentPoolID；(3) P-01 §3.8 補對外 API surface 8 個方法 + RegisterEffectiveScaleListener + MonitorInfo schema；(4) P-03 §3.5 補 BindLogWindow API + 三回傳碼；(5) FT-09 §3.7.1 補 GetPendingDialogueStages；(6) FT-04 §6 P-02 row ⏳ → ✅；(7) C-02 §6.2 P-02 row 升級為 v0.6 對齊版本（含 v3.1 排序 + 三事件訂閱）；(8) FT-07 §6.2 P-02 row 升級為 v0.6 對齊版本（含 CanUpgrade / TryUpgradeBuilding / OnBuildingUpgraded）；(9) F-03 §6.2 line 409 既有條目已涵蓋 v0.6 全部事件，無需修改；(10) C-06 §6 line 245 既有條目已涵蓋 GetCurrentLevel / GetDangerData / OnDangerLevelChanged，無需修改 | 2026-05-01 |
 
 ---
 
@@ -156,8 +157,8 @@ _用途：彙整各已通過 design-review 的 GDD 在 §6.4 / §6.6 / §6.3 中
 | 區塊 | 條目數 |
 |---|---|
 | A 待完成（含 🔍 待校驗）| 0（2026-04-27 本輪全部完成）|
-| B 暫停（待對端 GDD 設計）| 3 |
-| C 已完成 | 9 |
+| B 暫停（待對端 GDD 設計）| 2（B-1 已於 2026-05-01 完成移至 C-10；B-2 P-03 部分仍暫停；B-3 FT-11 仍暫停）|
+| C 已完成 | 10（含 2026-05-01 P-02 五輪 review APPROVED 後跨系統 patch C-10）|
 
 **A 區待處理目標 GDD 數**：12（F-01 / F-02 / F-03 / C-02 / C-06 / FT-01 / FT-02 / FT-03 / FT-04 / FT-05 / FT-06 / FT-07 / FT-08 / FT-09 / FT-12 / systems-index）
 

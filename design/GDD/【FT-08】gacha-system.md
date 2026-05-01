@@ -388,6 +388,8 @@ RollOneSlot(slotIndex, poolID, isFirstSlotInRefresh):
 | `TryRejectCandidate(int slotIndex)` | `(int) → RejectResult` | `SUCCESS` / `STAFF_SYSTEM_LOCKED` / `INVALID_SLOT` / `EMPTY_SLOT` | 清空該 slot |
 | `TryReserveCandidate(int slotIndex)` | `(int) → ReserveResult` | `SUCCESS` / `STAFF_SYSTEM_LOCKED` / `INVALID_SLOT` / `EMPTY_SLOT` / `RESERVE_FULL` / `RESERVE_CONSUMED` | 移卡至 reservedCandidates、`isReserved = true` |
 | `TryReleaseReserve(int reserveIndex)` | `(int) → ReleaseResult` | `SUCCESS` / `STAFF_SYSTEM_LOCKED` / `INVALID_INDEX` / `SLOT_OCCUPIED_BY_NEW_ROLL` | 移卡回 currentCandidates[原 slotIndex]、`reserveConsumedFlag = true` |
+| `GetCurrentCandidates()` | `() → IReadOnlyList<CandidateCard>` | — | 回傳當前池 N 張候選卡（含 null slot）；系統降級時回傳 empty list；P-02 §3.5.5 面試面板列表用 |
+| `GetCurrentPoolID()` | `() → int` | — | 回傳 `StaffPlayerState.currentPoolID`；系統降級時回傳 `0`；P-02 §3.5.5 池選擇 tab 高亮當前池用（2026-05-01 補）|
 
 回傳碼語意：
 
@@ -1145,7 +1147,7 @@ maxReserve = max(1, interviewSlotCount - 1)
 | # | 下游系統 | 消費介面 | 用途 |
 |---|---|---|---|
 | 1 | FT-12 Staff System | （單向被動）FT-08 呼叫 `FT-12.HireStaff` | 接收錄用候選 |
-| 2 | P-02 Main UI | 訂閱 `OnStaffSystemBoot`、查詢 6 個 `Try*` API + 候選查詢 | 面試介面、保留區、候選卡顯示 |
+| 2 | P-02 Main UI | 訂閱 `OnStaffSystemBoot`；呼叫 6 個 `Try*` 動作 API；查詢 `GetCurrentCandidates()` / `GetCurrentPoolID()`（§3.3.4） | 面試介面、池選擇 tab、保留區、候選卡顯示 |
 | 3 | P-03 Notification | 訂閱 `OnStaffSystemBoot`（可選） | 補刷完成 toast |
 | 4 | FT-10 Save/Load | `ISaveable` 實作（§6.7） | 序列化 StaffPlayerState |
 

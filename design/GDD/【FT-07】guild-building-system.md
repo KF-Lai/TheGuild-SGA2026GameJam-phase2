@@ -412,8 +412,9 @@ AfterUpgrade(buildingID, newLevel):
 | **FT-12 Staff System** | `IsStaffSystemUnlocked()` | 整體職員運營啟停閘（與 FT-08 共用） |
 | **FT-12 Staff System** | `GetBuildingLevel(6)` | 名冊容量上限（讀 `BuildingTable[6, level].slotCount`）|
 | **FT-12 Staff System** | `BuildingTable[buildingID].slotCount` | slot 指派 capacity（FT-12 §3.5 直接讀資料表，無需經 FT-07 API）|
-| **P-02 Main UI** | `GetBuildingLevel(id)` / 所有效果 API | 建築管理 UI 呈現、升級按鈕狀態 |
+| **P-02 Main UI** | `GetBuildingLevel(id)` / 具名 effect getter（`GetCommissionBoardSlots` / `GetMaxConcurrentMissions` / `GetRecruitRefreshInterval` / `GetBankruptcyWarningSeconds` 等，§3.6）/ `CanUpgrade(buildingID)` / `TryUpgradeBuilding(buildingID)` / `IsStaffSystemUnlocked()` | 建設面板（§3.5.3 P-02 v0.6）：6 棟建築當前等級顯示 + 升級按鈕（依 CanUpgrade 灰階） + 升級流程；判定 `nav_staff_lounge` 可點性與開除按鈕顯示（v3.1 P3.1-009 待補審查處 buildingID）|
 | **P-02 Main UI** | `GetMissionSlotCount()` | 委託板顯示槽數 |
+| **P-02 Main UI** | 訂閱 `OnBuildingUpgraded(buildingID, fromLevel, toLevel)` 事件 | 重整建設面板資料 |
 | **P-03 Notification** | `OnBuildingUpgraded` 事件 | 升級完成通知 **【→Log API待更新】** |
 | **FT-10 Save/Load** | `BuildingState[]` 全量序列化 / 還原 | 存讀檔內容 |
 

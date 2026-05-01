@@ -91,6 +91,77 @@ effectiveScale      = baseResolutionScale × userScale         // userScale 玩�
 - 最小化：`ShowWindow(hwnd, SW_MINIMIZE)`，視窗縮至工作列
 - 還原：點擊工作列圖示，`ShowWindow(hwnd, SW_RESTORE)` + 重設 `HWND_TOPMOST`（最小化後 topmost 可能被重置）
 
+### §3.8 對外 API surface（2026-05-01 補；服務 P-02 §3.5.10 設定彈窗、§4.2 縮放推送）
+
+P-01 對 P-02 / FT-10 暴露的公開方法簽章；其餘 §3.1–§3.7 描述為內部實作細節。
+
+```csharp
+// === 縮放查詢與推送（§3.5）===
+public float GetEffectiveScale();
+// 回傳當前 effectiveScale = baseResolutionScale × userScale；P-02 PanelSettings.scale 套用值來源
+
+public void SetUserScale(float value);
+// 玩家於設定彈窗調整 userScale；內部 clamp 至 [USER_SCALE_MIN, USER_SCALE_MAX]，
+// 套用後重算 effectiveScale 並呼叫 P-02.OnEffectiveScaleChanged(newScale)；
+// 同時透過 FT-10 持久化（§3.5）
+
+public void ResetUserScaleToDefault();
+// 將 userScale 重設為 1.0；行為等同 SetUserScale(1.0f)
+
+public float GetUserScale();
+// 回傳當前 userScale 值（給設定彈窗 slider 顯示用）
+
+// === 螢幕切換（§3.1）===
+public IReadOnlyList<MonitorInfo> EnumerateAvailableMonitors();
+// 回傳所有可用螢幕（透過 EnumDisplayMonitors）；MonitorInfo 含 monitorID, displayName, isPrimary, isConnected
+
+public void SwitchTargetScreen(int monitorID);
+// 切換至目標螢幕，重算 WorkingArea / 視窗尺寸 / baseResolutionScale；
+// monitorID 對應 MonitorInfo.monitorID；不存在時 fallback 至主螢幕並 LogWarning；
+// 切換結果透過 FT-10 持久化
+
+public int GetCurrentTargetMonitorID();
+// 回傳當前目標螢幕 monitorID（給設定彈窗 dropdown 高亮用）
+
+// === 視窗控制（§3.7）===
+public void Minimize();
+// 呼叫 ShowWindow(hwnd, SW_MINIMIZE)；P-02 設定彈窗「最小化」按鈕呼叫
+```
+
+#### §3.8.1 P-02 callback 介面（P-01 → P-02 推送）
+
+P-02 須實作以下 callback 並於啟動時透過 P-01 註冊：
+
+```csharp
+// P-02 提供（callback；於 P-01 推送 effectiveScale 時呼叫）
+public void OnEffectiveScaleChanged(float newScale);
+// 觸發時機（§4.2 對齊）：
+//   1. P-01 啟動完成（OnUIReady 之前透過註冊機制立即推送一次）
+//   2. WM_DISPLAYCHANGE 解析度變更
+//   3. SetUserScale / ResetUserScaleToDefault 呼叫後
+//   4. SwitchTargetScreen 呼叫後
+```
+
+註冊 API：
+
+```csharp
+public void RegisterEffectiveScaleListener(Action<float> callback);
+// P-02 OnUIReady 之前透過此 API 註冊 OnEffectiveScaleChanged；
+// 註冊後立即觸發一次（推送當前 effectiveScale）
+```
+
+#### §3.8.2 MonitorInfo schema
+
+```csharp
+public readonly struct MonitorInfo
+{
+    public readonly int    monitorID;     // HMONITOR.ToInt32() 或自訂穩定 ID
+    public readonly string displayName;   // 例 "DELL U2720Q (1)"
+    public readonly bool   isPrimary;     // 是否為主螢幕
+    public readonly bool   isConnected;   // 是否仍在線；FT-10 還原時若儲存的 monitorID 對應 isConnected=false，UI 顯示「(已斷開)」並 fallback 主螢幕
+}
+```
+
 ---
 
 ## §4 公式（Formulas）
@@ -160,14 +231,15 @@ windowY      = WorkingArea.Bottom - windowHeight
 
 | 系統 | 依賴內容 |
 |---|---|
-| P-02 Main UI Framework | 等待 `OnUIReady` 事件後才啟用 Hit-Test；`panel.Pick()` 查詢依賴 P-02 的 UI Panel 實例；UI 錨點規則（§3.6）由 P-02 實作 |
+| P-02 Main UI Framework | 等待 `OnUIReady` 事件後才啟用 Hit-Test；`panel.Pick()` 查詢依賴 P-02 的 UI Panel 實例；UI 錨點規則（§3.6）由 P-02 實作；`OnEffectiveScaleChanged(float)` callback 由 P-02 提供（§3.8.1）|
 
 ### 依賴 P-01 的系統
 
 | 系統 | 說明 |
 |---|---|
-| P-02 Main UI Framework | P-02 的 USS 錨點規則（置左/置右）與 `PanelSettings.scale` 設定須與 P-01 §3.5/§3.6 規格對齊 |
+| P-02 Main UI Framework | P-02 的 USS 錨點規則（置左/置右）與 `PanelSettings.scale` 設定須與 P-01 §3.5/§3.6 規格對齊；P-02 設定彈窗（§3.5.10）呼叫 §3.8 列出的 8 個對外 API（`GetEffectiveScale` / `SetUserScale` / `ResetUserScaleToDefault` / `GetUserScale` / `EnumerateAvailableMonitors` / `SwitchTargetScreen` / `GetCurrentTargetMonitorID` / `Minimize`）+ `RegisterEffectiveScaleListener` 註冊 callback |
 | P-03 Notification System | P-03 的通知 UI 元素須在 P-01 Hit-Test 可命中區域內，確保玩家可點擊通知 |
+| FT-10 Save/Load | `userScale` 與目標螢幕 `monitorID` 透過 FT-10 持久化（§3.5 / §3.1）；P-01 為 owner，呼叫 `SetUserScale` / `SwitchTargetScreen` 時內建寫入 |
 
 > P-01 為純技術層，不讀取任何遊戲資料（Foundation / Core / Feature 層），無相關依賴。
 

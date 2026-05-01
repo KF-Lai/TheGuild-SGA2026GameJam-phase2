@@ -325,7 +325,7 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | FT-04 Outcome Resolution | 結算後更新冒險者狀態（Idle / Wounded / Dead） | `SetWounded`、`UpdateStatus` |
 | FT-07 Guild Building | **v3.1 新增（P3.1-005）** `DismissAdventurer` Idle 放寬條件：查詢審查處是否已解鎖 | `IsBuildingUnlocked(buildingID)` |
 | FT-10 Save/Load | 序列化／反序列化整個名冊；新遊戲初始化時呼叫 `RegisterUniqueAdventurer` | `GetRoster()`、`AddAdventurer`、`RegisterUniqueAdventurer` |
-| P-02 Main UI | 顯示名冊列表、狀態、除名按鈕 | `GetRoster()`、`GetAdventurer`、`DismissAdventurer` |
+| P-02 Main UI | 顯示名冊列表、狀態、除名按鈕；訂閱 `OnAdventurerDied` / `OnAdventurerRecovered` / `OnAdventurerDismissed` 重整名冊；依 §3.4 排序規則呈現（v3.1 P3.1-005 §3.1.3：奧菲莉雅 templateID=901 永遠第一格）；除名/開除流程透過 P-02 確認彈窗觸發（Idle 狀態僅當 FT-07 審查處解鎖時可開除） | `GetRoster()`、`GetAdventurer`、`DismissAdventurer` |
 
 ---
 

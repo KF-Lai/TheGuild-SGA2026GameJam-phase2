@@ -617,9 +617,10 @@ CalcAdjustedJitter(baseJitter, mission, currentDangerLevelIndex):
 | **F-01** | FT-04 讀取 CSV 表 | F-01 § 6.2 下游列出 FT-04 | ✅ 已登記（F-01 § 6.2） |
 | **FT-05** | FT-05 訂閱 `OnMissionResolved` | FT-05 § 6.1 上游列出 FT-04 | ✅ 已登記（FT-05 § 3.2／§ 6.1） |
 | **FT-09** | FT-09 訂閱 `OnMissionResolved` | FT-09 § 6.1 上游列出 FT-04；FT-09 § 3.6.2 Step 8 明確指定消費 `missionFactionID` / `isSuccess` / `isDead` 欄位（§ 3.1 line 69 / 74 / 75 已定義）；`isDead` 欄位已存在於 § 3.1 並供 FT-09 § 3.6.2 Step 9 event payload 使用 | ✅ 已登記（FT-09 § 6.1 上游 / § 3.6.2） |
-| **P-02 / P-03** | 訂閱 `OnMissionResolved` | P-02 / P-03 設計時須列出 FT-04 為上游 | ⏳ 待設計 |
+| **P-02** | 訂閱 `OnMissionResolved`、`OnAdventurerDied` | P-02 §6.1 已列 FT-04 為上游（v0.6 / 2026-05-01）；用於名冊死亡標記與任務統計累積（§5 EC-11） | ✅ 已登記（P-02 §6.1 Feature 層 FT-04 row） |
+| **P-03** | 訂閱 `OnMissionResolved` | P-03 GDD 設計時須列出 FT-04 為上游 | ⏳ 待設計 |
 
-> FT-09 雙向依賴已對齊。P-02 / P-03 在其 GDD 撰寫時須同步反向聲明。
+> FT-09 雙向依賴已對齊。P-02 已對齊（v0.6）；P-03 在其 GDD 撰寫時須同步反向聲明。
 
 ---
 

@@ -58,7 +58,40 @@ P-03 透過 EventBus 訂閱以下事件，並依 `NotificationTemplate` CSV 的 
 | `OnAutoPickup` | FT-03 | Optional |
 | `OnCommissionPosted` | FT-02 | Optional |
 
-### §3.5 職員對話氣泡推播（Post-Jam 保留功能）
+### §3.5 P-02 host 綁定 API（2026-05-01 補）
+
+P-03 自身不持有 UXML 場景；Log 浮動視窗為 P-02 提供的 UI 容器，P-03 在容器內渲染 Log 內容。雙向 contract 透過以下 API 確立：
+
+```csharp
+// P-03 暴露給 P-02 的綁定 API
+public BindResult BindLogWindow(VisualElement container);
+
+public enum BindResult
+{
+    Success,           // 綁定成功，P-03 開始監聽事件並渲染 Log 條目
+    AlreadyBound,      // 已被綁定（重複呼叫）；P-03 LogWarning 並 no-op
+    InvalidContainer,  // container 為 null 或不符合 P-03 預期 UXML 階層；P-03 LogError 並 no-op
+}
+```
+
+**生命週期與時序**：
+
+1. P-02 啟動序列（P-02 §3.8）step 8 instantiate `LogFloatingWindow` UXML 容器（VisualElement）
+2. P-02 呼叫 P-03 的 `BindLogWindow(container)` 完成綁定（**P-02 為 caller，P-03 為 callee**）；P-03 不需要訂閱 `OnUIReady`，由 P-02 主動觸發綁定流程
+3. 綁定成功後 P-03 開始接收 §3.4 的 EventBus 事件，將條目寫入 container 內的 ScrollView
+4. P-03 自行管理 Log 視窗的拖曳/縮放/最小化（§3.2）；FT-10 持久化 Log 視窗位置與狀態
+
+**綁定後 P-03 對 container 的使用契約**：
+
+- P-03 假設 container 為一個 `VisualElement`，內部已包含 `LogScrollView`（ScrollView 子元素，name 為 `log-scroll-view`）、`LogTitleBar`（標題列子元素）等預期結構；P-02 §3.5.7 host 規範須對齊
+- P-03 不修改 container 的 USS 樣式（位置、大小由 P-02 §4.6 公式控制 + P-03 自身拖曳邏輯）
+- P-03 透過 EventBus 訂閱事件並寫入 ScrollView，不直接持有 P-02 內部狀態
+
+**降級行為**：
+- P-02 instantiate `LogFloatingWindow` 失敗或 `BindLogWindow` 回傳 `InvalidContainer` → P-03 自身降級：事件仍持續訂閱與累積至內部 `_pendingEntries`，但無 UI 渲染；不影響遊戲運作
+- P-02 §EC-25 已對齊此降級行為
+
+### §3.6 職員對話氣泡推播（Post-Jam 保留功能）
 
 > **Jam 版不實作，以下為設計概念存檔。**
 
@@ -147,12 +180,13 @@ Token 替換規則（其餘字元視為字面分隔符）：
 | F-02 Time System | 讀取當前遊戲時間（月/日/時/分），用於 Log 條目時間戳記格式化（§4.4） |
 | FT-10 Save/Load | 持久化 Log 視窗位置與視窗狀態（最大化/最小化）；讀取失敗時使用預設位置 |
 | P-01 Desktop Transparent Window | Log 視窗 UI 元素須在 P-01 Hit-Test 可命中範圍內，確保拖曳與點擊可用 |
-| P-02 Main UI Framework | Log 視窗為 P-02 場景下的浮動子面板，在 P-02 `OnUIReady` 後初始化 |
+| P-02 Main UI Framework | Log 視窗為 P-02 場景下的浮動子面板，在 P-02 `OnUIReady` 後初始化；P-02 instantiate `LogFloatingWindow` UXML 並呼叫 P-03 `BindLogWindow(container)` 完成綁定（§3.5） |
 
 ### 依賴 P-03 的系統
 
 | 系統 | 說明 |
 |---|---|
+| P-02 Main UI Framework | P-02 §3.5.7 host 規範實作 `LogFloatingWindow` UXML 容器；OnUIReady 後呼叫 `BindLogWindow(container)`（§3.5）完成綁定（contract：P-02 為 host owner，P-03 為 Log 內容渲染與互動 owner） |
 | FT-01 冒險者招募 | `OnRecruitSuccess` → P-03 Log |
 | FT-02 任務派遣 | `OnCommissionPosted` → P-03 Log |
 | FT-03 NPC 決策 | `OnAutoPickup` → P-03 Log |

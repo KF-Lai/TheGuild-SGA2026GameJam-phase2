@@ -732,8 +732,25 @@ internal static StaffStateView GetStaffStateView(int instanceID);
 //   - switchCooldownRemainingSec = max(0, switchCooldownEnd − now)
 ```
 
----
+#### 3.6.7 公開查詢 API（P-02 名冊枚舉用，2026-05-01 補）
 
+供 P-02 §3.5.4 職員名冊面板列舉名冊與顯示「已使用 N / 上限 M」進度：
+
+```csharp
+public IReadOnlyList<StaffInstance> GetActiveRoster();
+// 回傳當前所有 StaffInstance（含 OnLeave 狀態）；空名冊回傳 empty list；
+// FT-07.IsStaffSystemUnlocked() == false 時回傳 empty list（系統降級，§3.10）
+
+public int GetRosterCap();
+// 回傳 ROSTER_CAP（StaffTuning.csv 常數，§7.2 預設 99）；
+// 系統降級時仍回傳設定值（不返 0，避免 UI 顯示「0/0」假象）
+```
+
+**消費者**：P-02 Main UI（§3.5.4 職員名冊面板）。
+
+**設計理由**：P-02 須能列舉名冊與顯示「已使用 N / 上限 M」進度；FT-12 雖維護內部 `_roster: Dictionary<int, StaffInstance>`（§3.3.2），公開 API 範圍須擴及枚舉以支援 UI 直接渲染，避免 P-02 自行訂閱 `OnStaffHired` / `OnStaffFired` 反向 mirror 名冊（增加複雜度且違反 ownership 歸屬原則）。
+
+**降級行為**：與 §3.10.1 對外 API 行為總表對齊——系統未解鎖時 `GetActiveRoster` 回 empty list；`GetRosterCap` 仍回設定值（純資料表查詢，不依賴 runtime 狀態）。
 
 ---
 
@@ -1330,7 +1347,7 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | 2 | FT-03 NPC Decision | 查詢 `GetStaffWillingnessBonus()` | NPC 接受意願加成 |
 | 3 | FT-05 Guild Gold Flow | 訂閱 `OnStaffSalaryDue`（Phase 2）、查詢 `GetAccountantCommissionBonus` / `GetAccountantPenaltyBonus` | 薪水扣款（Phase 2）+ 委託金流會計加成 |
 | 4 | FT-02 Mission Dispatch | 查詢 `IsSuccessRatePreviewEnabled()` | UI 顯示成功率預覽 flag |
-| 5 | P-02 Main UI | 訂閱 5 事件 + 名冊 UI / 指派 UI / 解雇確認 | 玩家可見的職員管理介面 |
+| 5 | P-02 Main UI | 訂閱 `OnStaffHired` / `OnStaffFired` / `OnStaffAssigned` / `OnStaffStateChanged`；查詢 `GetActiveRoster()` / `GetRosterCap()`（§3.6.7）/ `GetStaffStateView(instanceID)`（§3.6.6）/ `IsSuccessRatePreviewEnabled()` | 名冊面板列舉、指派 UI、解雇確認、委託卡成功率預覽顯示 |
 | 6 | P-03 Notification | 訂閱 OnStaffHired / OnStaffFired / OnStaffStateChanged（轉假時） | 桌面通知 |
 | 7 | FT-10 Save/Load | `ISaveable` 實作（§6.7） | 序列化 StaffInstance[] / lastSalaryTimestamp |
 | 8 | FT-09 Faction Story System | **v3.1 新增（P3.1-008）** 查詢 `IsStaffHired(int staffID)`（§3.4.7）| Stage 對話前判斷特定職員是否在名冊，決定是否疊加職員專屬對話層（例如米拉 staffID=501 的 Stage 反應）|
@@ -1375,6 +1392,7 @@ missedSalaryCycles = floor((now − lastSalaryTimestamp) / 86400)
 | `[FT-03]` | §6 上游列出 FT-12 為 `GetStaffWillingnessBonus` 提供方 |
 | `[FT-09]` | §設計來源聲明：`StaffTable.factionID` Post-Jam 才消費 |
 | `[FT-10]` | §6.4 反向依賴清單列出 FT-12 為 `ISaveable` owner（Critical） |
+| `[P-02]` | §6 上游依賴列出 FT-12 為 `GetActiveRoster` / `GetRosterCap`（§3.6.7）/ `GetStaffStateView`（§3.6.6）/ `IsSuccessRatePreviewEnabled`（§3.4）/ `IsStaffHired`（§3.4.7）提供方；訂閱 `OnStaffHired` / `OnStaffFired` / `OnStaffAssigned` / `OnStaffStateChanged` 事件 |
 
 ### 6.7 ISaveable 持久化契約
 
