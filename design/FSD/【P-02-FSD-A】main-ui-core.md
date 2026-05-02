@@ -8,7 +8,7 @@
 | 對應 Data-Specs | `【P-02-DS】ui-text.md`（_待建_，CSV：`UIText.csv`，owner = P-02）<br>`【P-02-DS】scene-object-state-table.md`（_待建_，CSV：`SceneObjectStateTable.csv`，owner = P-02，v3.1 P3.1-010） |
 | 撰寫者 | Claude Code 主體（Opus 4.7 + xhigh） |
 | Review 者 | Claude Code 主體 |
-| 狀態 | 審查中 |
+| 狀態 | 已完成 |
 | 最近更新 | 2026-05-02 |
 
 ---

@@ -1,0 +1,55 @@
+:root {
+    --log-bg: rgba(18, 18, 18, 0.82);
+    --log-header-bg: rgba(36, 36, 36, 0.92);
+    --log-border: rgba(255, 255, 255, 0.22);
+    --log-text: rgb(240, 240, 240);
+    --log-muted: rgba(240, 240, 240, 0.62);
+}
+
+.log-window {
+    position: absolute;
+    left: 24px;
+    top: 96px;
+    width: 280px;
+    height: 220px;
+    background-color: var(--log-bg);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--log-border);
+    border-right-color: var(--log-border);
+    border-bottom-color: var(--log-border);
+    border-left-color: var(--log-border);
+    color: var(--log-text);
+}
+
+.log-header {
+    height: 28px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--log-header-bg);
+    padding-left: 8px;
+    padding-right: 4px;
+}
+
+.log-title {
+    color: var(--log-muted);
+    font-size: 12px;
+}
+
+.log-minimize {
+    width: 24px;
+    height: 22px;
+    margin-left: 4px;
+    color: var(--log-text);
+}
+
+.log-body {
+    flex-grow: 1;
+    padding-top: 6px;
+    padding-right: 8px;
+    padding-bottom: 6px;
+    padding-left: 8px;
+}

@@ -1,0 +1,26 @@
+{
+    "name": "TheGuild.UI",
+    "rootNamespace": "TheGuild.UI",
+    "references": [
+        "TheGuild.Core.Data",
+        "TheGuild.Core.Events",
+        "TheGuild.Core.Time",
+        "TheGuild.Core.SaveContract",
+        "TheGuild.Gameplay.Resources",
+        "TheGuild.Gameplay.Building",
+        "TheGuild.Gameplay.FactionStory",
+        "TheGuild.Gameplay.Mission",
+        "TheGuild.Gameplay.MissionDispatch",
+        "TheGuild.Gameplay.Outcome",
+        "TheGuild.Gameplay.Guild"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
