@@ -1,8 +1,18 @@
 # Guild Core 系統設計文件
 
 _建立時間：2026-04-22_
-_狀態：設計完成（Section 1-8 全部完成，待 /design-review）_
+_狀態：設計完成 + 實作完成；**Game Jam 階段 Game Over 收斂為單一觸發＝破產**（2026-05-03 確認）_
 _系統 ID：FT-06_
+
+---
+
+> **⚠ Game Jam 規則收斂（2026-05-03 確認）**
+>
+> - **Game Over 唯一觸發 = 破產**：F-03 `OnBankruptcyStateChangedEvent.CurrentState == Bankrupt` → `GuildCoreService.HandleBankruptcyState` → `RaisePending` → `ConfirmGameOver`。
+> - **不啟用其他結局**：原設計 §3 概念中「敘事結局 / 陣營路線完結」由 NARRATIVE_ENABLED=0 停用（FT-09 早退），Jam 階段玩家僅有「持續經營 / 破產結束」兩種終局。
+> - **公會等級不影響 Game Over**：Lv1~Lv5 升級僅影響可接難度與招募，無 game over 條件。
+> - **Code 已對齊**：`GuildCoreService.cs` 中 `RaisePending` 唯一呼叫源即 `HandleBankruptcyState`，無需任何 code 改動。
+> - 兩階段流程（Pending → Over）保留：玩家在破產訃聞畫面點 OK 才進結算。
 
 ---
 
