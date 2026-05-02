@@ -15,6 +15,7 @@ namespace TheGuild.UI.Scene
         private readonly Dictionary<int, string> _dialogueKeyByStageID = new Dictionary<int, string>();
         private bool _subscribed;
         private int _currentStageID;
+        private IFactionStoryService _serviceOverride;
 
         public static StoryDialogueQueue Instance { get; private set; }
         public int Count => _pendingStageDialogueQueue.Count;
@@ -64,12 +65,13 @@ namespace TheGuild.UI.Scene
         public void RestorePendingFromService()
         {
             // FSD-A §3.8 OnUIReady step 3 / EC-04 雙重保險（main 路徑）：主動 query FT-09 取目前 pending stage queue。
-            if (FactionStoryService.Instance == null)
+            IFactionStoryService service = GetService();
+            if (service == null)
             {
                 return;
             }
 
-            IReadOnlyList<int> stages = FactionStoryService.Instance.GetPendingDialogueStages();
+            IReadOnlyList<int> stages = service.GetPendingDialogueStages();
             if (stages == null || stages.Count == 0)
             {
                 return;
@@ -127,24 +129,29 @@ namespace TheGuild.UI.Scene
 
         public void ConfirmCurrentDialogue()
         {
-            if (_currentStageID <= 0 || FactionStoryService.Instance == null)
+            IFactionStoryService service = GetService();
+            if (_currentStageID <= 0 || service == null)
             {
                 return;
             }
 
-            ConfirmDialogueResult result = FactionStoryService.Instance.ConfirmDialogue(_currentStageID);
+            ConfirmDialogueResult result = service.ConfirmDialogue(_currentStageID);
             if (result != ConfirmDialogueResult.OK)
             {
                 Debug.LogWarning($"[StoryDialogueQueue] ConfirmDialogue failed. stageID={_currentStageID}, result={result}");
                 return;
             }
 
+            _currentStageID = 0;
             if (PanelManager.Instance != null)
             {
-                PanelManager.Instance.ClosePanel(PanelID.StoryDialogue);
+                // FSD-A §5.4.6 chain continue：StoryDialogue Closing 動畫完成後再 TryStartNext，避免 GetTopPanel 仍回 StoryDialogue。
+                PanelManager.Instance.ClosePanel(PanelID.StoryDialogue, TryStartNextOnClose);
             }
+        }
 
-            _currentStageID = 0;
+        private void TryStartNextOnClose()
+        {
             TryStartNext();
         }
 
@@ -173,6 +180,16 @@ namespace TheGuild.UI.Scene
         {
             // TODO Batch 3/P-03：若 P-03 提供 critical 查詢 API，於此接入。
             return false;
+        }
+
+        private IFactionStoryService GetService()
+        {
+            return _serviceOverride ?? (IFactionStoryService)FactionStoryService.Instance;
+        }
+
+        internal void SetServiceForTests(IFactionStoryService service)
+        {
+            _serviceOverride = service;
         }
     }
 }

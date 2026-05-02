@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -104,14 +105,18 @@ namespace TheGuild.UI.Core
             return false;
         }
 
-        public bool ClosePanel(PanelID id)
+        public bool ClosePanel(PanelID id, Action onClosed = null)
         {
             if (!_machines.TryGetValue(id, out PanelStateMachine machine))
             {
                 return false;
             }
 
-            machine.Close(() => RemoveFromStack(id));
+            machine.Close(() =>
+            {
+                RemoveFromStack(id);
+                onClosed?.Invoke();
+            });
             if (id == PanelID.ConfirmPopup)
             {
                 _confirmArgs.Remove(id);

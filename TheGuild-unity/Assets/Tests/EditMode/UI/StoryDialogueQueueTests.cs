@@ -76,7 +76,7 @@ namespace Tests.EditMode.UI
         }
 
         [Test]
-        [Ignore("FT-09 ConfirmDialogue concrete singleton lacks a lightweight mock seam; keep chain-continue coverage for PlayMode or after FT-09 test hook.")]
+        [Ignore("Chain continue 倚賴 PanelStateMachine Closing 動畫完成 callback；EditMode 環境動畫驅動不穩定，覆蓋責任移至 StoryDialogueQueuePlayModeTests.DoD_A4_EC08_ConfirmCurrentDialogue_ChainsNextStage。")]
         public void DoD_A4_EC08_ConfirmCurrentDialogue_ChainsNextStage()
         {
         }
