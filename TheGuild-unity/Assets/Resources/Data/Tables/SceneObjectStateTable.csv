@@ -1,11 +1,26 @@
-# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
 # === SceneObjectStateTable：奧菲莉雅敘事物件 stage 對映 ===
-# v3.1 P3.1-010；10 row / 5 objectID；rowID 為合成 PK；具體值依 P3.1-010 §4.2.1
+# v3.1 P3.1-010；對齊 A-08~A-12 圖檔變體命名（idle/empty/present/cold/unopened/annotated/visible/posted）
+# row 順序：SceneObjectStateLoader 依 priority 由高至低排序後逐筆匹配（cs:85），第一個 stageCondition 命中即 return（SceneObjectController.cs:67-78）
+#
+# 2026-05-03 NARRATIVE_ENABLED=0：本表所有 row 全為 narrative（5 個 objectID：ophelia_chair / ophelia_teacup / ophelia_guildbook / ophelia_door_note / ophelia_crest），Jam 階段全部清空。
+# SceneObjectController 取不到任何 row 時走 SceneObjectState.Default fallback，不嘗試 load sprite，避免 LogError。
+# Post-Jam 重新啟用時依 v3.1 P3.1-010 規格重新填入下方 archived row（保留作為還原參考）。
+#
+# === ARCHIVED rows（Jam 不啟用，Post-Jam 切回 NARRATIVE_ENABLED=1 時 uncomment）===
+# rowID,1,2,3,4,5,6,7,8
+# objectID,ophelia_chair,ophelia_chair,ophelia_teacup,ophelia_teacup,ophelia_guildbook,ophelia_guildbook,ophelia_door_note,ophelia_crest
+# stageCondition,event:ophelia_missing,stageID >= 1,event:ophelia_missing,stageID >= 1,stageID >= 3,stageID >= 1,event:ophelia_missing,stageID >= 3
+# spriteVariant,empty,idle,cold,present,annotated,unopened,posted,visible
+# dialogueKey,"",ophelia_chair_s1,"",ophelia_teacup_s2,ophelia_book_s3,ophelia_book_s1,ophelia_door_note_missing,ophelia_crest_s3
+# priority,50,10,50,10,20,10,50,20
+# audioCue,"","","","","","","",""
+# factionID,1,1,1,1,1,1,1,1
 
-rowID,1,2,3,4,5
-objectID,ophelia_chair,ophelia_chair,ophelia_teacup,ophelia_guildbook,ophelia_door_note
-stageCondition,stageID >= 1,stageID >= 3,stageID >= 2,stageID >= 1,event:ophelia_missing
-spriteVariant,default,reading,warm,open,note_stuck
-dialogueKey,ophelia_chair_s1,"",ophelia_teacup_s2,ophelia_book_s1,ophelia_door_note_missing
-priority,10,20,10,10,50
-audioCue,"","","","",""
+rowID
+objectID
+stageCondition
+spriteVariant
+dialogueKey
+priority
+audioCue
+factionID
