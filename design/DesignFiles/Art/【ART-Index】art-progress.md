@@ -57,17 +57,17 @@ _規格來源：`【ART-01】art-requirements.md` v1.7.2_
 
 | ID   | templateID | 名稱      | rank | 職業  | 種族  | 檔案                                    | 優先度 | 狀態  |
 | ---- | ---------- | ------- | ---- | --- | --- | ------------------------------------- | --- | --- |
-| B-01 | 101        | 馬庫斯·柯特  | B    | 傭兵  | 人類  | `Adventurers/adv_101_markus_cort.png` | P3  | 待製作 |
-| B-02 | 102        | 艾利亞·維恩  | C    | 法師  | 人類  | `Adventurers/adv_102_elya_veen.png`   | P3  | 待製作 |
-| B-03 | 103        | 卡蒙·葛雷   | B    | 戰士  | 獸人  | `Adventurers/adv_103_camon_grey.png`  | P3  | 待製作 |
-| B-04 | 104        | 露西·費恩   | D    | 遊俠  | 精靈  | `Adventurers/adv_104_lucy_fenn.png`   | P3  | 待製作 |
-| B-05 | 105        | 馬爾科·賽亞  | A    | 傭兵  | 人類  | `Adventurers/adv_105_marco_saya.png`  | P3  | 待製作 |
-| B-06 | 106        | 蘭妮絲·科恩  | C    | 治癒師 | 人類  | `Adventurers/adv_106_lanis_coen.png`  | P3  | 待製作 |
-| B-07 | 107        | 維克托·鄧恩  | B    | 戰士  | 矮人  | `Adventurers/adv_107_victor_dunn.png` | P3  | 待製作 |
-| B-08 | 108        | 莉利安娜·席爾 | S    | 遊俠  | 精靈  | `Adventurers/adv_108_liliana_syl.png` | P3  | 待製作 |
-| B-09 | 109        | 米歇爾·艾許  | S    | 法師  | 人類  | `Adventurers/adv_109_michel_ash.png`  | P3  | 待製作 |
-| B-10 | 110        | 莫德·克萊   | B    | 傭兵  | 人類  | `Adventurers/adv_110_mord_clay.png`   | P3  | 待製作 |
-| B-11 | 111        | 艾文·羅斯   | A    | 斥候  | 人類  | `Adventurers/adv_111_evan_ross.png`   | P3  | 待製作 |
+| B-01 | 101        | 馬庫斯·柯特  | B    | 傭兵  | 人類  | `Adventurers/adv_101_marcus_kurt.png`   | P3  | 待製作 |
+| B-02 | 102        | 艾利亞·維恩  | C    | 法師  | 人類  | `Adventurers/adv_102_elia_vienne.png`   | P3  | 待製作 |
+| B-03 | 103        | 卡蒙·葛雷   | B    | 戰士  | 獸人  | `Adventurers/adv_103_kamon_grey.png`    | P3  | 待製作 |
+| B-04 | 104        | 露西·費恩   | D    | 遊俠  | 精靈  | `Adventurers/adv_104_lucy_fane.png`     | P3  | 待製作 |
+| B-05 | 105        | 馬爾科·賽亞  | A    | 傭兵  | 人類  | `Adventurers/adv_105_marco_seya.png`    | P3  | 待製作 |
+| B-06 | 106        | 蘭妮絲·科恩  | C    | 治癒師 | 人類  | `Adventurers/adv_106_lannis_cohen.png`  | P3  | 待製作 |
+| B-07 | 107        | 維克托·鄧恩  | B    | 戰士  | 矮人  | `Adventurers/adv_107_victor_dunn.png`   | P3  | 待製作 |
+| B-08 | 108        | 莉利安娜·席爾 | S    | 遊俠  | 精靈  | `Adventurers/adv_108_liliana_sill.png`  | P3  | 待製作 |
+| B-09 | 109        | 米歇爾·艾許  | S    | 法師  | 人類  | `Adventurers/adv_109_michelle_ash.png`  | P3  | 待製作 |
+| B-10 | 110        | 莫德·克萊   | B    | 傭兵  | 人類  | `Adventurers/adv_110_maude_clay.png`    | P3  | 待製作 |
+| B-11 | 111        | 艾文·羅斯   | A    | 斥候  | 人類  | `Adventurers/adv_111_evan_ross.png`     | P3  | 待製作 |
 
 > B-12（templateID=112）已移除，待資料確認後補入。
 
