@@ -60,8 +60,8 @@ namespace TheGuild.Gameplay.Gacha
             DataManager.RegisterTable<StaffRarityProbData>(RARITY_PROB_TABLE_NAME);
             DataManager.RegisterTable<TrashItemData>(TRASH_TABLE_NAME);
 
-            // Pre-flight grep shows FT-12 does not currently register StaffTuning.
-            DataManager.RegisterTable<StaffTuningEntry>(STAFF_TUNING_TABLE_NAME);
+            // StaffTuning 為 key/value 表（owner = FT-12 StaffService），改走 SystemConstants 路徑統一查詢；
+            // FT-12 StaffService.RegisterTables 已呼叫 RegisterSystemConstantsTable("StaffTuning")，此處不再重複註冊。
         }
 
         public void Initialize()
@@ -455,38 +455,16 @@ namespace TheGuild.Gameplay.Gacha
 
         private void LoadTuningTable()
         {
-            IReadOnlyList<StaffTuningEntry> rows = DataManager.Instance.GetAll<StaffTuningEntry>();
-            if (rows == null || rows.Count == 0)
-            {
-                throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME} is empty.");
-            }
-
-            Dictionary<string, string> tuning = new Dictionary<string, string>(rows.Count, StringComparer.Ordinal);
-            for (int i = 0; i < rows.Count; i++)
-            {
-                StaffTuningEntry row = rows[i] ?? throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME}[{i}] is null.");
-                if (string.IsNullOrWhiteSpace(row.key))
-                {
-                    throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME}[{i}] has empty key.");
-                }
-
-                string key = row.key.Trim();
-                if (tuning.ContainsKey(key))
-                {
-                    throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME}: duplicate key={key}.");
-                }
-
-                tuning[key] = row.value == null ? string.Empty : row.value.Trim();
-            }
-
-            PityThreshold = ParseRequiredInt(tuning, KEY_PITY_THRESHOLD);
-            TrashRollRateAtRarity1 = ParseRequiredFloat(tuning, KEY_TRASH_ROLL_RATE_AT_RARITY_1);
-            MinAutoRefreshIntervalSec = ParseRequiredInt(tuning, KEY_MIN_AUTO_REFRESH_INTERVAL_SEC);
-            MaxReserveFallback = ParseRequiredInt(tuning, KEY_MAX_RESERVE_FALLBACK);
+            // StaffTuning 走 SystemConstants 路徑（FT-12 StaffService 註冊）；
+            // 同檔同時被 StaffTableLoader 透過 GetFloat/GetInt 消費，避免雙重註冊衝突。
+            PityThreshold = DataManager.Instance.GetInt(KEY_PITY_THRESHOLD);
+            TrashRollRateAtRarity1 = DataManager.Instance.GetFloat(KEY_TRASH_ROLL_RATE_AT_RARITY_1);
+            MinAutoRefreshIntervalSec = DataManager.Instance.GetInt(KEY_MIN_AUTO_REFRESH_INTERVAL_SEC);
+            MaxReserveFallback = DataManager.Instance.GetInt(KEY_MAX_RESERVE_FALLBACK);
 
             if (PityThreshold <= 0)
             {
-                throw new StaffGachaPoolTableValidationException($"{KEY_PITY_THRESHOLD} must be > 0.");
+                throw new StaffGachaPoolTableValidationException($"{KEY_PITY_THRESHOLD} must be > 0 (key missing or invalid).");
             }
 
             if (TrashRollRateAtRarity1 < 0f || TrashRollRateAtRarity1 > 1f)
@@ -496,18 +474,19 @@ namespace TheGuild.Gameplay.Gacha
 
             if (MinAutoRefreshIntervalSec <= 0)
             {
-                throw new StaffGachaPoolTableValidationException($"{KEY_MIN_AUTO_REFRESH_INTERVAL_SEC} must be > 0.");
+                throw new StaffGachaPoolTableValidationException($"{KEY_MIN_AUTO_REFRESH_INTERVAL_SEC} must be > 0 (key missing or invalid).");
             }
 
             if (MaxReserveFallback < 1)
             {
-                throw new StaffGachaPoolTableValidationException($"{KEY_MAX_RESERVE_FALLBACK} must be >= 1.");
+                throw new StaffGachaPoolTableValidationException($"{KEY_MAX_RESERVE_FALLBACK} must be >= 1 (key missing or invalid).");
             }
 
             for (int level = MIN_GUILD_LEVEL; level <= MAX_GUILD_LEVEL; level++)
             {
-                int interval = ParseRequiredInt(tuning, KEY_INTERVIEW_AUTO_REFRESH_PREFIX + level.ToString(CultureInfo.InvariantCulture));
-                int tunedSlotCount = ParseRequiredInt(tuning, KEY_INTERVIEW_SLOT_COUNT_PREFIX + level.ToString(CultureInfo.InvariantCulture));
+                string levelStr = level.ToString(CultureInfo.InvariantCulture);
+                int interval = DataManager.Instance.GetInt(KEY_INTERVIEW_AUTO_REFRESH_PREFIX + levelStr);
+                int tunedSlotCount = DataManager.Instance.GetInt(KEY_INTERVIEW_SLOT_COUNT_PREFIX + levelStr);
                 if (interval <= 0)
                 {
                     throw new StaffGachaPoolTableValidationException($"INTERVIEW_AUTO_REFRESH_INTERVAL_L{level} must be > 0.");
@@ -527,36 +506,6 @@ namespace TheGuild.Gameplay.Gacha
                         $"INTERVIEW_SLOT_COUNT_L{level} ({tunedSlotCount}) must match StaffRefreshCostTable.interviewSlotCount ({refreshRow.interviewSlotCount}).");
                 }
             }
-        }
-
-        private static int ParseRequiredInt(IReadOnlyDictionary<string, string> tuning, string key)
-        {
-            if (!tuning.TryGetValue(key, out string raw))
-            {
-                throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME} missing required key={key}");
-            }
-
-            if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
-            {
-                throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME} key={key} is not a valid int: {raw}");
-            }
-
-            return parsed;
-        }
-
-        private static float ParseRequiredFloat(IReadOnlyDictionary<string, string> tuning, string key)
-        {
-            if (!tuning.TryGetValue(key, out string raw))
-            {
-                throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME} missing required key={key}");
-            }
-
-            if (!float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
-            {
-                throw new StaffGachaPoolTableValidationException($"{STAFF_TUNING_TABLE_NAME} key={key} is not a valid float: {raw}");
-            }
-
-            return parsed;
         }
 
         private void EnsureReady()

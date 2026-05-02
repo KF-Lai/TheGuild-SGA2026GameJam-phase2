@@ -106,8 +106,8 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱 | GDD 來源 | 系統分類 | DataSpec 狀態 | CSV 狀態 |
 |---|---|---|---|---|
-| `NamePool.csv` | 【D-01】character-content-database.md §3.1 | Cross-cutting / D-01 CharacterContentDatabase | ✅ `[D-01-DS] name-pool.md` | 📐 |
-| `BioPool.csv` | 【D-01】character-content-database.md §3.2 | Cross-cutting / D-01 CharacterContentDatabase | ✅ `[D-01-DS] bio-pool.md` | 📐 |
+| `NamePool.csv` | 【D-01】character-content-database.md §3.1 | Cross-cutting / D-01 CharacterContentDatabase | ✅ `[D-01-DS] name-pool.md` | ✅ |
+| `BioPool.csv` | 【D-01】character-content-database.md §3.2 | Cross-cutting / D-01 CharacterContentDatabase | ✅ `[D-01-DS] bio-pool.md` | ✅ |
 | `MissionNamePool.csv` | 【D-02】mission-content-database.md §3.1 | Cross-cutting / D-02 MissionContentDatabase | ✅ `[D-02-DS] mission-name-pool.md` | ✅ |
 | `UIText.csv` | 【P-02】main-ui-framework.md §7.3 / §3.9 | Platform / P-02 MainUIFramework（文字表） | ✅ `[P-02-DS] ui-text.md` | ✅ |
 | `DialogueTable.csv` | systems-index.md（對話內容） | Cross-cutting / 文字資料 | 📐 | 📐 |
@@ -141,8 +141,8 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | Core | 11 | 0 | 11 |
 | Feature | 13 | 13 | 13 |
 | Platform | 1 | 1 | 1 |
-| 文字表 | 6 | 4 | 2 |
-| **總計（active）** | **33** | **18** | **29** |
+| 文字表 | 6 | 4 | 4 |
+| **總計（active）** | **33** | **18** | **31** |
 | 歸檔 | 9 | 0 | — |
 
 > 2026-04-26 合併批次：移除 7 張表（A1 + A2 + B1 + B2），BankruptcyThresholdTable 移到歸檔分區（原計入 Foundation）；總表數 40 → 33。

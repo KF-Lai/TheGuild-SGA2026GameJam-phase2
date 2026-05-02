@@ -1,0 +1,42 @@
+{
+    "name": "TheGuild.EditorTools",
+    "rootNamespace": "TheGuild.EditorTools",
+    "references": [
+        "TheGuild.UI",
+        "TheGuild.UI.Panels",
+        "TheGuild.Core.Bootstrap",
+        "TheGuild.Core.Data",
+        "TheGuild.Core.Events",
+        "TheGuild.Core.Time",
+        "TheGuild.Core.SaveContract",
+        "TheGuild.Gameplay.Adventurer",
+        "TheGuild.Gameplay.Building",
+        "TheGuild.Gameplay.Decision",
+        "TheGuild.Gameplay.FactionStory",
+        "TheGuild.Gameplay.Gacha",
+        "TheGuild.Gameplay.GoldFlow",
+        "TheGuild.Gameplay.Guild",
+        "TheGuild.Gameplay.Mission",
+        "TheGuild.Gameplay.MissionDispatch",
+        "TheGuild.Gameplay.Outcome",
+        "TheGuild.Gameplay.Profession",
+        "TheGuild.Gameplay.Race",
+        "TheGuild.Gameplay.Recruitment",
+        "TheGuild.Gameplay.Resources",
+        "TheGuild.Gameplay.Save",
+        "TheGuild.Gameplay.Staff",
+        "TheGuild.Gameplay.Trait",
+        "TheGuild.Gameplay.WorldDanger"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

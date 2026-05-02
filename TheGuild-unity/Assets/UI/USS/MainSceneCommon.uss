@@ -1,0 +1,32 @@
+/* P-02 Main UI Common USS — placeholder, art assets pending */
+
+.p02-panel {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 10%;
+    bottom: 25%;
+    background-color: rgba(20, 20, 30, 0.85);
+    border-radius: 8px;
+    border-width: 2px;
+    border-color: rgba(180, 150, 90, 0.7);
+    padding: 16px;
+}
+
+.p02-modal-mask {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.40);
+}
+
+.hud-element {
+    color: rgb(255, 235, 200);
+    -unity-font-style: bold;
+}
+
+.hud-gold-negative {
+    color: rgb(220, 80, 80);
+}

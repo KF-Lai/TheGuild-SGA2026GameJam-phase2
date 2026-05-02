@@ -7,7 +7,9 @@ namespace TheGuild.Gameplay.Mission
 {
     /// <summary>
     /// C-01 任務資料庫查詢服務（concrete singleton）。
+    /// 必須在 RaceService（order=0）之前完成 Awake，DataManager（order=-300）之後。
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     public sealed class MissionDatabaseService : MonoBehaviour
     {
         private const string EscortTypeIDKey = "ESCORT_TYPE_ID";
@@ -50,6 +52,8 @@ namespace TheGuild.Gameplay.Mission
             DataManager.RegisterTable<MissionDifficultyData>("MissionDifficultyTable");
             DataManager.RegisterTable<MissionTypeData>("MissionTypeTable");
             DataManager.RegisterTable<MissionCategoryData>("MissionCategoryTable");
+            // D-02 任務名稱池：MissionTextFacade 透過 PickRandomWhere<MissionNameData> 消費。
+            DataManager.RegisterTable<MissionNameData>("MissionNamePool");
         }
 
         public MissionTemplate GetTemplate(int missionID)

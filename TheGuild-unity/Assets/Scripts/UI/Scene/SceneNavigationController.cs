@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TheGuild.Gameplay.Building;
 using TheGuild.UI.Core;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace TheGuild.UI.Scene
@@ -54,7 +55,7 @@ namespace TheGuild.UI.Scene
                 UpdateHoverVisual(binding);
             }
 
-            if (binding != null && Input.GetMouseButtonDown(0))
+            if (binding != null && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
                 HandleObjectClicked(binding.ObjectID);
             }
@@ -98,7 +99,13 @@ namespace TheGuild.UI.Scene
 
         private NavigationBinding PickNavigationBinding()
         {
-            Vector3 world = _camera.ScreenToWorldPoint(Input.mousePosition);
+            if (Mouse.current == null)
+            {
+                return null;
+            }
+
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            Vector3 world = _camera.ScreenToWorldPoint(mousePos);
             Collider2D hit = Physics2D.OverlapPoint(world);
             if (hit != null && _bindingByCollider.TryGetValue(hit, out NavigationBinding binding))
             {

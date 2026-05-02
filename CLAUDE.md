@@ -81,3 +81,20 @@ TheGuild-unity/Assets/
 | 程式碼標準 | `.claude/docs/coding-standards.md` |
 | 情境管理 | `.claude/docs/context-management.md` |
 | 程式碼行為準則 | `~/.claude/CLAUDE.md`（全域自動載入） |
+
+<!-- code-review-graph MCP tools -->
+## MCP Tools: code-review-graph
+
+**DISABLED — DO NOT USE。** code-review-graph MCP 目前在本專案不可用（graph 索引不完整／與專案實際檔案脫節），所有 `mcp__code-review-graph__*` 工具一律不得呼叫。
+
+### 審查與探索改用以下工具
+
+- **探索程式碼**：`Grep` / `Glob` / `Read`
+- **理解影響範圍**：手動 `Grep` 找 callers / imports；必要時請 `Explore` subagent 協助
+- **Code review**：直接 `Read` 變更檔案 + `git diff` / `git log`
+- **找關聯**：`Grep` 搜尋識別符號；用法為 `query_graph` 之處改用 `Grep` 搭配檔案範圍
+- **架構概覽**：閱讀 `design/GDD/`、`design/Data-Specs/`、`design/FSD/` 與目錄結構
+
+### 復原條件
+
+待 graph 重建並驗證覆蓋完整（檔案數對齊 `Assets/Scripts/**/*.cs` 實際數量）後再恢復本節原內容。

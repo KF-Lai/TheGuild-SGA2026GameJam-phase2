@@ -40,6 +40,7 @@ namespace TheGuild.Gameplay.WorldDanger
         private int _acceptedMissionCount;
         private long _gameStartTimestamp;
         private int _cachedMaxFactionScore;
+        private bool _elapsedDaysWarningLogged;
 
         // FT-10 ISaveable 接線（IsCritical=false / OwnerKey="c06WorldDanger"，per FT-10 FSD §2.3 / §5.4.1.A）
         public string OwnerKey => "c06WorldDanger";
@@ -268,6 +269,14 @@ namespace TheGuild.Gameplay.WorldDanger
         private void Start()
         {
             ApplyBankruptcyThreshold();
+
+            // SaveLoadService.Start（order=-100）已在此之前執行，若仍未被 InitializeAsNewGame 填值則自補。
+            if (_gameStartTimestamp == 0)
+            {
+                _gameStartTimestamp = TimeSystem.Instance != null
+                    ? TimeSystem.Instance.NowUTC
+                    : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            }
         }
 
         private void OnEnable()
@@ -358,7 +367,12 @@ namespace TheGuild.Gameplay.WorldDanger
         {
             if (_gameStartTimestamp == 0)
             {
-                Debug.LogError("[WorldDangerService] gameStartTimestamp=0，elapsedDays 以 0 計算。");
+                if (!_elapsedDaysWarningLogged)
+                {
+                    Debug.LogWarning("[WorldDangerService] gameStartTimestamp=0，elapsedDays 以 0 計算（已抑制重複警告）。");
+                    _elapsedDaysWarningLogged = true;
+                }
+
                 return 0;
             }
 

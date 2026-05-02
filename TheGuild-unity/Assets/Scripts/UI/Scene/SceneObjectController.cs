@@ -148,20 +148,30 @@ namespace TheGuild.UI.Scene
             }
 
             SceneObjectState state = ResolveSceneObjectState(binding.ObjectID);
-            binding.SpriteRenderer.sprite = LoadSpriteOrPlaceholder(binding.ObjectID, state.SpriteVariant);
+            Sprite resolved = TryLoadSprite(binding.ObjectID, state.SpriteVariant);
+            if (resolved != null)
+            {
+                binding.SpriteRenderer.sprite = resolved;
+                return;
+            }
+
+            // Resources 未提供對應 sprite：保留 SpriteRenderer 既有 sprite（通常是場景中的 placeholder），
+            // 僅在連 placeholder 都沒有時才覆蓋為透明 fallback。
+            if (binding.SpriteRenderer.sprite == null)
+            {
+                binding.SpriteRenderer.sprite = GetPlaceholderSprite();
+            }
         }
 
-        private Sprite LoadSpriteOrPlaceholder(string objectID, string spriteVariant)
+        private Sprite TryLoadSprite(string objectID, string spriteVariant)
         {
             string variant = string.IsNullOrEmpty(spriteVariant) ? "default" : spriteVariant;
             Sprite sprite = Resources.Load<Sprite>($"Art/Scene/Ophelia/{objectID}_{variant}");
-            if (sprite != null)
+            if (sprite == null)
             {
-                return sprite;
+                Debug.LogWarning($"[SceneObjectController] Sprite not found in Resources: {objectID}_{variant}, keep existing SpriteRenderer sprite.");
             }
-
-            Debug.LogError($"[SceneObjectController] Sprite load failed: {objectID}_{variant}");
-            return GetPlaceholderSprite();
+            return sprite;
         }
 
         private Sprite GetPlaceholderSprite()
@@ -227,23 +237,27 @@ namespace TheGuild.UI.Scene
                 ? -1
                 : FactionStoryService.Instance.GetUnlockedStageIndex(factionID);
 
-            if (TryCompare(atom, "stageID >= ", stage, (a, b) => a >= b)) return true;
-            if (TryCompare(atom, "stage >= ", stage, (a, b) => a >= b)) return true;
-            if (TryCompare(atom, "stageID == ", stage, (a, b) => a == b)) return true;
-            if (TryCompare(atom, "stage == ", stage, (a, b) => a == b)) return true;
-            if (TryCompare(atom, "stageID <= ", stage, (a, b) => a <= b)) return true;
-            if (TryCompare(atom, "stage <= ", stage, (a, b) => a <= b)) return true;
-            if (TryCompare(atom, "stageID > ", stage, (a, b) => a > b)) return true;
-            if (TryCompare(atom, "stage > ", stage, (a, b) => a > b)) return true;
-            if (TryCompare(atom, "stageID < ", stage, (a, b) => a < b)) return true;
-            if (TryCompare(atom, "stage < ", stage, (a, b) => a < b)) return true;
+            if (TryCompare(atom, "stageID >= ", stage, (a, b) => a >= b, out bool r1)) return r1;
+            if (TryCompare(atom, "stage >= ", stage, (a, b) => a >= b, out bool r2)) return r2;
+            if (TryCompare(atom, "stageID == ", stage, (a, b) => a == b, out bool r3)) return r3;
+            if (TryCompare(atom, "stage == ", stage, (a, b) => a == b, out bool r4)) return r4;
+            if (TryCompare(atom, "stageID <= ", stage, (a, b) => a <= b, out bool r5)) return r5;
+            if (TryCompare(atom, "stage <= ", stage, (a, b) => a <= b, out bool r6)) return r6;
+            if (TryCompare(atom, "stageID > ", stage, (a, b) => a > b, out bool r7)) return r7;
+            if (TryCompare(atom, "stage > ", stage, (a, b) => a > b, out bool r8)) return r8;
+            if (TryCompare(atom, "stageID < ", stage, (a, b) => a < b, out bool r9)) return r9;
+            if (TryCompare(atom, "stage < ", stage, (a, b) => a < b, out bool r10)) return r10;
 
             Debug.LogError($"[SceneObjectController] Invalid stageCondition atom: {atom}");
             return false;
         }
 
-        private bool TryCompare(string atom, string prefix, int currentStage, Func<int, int, bool> compare)
+        // 回傳值表示「prefix 是否匹配並能解析數值」；compare 結果由 out result 帶出。
+        // 修正先前以回傳值同時表達 match 與 compare 結果造成的誤判：當 prefix 命中但比較為 false 時，
+        // 舊版回傳 false 會使 EvaluateAtom 繼續嘗試其它 prefix，最終誤觸 "Invalid stageCondition atom" log。
+        private bool TryCompare(string atom, string prefix, int currentStage, Func<int, int, bool> compare, out bool result)
         {
+            result = false;
             if (!atom.StartsWith(prefix, StringComparison.Ordinal))
             {
                 return false;
@@ -251,11 +265,12 @@ namespace TheGuild.UI.Scene
 
             if (int.TryParse(atom.Substring(prefix.Length).Trim(), out int value))
             {
-                return compare(currentStage, value);
+                result = compare(currentStage, value);
+                return true;
             }
 
             Debug.LogError($"[SceneObjectController] Invalid stageCondition number: {atom}");
-            return false;
+            return true;
         }
 
         private void RebuildBindingMap()

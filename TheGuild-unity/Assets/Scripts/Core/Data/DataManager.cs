@@ -9,6 +9,7 @@ namespace TheGuild.Core.Data
     /// 遊戲資料載入與查詢中心。
     /// 由下游系統在 Awake 前註冊表格，DataManager 於 Awake 載入後提供唯讀查詢。
     /// </summary>
+    [DefaultExecutionOrder(-300)]
     public sealed class DataManager : MonoBehaviour
     {
         private const string DATA_TABLE_PATH = "Data/Tables/";
@@ -429,7 +430,8 @@ namespace TheGuild.Core.Data
                 TableRegistration existing = _pendingRegistrations[index];
                 if (keepExistingOnDuplicate && existing.IsSystemConstants && registration.IsSystemConstants)
                 {
-                    Debug.LogWarning($"[DataManager] SystemConstants 表格 {tableName} 已註冊，重複註冊已忽略");
+                    // 多個系統皆聲明依賴同一張 SystemConstants 表為設計允許（依賴可見）；非異常，僅留 debug 訊息。
+                    Debug.Log($"[DataManager] SystemConstants 表格 {tableName} 已註冊，重複註冊已忽略");
                     return;
                 }
 

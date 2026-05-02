@@ -33,7 +33,9 @@
       "Bash(rm .claude/optimization-work/batch-notes-*.md)",
       "Bash(rm .claude/optimization-work/_inline-*.md)",
       "Bash(mkdir -p .claude/scratch)",
-      "Bash(jq -r '.result.agent_messages' \"C:/Users/x94d9/.claude/projects/D--AI-Repository-02-Project-SGA-2026-gamejam-TheGuild-SGA2026GameJam-phase2/00bec25f-1460-4b5d-a542-33c22b5db1bc/tool-results/mcp-codex-codex-1777388173563.txt\")"
+      "Bash(jq -r '.result.agent_messages' \"C:/Users/x94d9/.claude/projects/D--AI-Repository-02-Project-SGA-2026-gamejam-TheGuild-SGA2026GameJam-phase2/00bec25f-1460-4b5d-a542-33c22b5db1bc/tool-results/mcp-codex-codex-1777388173563.txt\")",
+      "Bash(cp .mcp.json .mcp.json.bak)",
+      "Bash(cp CLAUDE.md CLAUDE.md.bak)"
     ]
   }
 }

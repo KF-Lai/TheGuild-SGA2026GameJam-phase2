@@ -82,3 +82,5 @@ debug.log
 .claude/optimization-work/
 .claude/batch-manifests/.progress/
 .claude/batch-manifests/.reports/
+# Added by code-review-graph
+.code-review-graph/

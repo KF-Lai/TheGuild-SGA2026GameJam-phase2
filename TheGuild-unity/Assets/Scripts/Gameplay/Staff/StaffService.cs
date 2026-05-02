@@ -40,6 +40,11 @@ namespace TheGuild.Gameplay.Staff
         private static void RegisterTables()
         {
             DataManager.RegisterTable<StaffData>(STAFF_TABLE_NAME);
+            // StaffTuning 以 SystemConstants 模式合併，提供 EFFECT_MAX_* /
+            // BUILDING_SWITCH_COOLDOWN_SECONDS / REALLOCATING_AUTO_LEAVE_SECONDS /
+            // AUTO_LEAVE_SCAN_INTERVAL_SECONDS / ROSTER_CAP 等 key
+            // 給 StaffTableLoader.LoadTuningConstants 透過 GetFloat / GetInt 查詢。（FT-12 §7.2）
+            DataManager.RegisterSystemConstantsTable("StaffTuning");
         }
 
         /// <summary>FT-10 會使用的 owner key。</summary>

@@ -37,6 +37,7 @@ namespace TheGuild.UI.Core
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Initialize();
         }
 
         private void OnDestroy()

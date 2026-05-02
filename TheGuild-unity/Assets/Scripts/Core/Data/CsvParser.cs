@@ -305,6 +305,11 @@ namespace TheGuild.Core.Data
                 return ParseFloatArray(trimmed, listSeparator, tableName, rowNumber, columnName);
             }
 
+            if (targetType == typeof(int[]))
+            {
+                return ParseIntArray(trimmed, listSeparator, tableName, rowNumber, columnName);
+            }
+
             Debug.LogError($"[CsvParser] 不支援的型別：表格={tableName}，列號={rowNumber}，欄位={columnName}，型別={targetType.Name}");
             return GetDefaultValue(targetType);
         }
@@ -340,6 +345,43 @@ namespace TheGuild.Core.Data
             }
 
             return parts;
+        }
+
+        private static int[] ParseIntArray(
+            string raw,
+            char separator,
+            string tableName,
+            int rowNumber,
+            string columnName)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return Array.Empty<int>();
+            }
+
+            string[] parts = raw.Split(separator);
+            // 多值欄位 null sentinel：單一 "0" 視為空陣列（data-files.md 規範）。
+            if (parts.Length == 1 && parts[0].Trim() == "0")
+            {
+                return Array.Empty<int>();
+            }
+
+            int[] result = new int[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string token = parts[i].Trim();
+                if (!int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+                {
+                    Debug.LogError(
+                        $"[CsvParser] int[] 解析失敗：表格={tableName}，列號={rowNumber}，欄位={columnName}，索引={i}，值={token}");
+                    result[i] = 0;
+                    continue;
+                }
+
+                result[i] = parsed;
+            }
+
+            return result;
         }
 
         private static float[] ParseFloatArray(

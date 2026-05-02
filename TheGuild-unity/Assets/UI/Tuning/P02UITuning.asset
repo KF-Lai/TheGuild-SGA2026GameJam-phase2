@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ce1e1a51b898ae4894dcceb0200ae65, type: 3}
+  m_Name: P02UITuning
+  m_EditorClassIdentifier: TheGuild.UI::TheGuild.UI.Core.P02UITuning
+  PanelTransitionSeconds: 0.15
+  ModalOverlayAlpha: 0.4
+  HoverOutlineThickness: 2
+  HoverOutlineAlpha: 0.6
+  LogVisibleMargin: 32
+  IntroTextMaxDisplayChars: 40
+  DialogueLineMaxChars: 24
+  DialogueLinesPerPage: 3
+  StoryNoteGrayHex: '#888888'
+  StoryNoteBlackHex: '#000001'
+  FontSizePanelTitle: 16
+  FontSizeCardHeader: 14
+  FontSizeCardBody: 11
+  FontSizeDialogue: 14
+  FontSizeHud: 13
+  FontSizeButton: 12

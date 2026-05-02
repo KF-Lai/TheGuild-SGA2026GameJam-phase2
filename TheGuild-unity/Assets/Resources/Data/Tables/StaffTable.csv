@@ -18,7 +18,10 @@ minGuildLevel,1,1,1,1,1,1,1,2,1,1
 effectIDs,Willingness,"","",Willingness,Willingness,RecruitRefreshOnCounter,AccountantPenaltyOnVault,Willingness,RecruitRefreshOnCounter,""
 effectValues,0.08,"","",0.12,0.10,1800,-0.01,0.15,1800,""
 slotBuildingIDs,0,0,0,0,0,4,5,0,4,1
-uiFlagIDs,"","","","","","","",SuccessRatePreview,"",SuccessRatePreview
+# staffID=501 米拉：原 uiFlagIDs=SuccessRatePreview / uiFlagBuildingIDs=0，但 slotBuildingIDs=0（不可指派），
+# UI flag 無法啟用，且 v3.1 ParseIntList 過濾 0 sentinel 後 count 不一致。設為 "" 移除無效 flag。
+# 後續若 501 需指派至特定建築（例如 1=委託板），需同步調整 slotBuildingIDs / uiFlagBuildingIDs。
+uiFlagIDs,"","","","","","","","","",SuccessRatePreview
 uiFlagBuildingIDs,0,0,0,0,0,0,0,0,0,1
 personalityDesc,做事認真有餘但缺乏靈活變通，對公會的規則異常執著,總是往好的方向想，樂於幫助每個人，有時候過於天真,沉默寡言的文書工作者，對數字的敏感度遠勝於人情,認真負責但容易被小事絆住，與同僚相處融洽,年輕氣盛，總想著證明自己，容易衝動行動,精力充沛的招募好手，與應徵者建立快速信任,默默處理雜務的新手，觀察力強但還在學習表達,對女神的信仰與對現實的懷疑在她心中拉鋸，表面溫柔卻有自己的底線,說話簡短直接不繞彎子，對公會長有戒心但尊重實力,樂觀隨性、好奇心強，對委託結果比任何人都認真
 intimacyLevel,0,0,0,0,0,0,0,0,0,0

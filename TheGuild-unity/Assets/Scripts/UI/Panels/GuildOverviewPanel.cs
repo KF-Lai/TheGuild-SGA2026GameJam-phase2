@@ -15,8 +15,6 @@ namespace TheGuild.UI.Panels
 {
     public sealed class GuildOverviewPanel : MonoBehaviour, IPanel
     {
-        private static bool _styleBiasWarningLogged;
-
         private VisualElement _root;
         private Label _summary;
         private Label _faction;
@@ -45,12 +43,6 @@ namespace TheGuild.UI.Panels
             EventBus.Subscribe<OnDangerLevelChangedEvent>(HandleDangerChanged);
             EventBus.Subscribe<OnFactionScoreChangedEvent>(HandleFactionScoreChanged);
             EventBus.Subscribe<OnFactionRouteCompletedEvent>(HandleFactionRouteCompleted);
-
-            if (!_styleBiasWarningLogged)
-            {
-                Debug.LogWarning("[GuildOverviewPanel] FactionStoryService.GetCurrentStyleTagBias() unavailable; fallback to 'neutral'.");
-                _styleBiasWarningLogged = true;
-            }
 
             _root.schedule.Execute(Refresh).Every(1000);
         }

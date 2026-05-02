@@ -12,6 +12,11 @@
             "type": "command",
             "command": "bash .claude/hooks/session-start.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "code-review-graph status",
+            "timeout": 10
           }
         ]
       }
@@ -48,6 +53,18 @@
             "type": "command",
             "command": "bash .claude/hooks/log-agent.sh",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "code-review-graph update --skip-flows",
+            "timeout": 30
           }
         ]
       }

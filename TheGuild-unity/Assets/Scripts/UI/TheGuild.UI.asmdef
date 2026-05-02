@@ -2,6 +2,7 @@
     "name": "TheGuild.UI",
     "rootNamespace": "TheGuild.UI",
     "references": [
+        "Unity.InputSystem",
         "TheGuild.Core.Data",
         "TheGuild.Core.Events",
         "TheGuild.Core.Time",

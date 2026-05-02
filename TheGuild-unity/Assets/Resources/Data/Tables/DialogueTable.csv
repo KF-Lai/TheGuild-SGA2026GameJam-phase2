@@ -1,0 +1,8 @@
+# === DialogueTable — 對話內容表（v0 骨架）===
+# owner 待定（FSD-A §1.2 註）；本檔為避免 DataManager 載入時噴 "表格未找到" 而建立。
+# 欄位：dialogueID(string PK), speakerId, context, text
+# 欄位含逗號時用 "..." 包裹。資料列待 narrative-director / writer 補充。
+dialogueID,placeholder_001
+speakerId,system
+context,placeholder
+text,placeholder dialogue

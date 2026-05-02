@@ -13,8 +13,10 @@ namespace TheGuild.UI.Core
         private readonly Dictionary<PanelID, IPanel> _panels = new Dictionary<PanelID, IPanel>();
         private readonly Dictionary<PanelID, ConfirmArgs> _confirmArgs = new Dictionary<PanelID, ConfirmArgs>();
         private readonly List<PanelID> _panelStack = new List<PanelID>(2);
+        private readonly HashSet<PanelID> _warnedUnregisteredIds = new HashSet<PanelID>();
 
         [SerializeField] private P02UITuning _tuning;
+        [SerializeField] private UIDocument _overlayDocument;
 
         public static PanelManager Instance { get; private set; }
 
@@ -60,6 +62,26 @@ namespace TheGuild.UI.Core
 
             _panelRoots[id] = root;
             _machines[id] = new PanelStateMachine(root, GetTransitionSeconds());
+            AttachRootToOverlayIfDetached(root);
+        }
+
+        // 若 panel 的 root 尚未掛在 visual tree 上（如多數 panel 在 Awake 只 new 不 attach），
+        // 由 PanelManager 統一掛到 _overlayDocument，避免每個 panel 都要自己持 UIDocument 引用。
+        // 已自行 attach 的 panel（例如 AdventurerRosterPanel 用自己的 _document）會 skip。
+        private void AttachRootToOverlayIfDetached(VisualElement root)
+        {
+            if (root.parent != null)
+            {
+                return;
+            }
+
+            if (_overlayDocument == null || _overlayDocument.rootVisualElement == null)
+            {
+                Debug.LogWarning("[PanelManager] _overlayDocument 未指派，panel root 無法 attach 到 visual tree。");
+                return;
+            }
+
+            _overlayDocument.rootVisualElement.Add(root);
         }
 
         public void RegisterPanel(IPanel panel)
@@ -251,7 +273,11 @@ namespace TheGuild.UI.Core
                 return true;
             }
 
-            Debug.LogError($"[PanelManager] Panel root is not registered: {id}");
+            if (_warnedUnregisteredIds.Add(id))
+            {
+                Debug.LogWarning($"[PanelManager] Panel root is not registered: {id}（panel 尚未實作或未掛載到場景，已抑制重複警告）");
+            }
+
             return false;
         }
 

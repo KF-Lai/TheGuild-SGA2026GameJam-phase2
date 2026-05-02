@@ -304,6 +304,12 @@ namespace TheGuild.Gameplay.Staff
                     throw new StaffTableValidationException($"staffID={staffID} 的 {fieldName}[{i}] 非法：{token}");
                 }
 
+                // null sentinel：data-files.md 規定 int[] 多值欄位無值填單一 0，需在解析時過濾。
+                if (value == 0)
+                {
+                    continue;
+                }
+
                 output.Add(value);
             }
         }

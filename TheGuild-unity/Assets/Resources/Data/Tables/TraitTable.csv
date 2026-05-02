@@ -1,12 +1,12 @@
-# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
 # === TraitTable 特質定義表 ===
 # effectTarget 必須使用 GDD §3.2 合法清單；condition 機率型範圍 [0,1]，建議 0.05~0.30
 # v3.1 新增（P3.1-002）：traitID=999「沉默」為奧菲莉雅專屬 trait
 # effectValue=-0.40 突破 §7.1 behavior 安全範圍 [-0.30, +0.20]，依 §7.1 v3.1 例外條款（具名特殊角色 isUnique=1）
+# 2026-05-02 補完 traitID 6-25（20 個 trait），對應 TraitGroupTable group 2~5
 
-traitID,1,2,3,4,5,999
-name,勇猛,膽小,幸運兒,倒楣鬼,貪財,沉默
-description,戰鬥表現超出預期,不敢接高難度任務,總在最後關頭化險為夷,失敗時往往有額外損失,成功後偶爾帶回意外收穫,她不主動接受委託，需要玩家明確指派
-effectType,stat,behavior,condition,condition,condition,behavior
-effectTarget,success_1,willingness_diff_S,on_death_survive,on_fail_reputation,on_success_gold_bonus,willingness_all
-effectValue,0.08,-0.25,0.20,-2.0,0.15,-0.40
+traitID,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,999
+name,勇猛,膽小,幸運兒,倒楣鬼,貪財,勤奮,懶散,自負,謙遜,博學家,嗜戰,厭戰,護衛魂,不耐煩,強敵渴望,福星,悲劇主角,名聲在外,災厄體質,賭徒運,亡命徒,死戰不退,鋼鐵意志,求生本能,九命妖貓,沉默
+description,戰鬥表現超出預期,不敢接高難度任務,總在最後關頭化險為夷,失敗時往往有額外損失,成功後偶爾帶回意外收穫,任何任務都願意立刻接,對任何任務都提不起勁,看不起低難度任務,不敢挑戰超出自己等級的任務,對調查類任務充滿興趣,看到怪物就想砍,對殺戮深感疲倦,守護他人是天職,採集這種瑣事讓人煩躁,越強的對手越讓人興奮,完成任務後總撿到意外之財,失敗時總成為眾矢之的,成功時聲名遠播超出預期,失敗的後果總更嚴重,成功時偶爾大撈一筆,在死亡邊緣總能撿回一條命,失敗時也絕不輕易喪命,致命傷下仍堅持回來,任務搞砸時優先保命,死神似乎特別放她一馬,她不主動接受委託，需要玩家明確指派
+effectType,stat,behavior,condition,condition,condition,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,behavior,condition,condition,condition,condition,condition,condition,condition,condition,condition,condition,behavior
+effectTarget,success_1,willingness_diff_S,on_death_survive,on_fail_reputation,on_success_gold_bonus,willingness_all,willingness_all,willingness_diff_low,willingness_diff_S,willingness_type_4,willingness_type_1,willingness_type_1,willingness_type_2,willingness_type_3,willingness_diff_A,on_success_gold_bonus,on_fail_reputation,on_success_reputation_bonus,on_fail_reputation,on_success_gold_bonus,on_death_survive,on_fail_survive,on_death_survive,on_fail_survive,on_death_survive,willingness_all
+effectValue,0.08,-0.25,0.20,-2.0,0.15,0.10,-0.15,-0.20,-0.10,0.15,0.15,-0.20,0.15,-0.15,0.15,0.20,-3.0,2.0,-2.5,0.25,0.25,0.20,0.15,0.25,0.30,-0.40
