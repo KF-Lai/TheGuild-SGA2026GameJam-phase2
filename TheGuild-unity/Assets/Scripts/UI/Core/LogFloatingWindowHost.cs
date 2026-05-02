@@ -72,8 +72,9 @@ namespace TheGuild.UI.Core
                 host.Add(_windowRoot);
                 _bound = true;
 
-                // TODO P-03：NotificationService 補齊後，由此將 _pendingBindContainer 交給 BindLogWindow。
-                Debug.Log("[LogFloatingWindowHost] P-03 unavailable, log container prepared.");
+                // P-03 Game Jam 範疇外（2026-05-03 確認）：本 host 維持 standalone 容器準備，不接 NotificationService。
+                // Post-Jam 啟用時依 P-03 §3.5 contract 將 _pendingBindContainer 交給 BindLogWindow。
+                Debug.Log("[LogFloatingWindowHost] P-03 disabled for Jam, log container prepared as standalone.");
                 return BindResult.Unavailable;
             }
             catch (System.Exception ex)

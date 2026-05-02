@@ -1,7 +1,18 @@
 # 【P-03】Notification System
 
 _建立時間：2026-04-26_
-_狀態：設計中_
+_狀態：Game Jam 不實作（Post-Jam 保留設計，2026-05-03 確認）_
+
+---
+
+> **⚠ Game Jam 範疇外**
+>
+> 本系統 GDD 完整保留作為 Post-Jam 開發藍圖；Jam 階段 **不撰寫 FSD、不建立 CSV、不實作 Script**。
+>
+> - 其他系統（FT-01~FT-06）對 §3.4 事件清單仍正常 publish，但無訂閱者。
+> - P-02 `LogFloatingWindowHost` 維持 standalone 容器準備（`BindResult.Unavailable`），不接 P-03 服務。
+> - Jam 階段所有玩家可見訊息需求改由各 panel 自行渲染（含 Game Over 結算、聲望變化等）。
+> - 如 Post-Jam 重新啟用，依 §3.5 P-02 host 綁定 contract 接入即可，無破壞性變更。
 
 ---
 
@@ -226,3 +237,12 @@ Token 替換規則（其餘字元視為字面分隔符）：
 | AC-09 | 重啟遊戲後，Log 視窗位置與狀態與關閉前一致（FT-10 持久化） | 操作：移動視窗 → 關閉 → 重啟，確認位置還原 |
 | AC-10 | `NotificationTemplate.csv` 找不到 eventType 時，Log 顯示 fallback 文字，不崩潰 | 刪除某一 templateID 後觸發對應事件 |
 | AC-11 | `eventPayload` 為 null 時，Log 條目佔位符顯示為空字串，Unity Console 出現 `LogError`，遊戲正常運行 | 手動傳入 null payload，確認 Console 錯誤與遊戲不中斷 |
+
+---
+
+## §九 變更歷史（Change History）
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-04-26 | v1.0 | 初版 GDD，含 §3.5 P-02 host 綁定 API（2026-05-01 補） |
+| 2026-05-03 | v1.0 (Jam scope-out) | 確認 Game Jam 範疇外不實作；GDD 完整保留 Post-Jam 開發藍圖；無 FSD / CSV / Script 工項；Jam 階段所有玩家可見訊息由各 panel 自行渲染（含 Game Over 結算、聲望變化等）；P-02 `LogFloatingWindowHost` 維持 standalone（`BindResult.Unavailable`） |
