@@ -430,6 +430,13 @@ namespace TheGuild.UI.Platform.Win32
 
             // Step 3：啟用 Hit-Test
             _isHitTestEnabled = true;
+
+            // Step 4：主動接入 UIBootstrapController 的 effectiveScale callback
+            // （避免 cyclic asmdef ref，由 P-01 push side 主動找 UI 端註冊；callback 註冊瞬間立即推一次）
+            if (UIBootstrapController.Instance != null)
+            {
+                RegisterEffectiveScaleListener(UIBootstrapController.Instance.OnEffectiveScaleChanged);
+            }
         }
 
         // ──────────────────────────────────────────────────────

@@ -126,11 +126,40 @@ namespace TheGuild.UI.Core
 
         private void RegisterEffectiveScaleFallback()
         {
-            // TODO P-01：正式接入 RegisterEffectiveScaleListener(callback)。
-            Debug.Log("[UIBootstrapController] P-01 unavailable, default scale 1.0");
+            // P-01 接入策略：避免 cyclic asmdef ref（TheGuild.UI.Platform.Win32 已 ref TheGuild.UI），
+            // 改由 P-01 DesktopWindowService.HandleOnUIReady 主動 push（呼叫 OnEffectiveScaleChanged 並
+            // 透過 RegisterEffectiveScaleListener 註冊長期 callback）。本方法保留 fallback log，給 P-01
+            // 不可用 / OnUIReady 早於 P-01 載入的極端情境兜底。
+            Debug.Log("[UIBootstrapController] effectiveScale fallback 1.0（待 P-01 主動 push）");
+            OnEffectiveScaleChanged(1.0f);
+        }
+
+        /// <summary>
+        /// effectiveScale 變更回呼。public 給 P-01 DesktopWindowService 主動 push 用，
+        /// 也給 fallback 路徑於 P-01 不可用時直接呼叫。
+        /// </summary>
+        public void OnEffectiveScaleChanged(float newScale)
+        {
+            // 推送至 PanelSettings.scale（P-01 §3.5 / §3.8.1）
+            if (_mainSceneDocument != null && _mainSceneDocument.panelSettings != null)
+            {
+                _mainSceneDocument.panelSettings.scale = newScale;
+            }
+
+            if (_overlayPanelDocument != null && _overlayPanelDocument.panelSettings != null)
+            {
+                _overlayPanelDocument.panelSettings.scale = newScale;
+            }
+
+            // 通知下游元件
             if (PersistentHudController.Instance != null)
             {
-                PersistentHudController.Instance.OnEffectiveScaleChanged(1.0f);
+                PersistentHudController.Instance.OnEffectiveScaleChanged(newScale);
+            }
+
+            if (SceneNavigationController.Instance != null)
+            {
+                SceneNavigationController.Instance.OnEffectiveScaleChanged(newScale);
             }
         }
     }
