@@ -169,7 +169,8 @@ namespace TheGuild.UI.Scene
             Sprite sprite = Resources.Load<Sprite>($"Art/Scene/Ophelia/{objectID}_{variant}");
             if (sprite == null)
             {
-                Debug.LogWarning($"[SceneObjectController] Sprite not found in Resources: {objectID}_{variant}, keep existing SpriteRenderer sprite.");
+                // 設計師漏掉素材視為錯誤情境；後備行為（保留既有 sprite / placeholder）由呼叫端處理
+                Debug.LogError($"[SceneObjectController] Sprite load failed: {objectID}_{variant}");
             }
             return sprite;
         }

@@ -19,6 +19,9 @@ namespace TheGuild.UI.Panels
         private Label _summary;
         private Label _faction;
 
+        // v3.1 P3.1 GetCurrentStyleTagBias API 預留未實作；guard 確保 unavailable warning 只 log 一次
+        private static bool _styleBiasWarningLogged;
+
         public PanelID Id => PanelID.GuildOverview;
         public VisualElement Root => _root;
 
@@ -31,6 +34,8 @@ namespace TheGuild.UI.Panels
             _root.Add(new Label(Text("ui.panel.overview.title", "Guild Overview")));
             _root.Add(_summary);
             _root.Add(_faction);
+
+            ResolveStyleBias();
         }
 
         private void OnEnable()
@@ -96,6 +101,13 @@ namespace TheGuild.UI.Panels
 
         private static string ResolveStyleBias()
         {
+            // FT-09 v3.1 P3.1 GetCurrentStyleTagBias() API 預留未實作；
+            // 永遠 fallback "neutral"，並僅 log 一次 warning 避免噪音。
+            if (!_styleBiasWarningLogged)
+            {
+                Debug.LogWarning("[GuildOverviewPanel] FactionStoryService.GetCurrentStyleTagBias() unavailable; fallback to 'neutral'.");
+                _styleBiasWarningLogged = true;
+            }
             return "neutral";
         }
 
