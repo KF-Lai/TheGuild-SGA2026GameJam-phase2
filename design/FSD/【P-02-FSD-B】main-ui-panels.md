@@ -796,7 +796,7 @@ EC-17（dropdown 列出已斷開螢幕）：
 | §3.5.7 通知 Log（host）| §4.4 LogFloatingWindowTemplate（UXML 模板）；綁定邏輯 FSD-A | 對齊 | 本 FSD 僅提供 UXML/USS 模板資源 |
 | §3.5.8 故事面板 | §4.4 StoryDialoguePanel、§5.4.8、§7 EC-20（透過 DialogueRenderer 處理） | 對齊 | confirm 流程 + Stage 4/5 特殊呈現 + OnOpheliaMissingNight publish |
 | §3.5.9 確認彈窗 | §4.4 ConfirmPopup、§5.4.9 | 對齊 | Normal / Destructive 兩樣式；ESC 等同取消（FSD-A 路由）|
-| §3.5.10 設定彈窗 | §4.4 SettingsPanel、§5.4.10、§7 EC-17/EC-18 | **[B2 deferred]** | 整體仰賴 P-01 IDesktopWindow 8 個 API；P-01 FSD 暫緩（IG §5.4），無合理 fallback；待 P-01 啟動後另起 patch |
+| §3.5.10 設定彈窗 | §4.4 SettingsPanel、§5.4.10、§7 EC-17/EC-18 | **[B2 deferred]** | 整體仰賴 P-01 IDesktopWindow 8 個 API；**P-01 已排入 Jam 工作流**（2026-05-03 校正，IG §5.3 #19），FSD 待撰寫；P-01 unblocked 後 SettingsPanel 即可動工 |
 
 ### 8.2 公式對齊或替代說明
 
