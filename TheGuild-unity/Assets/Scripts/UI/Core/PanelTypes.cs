@@ -26,18 +26,20 @@ namespace TheGuild.UI.Core
 
     public readonly struct ConfirmArgs
     {
-        public ConfirmArgs(string messageKey, Action onConfirm, Action onCancel = null, ConfirmStyle style = ConfirmStyle.Normal)
+        public ConfirmArgs(string messageKey, Action onConfirm, Action onCancel = null, ConfirmStyle style = ConfirmStyle.Normal, string titleKey = "")
         {
             MessageKey = messageKey;
             OnConfirm = onConfirm;
             OnCancel = onCancel;
             Style = style;
+            TitleKey = titleKey;
         }
 
         public string MessageKey { get; }
         public Action OnConfirm { get; }
         public Action OnCancel { get; }
         public ConfirmStyle Style { get; }
+        public string TitleKey { get; }
     }
 
     public enum BindResult

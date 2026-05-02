@@ -2,5 +2,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement name="main-scene-root" style="flex-grow: 1; position: absolute; left: 0; right: 0; top: 0; bottom: 0;">
         <ui:VisualElement name="bg-banner" style="position: absolute; left: 0; right: 0; top: 0; height: 312px; background-image: url(&quot;project://database/Assets/Art/UI/Scene/A-01_default.png?fileID=21300000&amp;guid=82ed70fd51ff6c44caae01878bb5a780&amp;type=3#A-01_default&quot;); -unity-background-scale-mode: scale-and-crop;" />
+        <ui:VisualElement name="bg-floor" style="position: absolute; left: 0; right: 0; top: 312px; bottom: 0; background-image: url(&quot;project://database/Assets/Art/UI/Scene/A-14_default.png?fileID=21300000&amp;guid=ae73140fd1001e94499691f79c061bf0&amp;type=3#A-14_default&quot;); background-repeat: repeat; background-size: 100% 30px;" />
     </ui:VisualElement>
 </ui:UXML>

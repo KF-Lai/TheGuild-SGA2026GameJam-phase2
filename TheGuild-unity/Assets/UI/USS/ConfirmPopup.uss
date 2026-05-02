@@ -1,0 +1,139 @@
+/* ConfirmPopup.uss — E-02 通用確認彈窗 / E-02a 危險操作確認彈窗 */
+
+/* 全螢幕半透明遮罩 + 置中 */
+.confirm-popup {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.50);
+    align-items: center;
+    justify-content: center;
+}
+
+/* 視窗本體 480×320 */
+.confirm-panel {
+    width: 480px;
+    height: 320px;
+    background-color: rgba(20, 18, 14, 0.96);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-top-color: rgba(180, 150, 90, 0.8);
+    border-right-color: rgba(180, 150, 90, 0.8);
+    border-bottom-color: rgba(180, 150, 90, 0.8);
+    border-left-color: rgba(180, 150, 90, 0.8);
+    padding-top: 24px;
+    padding-right: 28px;
+    padding-bottom: 24px;
+    padding-left: 28px;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.confirm-title {
+    font-size: 18px;
+    color: rgb(255, 235, 180);
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.confirm-message {
+    flex-grow: 1;
+    color: rgb(220, 210, 190);
+    font-size: 14px;
+    white-space: normal;
+}
+
+/* 按鈕列（靠右排列） */
+.confirm-buttons {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+/* ---- 次要按鈕 F-A-08 (取消/Cancel) ---- */
+.confirm-cancel {
+    width: 180px;
+    height: 48px;
+    background-image: url("../../Art/UI/Control/F-A-08_default.png");
+    -unity-slice-left: 12;
+    -unity-slice-right: 12;
+    -unity-slice-top: 12;
+    -unity-slice-bottom: 12;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    color: rgb(220, 210, 190);
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.confirm-cancel:hover {
+    background-image: url("../../Art/UI/Control/F-A-08_hover.png");
+}
+
+.confirm-cancel:active {
+    background-image: url("../../Art/UI/Control/F-A-08_pressed.png");
+}
+
+.confirm-cancel:disabled {
+    background-image: url("../../Art/UI/Control/F-A-08_disabled.png");
+    color: rgba(220, 210, 190, 0.5);
+}
+
+/* ---- 主要按鈕 F-A-07 (確認/Confirm) ---- */
+.confirm-ok {
+    width: 180px;
+    height: 48px;
+    background-image: url("../../Art/UI/Control/F-A-07_default.png");
+    -unity-slice-left: 12;
+    -unity-slice-right: 12;
+    -unity-slice-top: 12;
+    -unity-slice-bottom: 12;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    color: rgb(255, 235, 180);
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-left: 12px;
+}
+
+.confirm-ok:hover {
+    background-image: url("../../Art/UI/Control/F-A-07_hover.png");
+}
+
+.confirm-ok:active {
+    background-image: url("../../Art/UI/Control/F-A-07_pressed.png");
+}
+
+.confirm-ok:disabled {
+    background-image: url("../../Art/UI/Control/F-A-07_disabled.png");
+    color: rgba(255, 235, 180, 0.5);
+}
+
+/* ---- Danger modifier — E-02a，覆蓋 F-A-07 改用 F-A-09 ---- */
+.confirm-ok--danger {
+    background-image: url("../../Art/UI/Control/F-A-09_default.png");
+}
+
+.confirm-ok--danger:hover {
+    background-image: url("../../Art/UI/Control/F-A-09_hover.png");
+}
+
+.confirm-ok--danger:active {
+    background-image: url("../../Art/UI/Control/F-A-09_pressed.png");
+}
+
+.confirm-ok--danger:disabled {
+    background-image: url("../../Art/UI/Control/F-A-09_disabled.png");
+}
