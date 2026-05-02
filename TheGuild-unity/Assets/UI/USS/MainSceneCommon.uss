@@ -1,15 +1,78 @@
-/* P-02 Main UI Common USS — art 接入中（A-01 公會橫幅 2026-05-03） */
+/* P-02 Main UI Common USS — 主場景 nav row + nav icon button */
+/* 設計：6 個建築 nav button 水平等寬鋪滿視窗區。USS styling 採極簡（Jam scope 縮減）。 */
 
-/* A-01：公會橫幅景觀 1920×312，置於場景頂部全寬 */
-.bg-banner {
+.main-scene-root {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    height: 312px;
-    background-image: url("project://database/Assets/Art/UI/Scene/A-01_default.png");
-    -unity-background-scale-mode: scale-and-crop;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0); /* P-01 透明 color key 對應；非 Win build 顯純黑 */
 }
+
+/* nav row：水平 flex 鋪滿，6 個 nav button 等寬 */
+.nav-row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-around;
+}
+
+/* 共用 nav icon button 樣式：去除 Unity 預設 Button 邊框 / hover 反白 */
+.nav-icon {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 50px;
+    margin: 4px;
+    padding: 0;
+    border-width: 0;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0);
+    -unity-background-scale-mode: scale-to-fit;
+    color: rgba(0, 0, 0, 0); /* Button 預設 text 隱藏（用 background-image 顯示） */
+}
+
+.nav-icon:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-icon:disabled {
+    opacity: 0.4;
+}
+
+/* 6 個 nav button 個別 background-image（用 sprite 路徑） */
+.nav-commission-board {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-01_default.png");
+}
+
+.nav-guild-hall {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-03_default.png");
+}
+
+.nav-construction {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-04_default.png");
+}
+
+.nav-safe {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-05_default.png");
+}
+
+.nav-staff-lounge {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-06_default.png");
+}
+
+.nav-settings-desk {
+    background-image: url("project://database/Assets/Art/UI/Scene/A-07_default.png");
+}
+
+/* ---------- 既有 panel/HUD class 保留 ---------- */
 
 .p02-panel {
     position: absolute;
