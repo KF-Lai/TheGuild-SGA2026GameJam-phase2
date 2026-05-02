@@ -2,7 +2,7 @@
 
 _建立時間：2026-04-19_
 _最後更新：2026-05-02_
-_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；P-02 Main UI Framework 實作完成（FSD A/B 拆分共 25 Script）；FT-11 Jam 範疇外不實作；**P-03 Jam 範疇外，不實作**（2026-05-03 確認）；D-01 / D-02 GDD 已設計但 FSD 未啟動；**P-01 Jam 必做**（2026-05-03 校正，桌面透明視窗 widget 是視覺核心，A-01/A-14 art 設計皆以 widget 為前提，待 FSD 撰寫 + Script 實作）；**Jam 階段 NARRATIVE_ENABLED=0 停用劇情**（2026-05-03 確認，FT-09 / 奧蘿瑞女神 / 奧菲莉雅 disabled，runtime flag 控制）_
+_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；P-02 Main UI Framework 實作完成（FSD A/B 拆分共 25 Script）；FT-11 Jam 範疇外不實作；**P-03 Jam 範疇外，不實作**（2026-05-03 確認）；D-01 / D-02 GDD 已設計但 FSD 未啟動；**P-01 Jam 必做**（2026-05-03 校正，桌面透明視窗 widget 是視覺核心，A-01/A-14 art 設計皆以 widget 為前提；FSD 已通過 design-review 並轉「已完成」2026-05-03，Script 實作中）；**Jam 階段 NARRATIVE_ENABLED=0 停用劇情**（2026-05-03 確認，FT-09 / 奧蘿瑞女神 / 奧菲莉雅 disabled，runtime flag 控制）_
 
 ---
 
@@ -326,7 +326,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-10 Save/Load System          | ✅   | ✅                                       | ✅     | ✅   | ✅   |
 | FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜（Jam 範疇外）| ⬜   |
 | FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ✅     | ✅   | ✅   |
-| P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜（**Jam 必做**，待 FSD）| ⬜   | ⬜   |
+| P-01 Desktop Transparent Window | ✅   | ✅                                       | ✅（2026-05-03 通過 design-review，使用者複核已轉「已完成」）| ⬜（Script 實作中）| ⬜   |
 | P-02 Main UI Framework          | ✅   | ✅（v0.6 / 2026-05-01 五輪 design-review APPROVED）| ✅（A/B 拆分，2026-05-02）| ✅（2026-05-02）| ✅（2026-05-02）|
 | P-03 Notification System        | ✅   | ✅（v1.0 / 2026-04-26）                   | ⬜（Jam 不實作）| ⬜（Jam 不實作）| ⬜（Jam 不實作）|
 | D-01 Character Content DB       | ✅   | ✅（v1.0 / 2026-05-02）                   | ⬜     | ⬜   | ⬜   |
