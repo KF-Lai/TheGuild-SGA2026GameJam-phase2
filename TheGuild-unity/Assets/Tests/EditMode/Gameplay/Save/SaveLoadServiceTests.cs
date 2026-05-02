@@ -181,8 +181,8 @@ namespace Tests.EditMode.Gameplay.Save
             InjectSaveables(new FakeSaveable("f03Resources", true));
 
             LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("Parse failed"));
-            // Bootstrap Step X 在無 AdventurerRoster.Instance 時 LogError「奧菲莉雅初始化失敗」並繼續；測試環境未注入 C-02，必然觸發。
-            LogAssert.Expect(LogType.Error, "[FT-10] Bootstrap Step X: AdventurerRoster.Instance 為 null，無法初始化奧菲莉雅。Bootstrap 繼續。");
+            // 2026-05-03 Game Jam scope-out：NARRATIVE_ENABLED key 在測試 SystemConstants 未註冊時 fallback=0，
+            // Step X 走 skip Ophelia registration（Debug.Log），不再觸發 AdventurerRoster.Instance null LogError。
             _service.Bootstrap();
 
             Assert.AreEqual("LoadFailed", _events.EventOrder[0]);

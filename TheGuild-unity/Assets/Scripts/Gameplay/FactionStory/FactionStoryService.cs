@@ -350,6 +350,15 @@ namespace TheGuild.Gameplay.FactionStory
                 return;
             }
 
+            // 2026-05-03 Game Jam scope-out：NARRATIVE_ENABLED=0 完全停用 FT-09（OnEnable 訂閱、API、stage 解鎖、奧菲莉雅事件全早退）
+            if (DataManager.Instance.GetInt("NARRATIVE_ENABLED") != 1)
+            {
+                Debug.Log("[FactionStoryService] NARRATIVE_ENABLED=0, narrative disabled for Game Jam.");
+                _isEnabled = false;
+                _isBootstrapped = true;
+                return;
+            }
+
             _factionNeutralID = DataManager.Instance.GetInt(FactionStoryConstants.FACTION_NEUTRAL_ID_KEY);
 
             // === v3.1 patch P3.1-004：讀取 SystemConstants（找不到 key 時保留預設值）===

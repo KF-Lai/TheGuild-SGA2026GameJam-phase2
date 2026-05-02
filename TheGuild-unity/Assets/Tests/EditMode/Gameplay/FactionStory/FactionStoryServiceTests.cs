@@ -676,9 +676,9 @@ namespace Tests.EditMode.Gameplay.FactionStory
                 "categoryID,0,3,3,3\n";
 
             string systemConstantsCsv =
-                "key,FACTION_NEUTRAL_ID\n" +
-                "value,0\n" +
-                "description,neutral faction id\n";
+                "key,FACTION_NEUTRAL_ID,NARRATIVE_ENABLED\n" +
+                "value,0,1\n" +
+                "description,neutral faction id,enable narrative for FT-09 tests\n";
 
             return new Dictionary<string, string>(StringComparer.Ordinal)
             {

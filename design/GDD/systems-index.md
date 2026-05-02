@@ -2,7 +2,7 @@
 
 _建立時間：2026-04-19_
 _最後更新：2026-05-02_
-_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；P-02 Main UI Framework 實作完成（FSD A/B 拆分共 25 Script）；FT-11 Jam 範疇外不實作；P-03 / D-01 / D-02 暫緩設計；P-01 GDD 已設計但 FSD 未啟動_
+_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；P-02 Main UI Framework 實作完成（FSD A/B 拆分共 25 Script）；FT-11 Jam 範疇外不實作；**P-03 Jam 範疇外，不實作**（2026-05-03 確認）；D-01 / D-02 GDD 已設計但 FSD 未啟動；P-01 GDD 已設計但 FSD 未啟動；**Jam 階段 NARRATIVE_ENABLED=0 停用劇情**（2026-05-03 確認，FT-09 / 奧蘿瑞女神 / 奧菲莉雅 disabled，runtime flag 控制）_
 
 ---
 
@@ -58,7 +58,7 @@ _狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature
 | ---- | ------------------------------ | -------------------------------------- | -------- | ---------------------- |
 | P-01 | **Desktop Transparent Window** | Windows API 透明視窗、點擊穿透、前置；切換螢幕；解析度自適應 + 玩家縮放 | ✅ 已設計 | —                      |
 | P-02 | **Main UI Framework**          | 委託板、名冊、公會總覽、招募等畫面管理；Scene-First 三層架構、SceneObjectController（v3.1） | ✅ 已設計（v0.6 / 2026-05-01 五輪 design-review APPROVED） | `UIText`, `SceneObjectStateTable` |
-| P-03 | **Notification System**        | 結算通知、事件提醒、桌面推播           | 待設計   | `NotificationTemplate` |
+| P-03 | **Notification System**        | 結算通知、事件提醒、桌面推播           | ✅ 已設計（GDD v1.0 / 2026-04-26）；**Jam 範疇外，不實作**（2026-05-03 確認）| `NotificationTemplate`（Jam 不建立） |
 
 ### Data 層（內容資料庫）
 
@@ -322,13 +322,13 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-06 Guild Core                | ✅   | ✅                                       | ✅     | ✅   | ✅   |
 | FT-07 Guild Building System     | ✅   | ✅                                       | ✅     | ✅   | ✅   |
 | FT-08 Gacha System              | ✅   | ✅（2026-04-26 從原職員系統拆出，聚焦 gacha）| ✅     | ✅   | ✅   |
-| FT-09 Faction Story System      | ✅   | ✅                                       | ✅     | ✅   | ✅   |
+| FT-09 Faction Story System      | ✅   | ✅（**Jam disabled** NARRATIVE_ENABLED=0，2026-05-03）| ✅     | ✅   | ✅   |
 | FT-10 Save/Load System          | ✅   | ✅                                       | ✅     | ✅   | ✅   |
 | FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜（Jam 範疇外）| ⬜   |
 | FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ✅     | ✅   | ✅   |
 | P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜（FSD 未啟動）| ⬜   | ⬜   |
 | P-02 Main UI Framework          | ✅   | ✅（v0.6 / 2026-05-01 五輪 design-review APPROVED）| ✅（A/B 拆分，2026-05-02）| ✅（2026-05-02）| ✅（2026-05-02）|
-| P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
+| P-03 Notification System        | ✅   | ✅（v1.0 / 2026-04-26）                   | ⬜（Jam 不實作）| ⬜（Jam 不實作）| ⬜（Jam 不實作）|
 | D-01 Character Content DB       | ✅   | ✅（v1.0 / 2026-05-02）                   | ⬜     | ⬜   | ⬜   |
 | D-02 Mission Content DB         | ✅   | ✅（v1.0 / 2026-05-02）                   | ⬜     | ⬜   | ⬜   |
 

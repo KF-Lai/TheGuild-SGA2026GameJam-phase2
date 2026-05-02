@@ -151,18 +151,27 @@ namespace TheGuild.Gameplay.Save
             {
                 try
                 {
-                    int opheliaTemplateID = ReadIntOrDefault("OPHELIA_TEMPLATE_ID", 901);
-                    if (AdventurerRoster.Instance != null)
+                    // 2026-05-03 Game Jam scope-out：NARRATIVE_ENABLED=0 時奧菲莉雅不生成
+                    int narrativeEnabled = ReadIntOrDefault("NARRATIVE_ENABLED", 0);
+                    if (narrativeEnabled != 1)
                     {
-                        bool registered = AdventurerRoster.Instance.RegisterUniqueAdventurer(opheliaTemplateID);
-                        if (!registered)
-                        {
-                            Debug.LogError($"[FT-10] Bootstrap Step X: RegisterUniqueAdventurer({opheliaTemplateID}) 失敗——無法將奧菲莉雅放入名冊。Bootstrap 繼續。");
-                        }
+                        Debug.Log("[FT-10] Bootstrap Step X: NARRATIVE_ENABLED=0, skip Ophelia registration.");
                     }
                     else
                     {
-                        Debug.LogError("[FT-10] Bootstrap Step X: AdventurerRoster.Instance 為 null，無法初始化奧菲莉雅。Bootstrap 繼續。");
+                        int opheliaTemplateID = ReadIntOrDefault("OPHELIA_TEMPLATE_ID", 901);
+                        if (AdventurerRoster.Instance != null)
+                        {
+                            bool registered = AdventurerRoster.Instance.RegisterUniqueAdventurer(opheliaTemplateID);
+                            if (!registered)
+                            {
+                                Debug.LogError($"[FT-10] Bootstrap Step X: RegisterUniqueAdventurer({opheliaTemplateID}) 失敗——無法將奧菲莉雅放入名冊。Bootstrap 繼續。");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError("[FT-10] Bootstrap Step X: AdventurerRoster.Instance 為 null，無法初始化奧菲莉雅。Bootstrap 繼續。");
+                        }
                     }
                 }
                 catch (Exception ex)

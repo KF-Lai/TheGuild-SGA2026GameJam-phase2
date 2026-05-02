@@ -95,6 +95,12 @@
 | OPHELIA_TEMPLATE_ID | int | 固定值 901 | 901 | 奧菲莉雅 AdventurerTemplate ID；FT-10 Bootstrap 依此 ID 呼叫 `RegisterUniqueAdventurer`；**禁止修改** | C-02、FT-10 |
 | STAGE5_MISSION_ID | int | >9000 | 9005 | Stage 5 劇情委託 missionID（量產時填入正確值；當前 MissionTemplate 9001-9003 為 Phase 1 設計，9005 為 v3.1 新增） | FT-09、C-01 |
 
+> **2026-05-03 新增（Game Jam scope-out）**：以下旗標控制 narrative 系統啟停。
+
+| key | 型別 | 範圍 | 預設值 | 用途 | 消費者 |
+|---|---|---|---|---|---|
+| NARRATIVE_ENABLED | int | 0 / 1 | 0（Jam 預設停用） | Game Jam 是否啟用 narrative 系統。0 → FT-09 Bootstrap 早退（不訂閱事件、所有 API 走 fallback）；FT-10 Bootstrap Step X 跳過 `RegisterUniqueAdventurer(901)`。1 → 還原完整功能 | FT-09、FT-10 |
+
 ## 範例
 
 ```csv
@@ -114,3 +120,4 @@ description,每日重置 UTC 小時（0~23）,離線時間上限（7 天 = 60480
 | 日期 | 版本 | 變更摘要 |
 |---|---|---|
 | 2026-04-30 | v1.1 | v3.1 patch P3.1-A3：新增 5 系統常數（LIGHT_THRESHOLD / MIXED_THRESHOLD / OPHELIA_MISSING_RECOVERY_HOURS / OPHELIA_TEMPLATE_ID / STAGE5_MISSION_ID） |
+| 2026-05-03 | v1.2 | Game Jam scope-out：新增 `NARRATIVE_ENABLED`（int，0/1，預設 0）；FT-09 / FT-10 早退控制旗標 |

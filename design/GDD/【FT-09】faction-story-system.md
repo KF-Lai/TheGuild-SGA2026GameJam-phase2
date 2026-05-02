@@ -1,11 +1,22 @@
 # Faction Story System 系統設計文件
 
 _建立時間：2026-04-25_
-_狀態：設計完成（已通過 2026-04-27 /design-review，修正 C1 / C2 / I1 / I2 / I3）_
-_最後更新：2026-04-27_
+_狀態：設計完成 + 實作完成；**Game Jam 階段 NARRATIVE_ENABLED=0 停用**（2026-05-03 確認）_
+_最後更新：2026-05-03_
 _系統 ID：FT-09_
 
-**狀態**：§1 ~ §8 全部寫入並通過 design-review。下一步：(a) §6.4 反向依賴中 P-02 / P-03 待登記項由各自 GDD 設計時自行登記；(b) 進入 Codex 實作階段（建議拆為 5 個次模組）。
+**狀態**：§1 ~ §8 全部寫入並通過 design-review；6 檔 ~1180 行 + 209 條 EditMode 測試實作完成。Jam 階段 runtime disabled，code 完整保留 Post-Jam 啟用。
+
+---
+
+> **⚠ Game Jam 範疇外（2026-05-03 確認）**
+>
+> - **runtime flag**：`SystemConstants.NARRATIVE_ENABLED = 0`（Jam 預設）；切回 `1` 即還原完整功能。
+> - **早退點**：`FactionStoryService.Bootstrap()` 在 DataManager init 後讀 `NARRATIVE_ENABLED`，0 時 `_isEnabled = false; _isBootstrapped = true; return;` 不訂閱事件、不解鎖 stage、所有 API 走 fallback（StyleTagBias="neutral"、UnlockedStageIndex=-1、PendingDialogueStages=[]）。
+> - **奧菲莉雅不生成**：`SaveLoadService.Bootstrap()` Step X 同樣讀 flag，0 時跳過 `RegisterUniqueAdventurer(901)`。
+> - **下游影響**：StoryDialoguePanel / StoryDialogueQueue / SceneObjectController 訂閱本系統事件但不會收到（FT-09 不發），自然 noop；AdventurerRosterPanel SortsOpheliaFirst 因奧菲莉雅不在名冊內無作用。
+> - **既有 209 條 FT-09 測試**：fixture 自建 SystemConstants 已加 `NARRATIVE_ENABLED=1`，測試走 enable 路徑保持綠。
+> - **Game Over**：FT-06 收斂為「破產唯一觸發」（見 FT-06 banner）；FT-09 不會解鎖任何結局線。
 
 ---
 

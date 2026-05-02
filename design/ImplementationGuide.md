@@ -128,9 +128,10 @@ FSD 內的 `IXxxService` 命名僅供敘述。實作直呼 concrete singleton，
 | 系統                     | 處理                                                  |
 | ------------------------ | ----------------------------------------------------- |
 | P-01 Desktop Window      | FSD 未啟動；Game Jam 用 Unity 預設視窗                |
-| P-03 Notification System | FSD 未啟動；LogWarning 改呼叫為建議事項               |
-| D-01 / D-02 Content DBs  | GDD 待設計；需 narrative 配合                         |
+| P-03 Notification System | **Jam 範疇外，不實作**（2026-05-03 確認）；GDD 完整保留 Post-Jam；Jam 階段所有玩家可見訊息由各 panel 自行渲染；LogFloatingWindowHost 維持 standalone（`BindResult.Unavailable`） |
+| D-01 / D-02 Content DBs  | GDD ✅（v1.0 / 2026-05-02）；FSD ⬜；Jam 不實作（fallback 顯示 templateID / typeID）|
 | FT-11 Offline Resolver   | Game Jam 範疇外，不實作                               |
+| FT-09 / 劇情系統         | **Jam 階段 NARRATIVE_ENABLED=0 停用**（2026-05-03 確認）；FT-09 完整實作保留（209 條測試），runtime flag 早退；奧菲莉雅 / 奧蘿瑞女神不出現；Game Over 唯一觸發＝破產 |
 
 ### 5.5 並行上限參考（4 週）
 
