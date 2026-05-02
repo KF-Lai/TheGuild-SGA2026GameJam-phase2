@@ -1,0 +1,11 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === SceneObjectStateTable：奧菲莉雅敘事物件 stage 對映 ===
+# v3.1 P3.1-010；10 row / 5 objectID；rowID 為合成 PK；具體值依 P3.1-010 §4.2.1
+
+rowID,1,2,3,4,5
+objectID,ophelia_chair,ophelia_chair,ophelia_teacup,ophelia_guildbook,ophelia_door_note
+stageCondition,stageID >= 1,stageID >= 3,stageID >= 2,stageID >= 1,event:ophelia_missing
+spriteVariant,default,reading,warm,open,note_stuck
+dialogueKey,ophelia_chair_s1,"",ophelia_teacup_s2,ophelia_book_s1,ophelia_door_note_missing
+priority,10,20,10,10,50
+audioCue,"","","","",""

@@ -96,7 +96,7 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 
 | 表格名稱 | GDD 來源 | 系統分類 | DataSpec 狀態 | CSV 狀態 |
 |---|---|---|---|---|
-| `SceneObjectStateTable.csv` | 【P-02】main-ui-framework.md §3.6.2（v3.1 P3.1-010） | Platform / P-02 MainUIFramework | ✅ `[P-02-DS] scene-object-state-table.md` | 📐 |
+| `SceneObjectStateTable.csv` | 【P-02】main-ui-framework.md §3.6.2（v3.1 P3.1-010） | Platform / P-02 MainUIFramework | ✅ `[P-02-DS] scene-object-state-table.md` | ✅ |
 
 ---
 
@@ -109,7 +109,7 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | `NamePool.csv` | systems-index.md（隨機冒險者名字） | Cross-cutting / 文字資料 | 📐 | 📐 |
 | `BioPool.csv` | systems-index.md（冒險者背景故事模板） | Cross-cutting / 文字資料 | 📐 | 📐 |
 | `MissionNamePool.csv` | systems-index.md（任務名稱描述池） | Cross-cutting / 文字資料 | 📐 | 📐 |
-| `UIText.csv` | 【P-02】main-ui-framework.md §7.3 / §3.9 | Platform / P-02 MainUIFramework（文字表） | ✅ `[P-02-DS] ui-text.md` | 📐 |
+| `UIText.csv` | 【P-02】main-ui-framework.md §7.3 / §3.9 | Platform / P-02 MainUIFramework（文字表） | ✅ `[P-02-DS] ui-text.md` | ✅ |
 | `DialogueTable.csv` | systems-index.md（對話內容） | Cross-cutting / 文字資料 | 📐 | 📐 |
 | `NotificationTemplate.csv` | systems-index.md（通知模板） | Cross-cutting / 文字資料 | 📐 | 📐 |
 
@@ -140,9 +140,9 @@ CSV 結構、符號、特殊值、命名與 ID 型別使用原則，統一定義
 | Foundation | 2 | 0 | 2 |
 | Core | 11 | 0 | 11 |
 | Feature | 13 | 13 | 13 |
-| Platform | 1 | 1 | 0 |
-| 文字表 | 6 | 1 | 0 |
-| **總計（active）** | **33** | **15** | **26** |
+| Platform | 1 | 1 | 1 |
+| 文字表 | 6 | 1 | 1 |
+| **總計（active）** | **33** | **15** | **28** |
 | 歸檔 | 9 | 0 | — |
 
 > 2026-04-26 合併批次：移除 7 張表（A1 + A2 + B1 + B2），BankruptcyThresholdTable 移到歸檔分區（原計入 Foundation）；總表數 40 → 33。

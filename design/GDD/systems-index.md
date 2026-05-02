@@ -1,8 +1,8 @@
 # 系統索引（Systems Index）
 
 _建立時間：2026-04-19_
-_最後更新：2026-05-01_
-_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；FT-11 Jam 範疇外不實作；P-02 已通過五輪 design-review（v0.6 / 2026-05-01 APPROVED）；P-03 / D-01 / D-02 暫緩設計；P-01 GDD 已設計但 FSD 未啟動_
+_最後更新：2026-05-02_
+_狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature 9，含 FT-02 A/B 拆分）；P-02 Main UI Framework 實作完成（FSD A/B 拆分共 25 Script）；FT-11 Jam 範疇外不實作；P-03 / D-01 / D-02 暫緩設計；P-01 GDD 已設計但 FSD 未啟動_
 
 ---
 
@@ -327,7 +327,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | FT-11 Offline Resolver          | ⬜   | ⬜                                       | ⬜     | ⬜（Jam 範疇外）| ⬜   |
 | FT-12 Staff System              | ✅   | ✅（2026-04-26 從原職員系統拆出；§3.9 / §4.2 / §5.3 / §8.6 + AC-2 / AC-36 標 Phase 2）| ✅     | ✅   | ✅   |
 | P-01 Desktop Transparent Window | ✅   | ✅                                       | ⬜（FSD 未啟動）| ⬜   | ⬜   |
-| P-02 Main UI Framework          | ✅   | ✅（v0.6 / 2026-05-01 五輪 design-review APPROVED）| ⬜     | ⬜   | ⬜   |
+| P-02 Main UI Framework          | ✅   | ✅（v0.6 / 2026-05-01 五輪 design-review APPROVED）| ✅（A/B 拆分，2026-05-02）| ✅（2026-05-02）| ✅（2026-05-02）|
 | P-03 Notification System        | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-01 Character Content DB       | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |
 | D-02 Mission Content DB         | ✅   | ⬜                                       | ⬜     | ⬜   | ⬜   |

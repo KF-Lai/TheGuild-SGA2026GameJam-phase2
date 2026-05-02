@@ -1,0 +1,7 @@
+# [SAMPLE] 本檔為 DS 範例資料，完整內容請依 GDD / DS 規格補充
+# === UIText：UI 固定字串多語系對映表 ===
+# Jam 版鎖定 zhTW；en 欄 Post-Jam 補全；key 命名慣例由 P-02 設計師定義（gdd-gap）
+
+key,BTN_CONFIRM,BTN_CANCEL,PANEL_COMMISSION_BOARD,HUD_GOLD_FORMAT,EC_UITEXT_FALLBACK
+zhTW,確認,取消,委託板,{0} g,（文字載入失敗）
+en,Confirm,Cancel,Commission Board,{0} g,(text load failed)
