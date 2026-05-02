@@ -1,0 +1,32 @@
+{
+    "name": "Tests.PlayMode.UI",
+    "rootNamespace": "Tests.PlayMode.UI",
+    "references": [
+        "TheGuild.UI",
+        "TheGuild.Core.Data",
+        "TheGuild.Core.Events",
+        "TheGuild.Core.Time",
+        "TheGuild.Core.SaveContract",
+        "TheGuild.Gameplay.Resources",
+        "TheGuild.Gameplay.Building",
+        "TheGuild.Gameplay.FactionStory",
+        "TheGuild.Gameplay.Adventurer",
+        "TheGuild.Gameplay.Mission",
+        "TheGuild.Gameplay.MissionDispatch",
+        "TheGuild.Gameplay.Guild",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
