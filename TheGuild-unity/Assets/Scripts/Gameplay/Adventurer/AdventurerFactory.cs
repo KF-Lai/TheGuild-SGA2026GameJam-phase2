@@ -11,6 +11,8 @@ namespace TheGuild.Gameplay.Adventurer
     /// </summary>
     public sealed class AdventurerFactory
     {
+        private static bool _d01StubWarningLogged;
+
         private readonly AdventurerTemplateLoader _loader;
         private readonly AdventurerRoster _roster;
 
@@ -70,6 +72,9 @@ namespace TheGuild.Gameplay.Adventurer
             // 步驟 6：factionID
             instance.factionID = tmpl.factionID;
 
+            instance.gender = 0; // v1.1：具名 NPC 預設 0；如未來 AdventurerTemplate 加 gender 欄位再對接
+            instance.bio = tmpl.bio ?? string.Empty; // v1.1：具名 NPC 靜態 bio，無則空字串
+
             // 步驟 7：初始狀態
             instance.status = AdventurerStatus.Idle;
             instance.currentMissionID = 0;
@@ -91,8 +96,14 @@ namespace TheGuild.Gameplay.Adventurer
             {
                 instanceID = _roster.AllocateInstanceID(),
                 templateID = 0,
-                // D-01 NamePool 尚未實作，暫用 placeholder（GDD §4.3a 允許）
+                // v1.1：D-01 Character Content Database 尚未實作，使用降級 stub
+                // GDD §4.3a：服務未就緒時 name="冒險者" / gender=0 / bio=""，並 LogWarning 一次
+                // 待 D-01 (NamePool/BioPool) 實作後切換為：
+                //   (instance.name, instance.gender) = D01.PickRandomNameWithGender(raceID)
+                //   instance.bio = D01.GetRandomBio(raceID, professionID, instance.name, instance.gender)
                 name = "冒險者",
+                gender = 0,
+                bio = string.Empty,
                 rank = rank,
                 professionID = professionID,
                 raceID = raceID,
@@ -104,6 +115,12 @@ namespace TheGuild.Gameplay.Adventurer
                 idleSinceTimestamp = 0,
                 lastAutoPickupTimestamp = 0,
             };
+
+            if (!_d01StubWarningLogged)
+            {
+                _d01StubWarningLogged = true;
+                Debug.LogWarning("[AdventurerFactory] CreateRandomInstance: D-01 Character Content Database is not implemented; using stub name/gender/bio fallback.");
+            }
 
             return instance;
         }

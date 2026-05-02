@@ -4,12 +4,12 @@
 
 | 欄位 | 內容 |
 |---|---|
-| 對應 GDD | `【FT-10】save-load-system.md`（版本：2026-04-27 design-review 通過） |
+| 對應 GDD | `【FT-10】save-load-system.md`（版本：2026-04-27 design-review 通過；2026-05-02 D-01 patch 補 C-02 序列化 gender/bio） |
 | 對應 Data-Specs | `【F-01-DS】system-constants.md`（消費端：`SAVE_AUTO_INTERVAL_SEC` / `SAVE_BACKUP_COUNT` / `SAVE_FILE_NAME` / `SAVE_BAK_PREFIX` / `SAVE_GAMEOVER_PREFIX` 共 5 keys，§7.2 規範） |
 | 撰寫者 | Claude Code 主體（Opus 4.7 + xhigh） |
 | Review 者 | Claude Code 主體（Opus 4.7 + xhigh） |
-| 狀態 | 審查中 |
-| 最近更新 | 2026-04-28 |
+| 狀態 | 審查中（v1.1 patched 2026-05-02） |
+| 最近更新 | 2026-05-02 |
 
 ## 1. 概要（Overview）
 
@@ -98,7 +98,7 @@ FT-10 Save/Load System 為公會所有持久化資料的統一存取層，採 Un
 | F-01 DataManager | `IDataManager.GetSystemConstant<T>(key, default)` / 各 owner 的 `Get<T>` / `GetAll<T>`（owner 端呼叫） | FT-10 自身載入 5 個 SAVE_* 常數；各 owner 在 `RestoreFromSave` 內驗證 ID 合法性（FT-10 不直接呼叫） |
 | F-02 Time System | `ITimeSystem.Initialize(long lastActiveTimestamp)` | Phase D 離線計算交棒；FT-10 為唯一呼叫者 |
 | F-03 Resource Mgmt | `ISaveable` 實作 | Phase C 第 1 順位還原 6 個欄位 |
-| C-02 Adventurer Mgmt | `ISaveable` 實作 | 第 3 順位還原 `AdventurerInstance[]`（含 FT-03 idle 時間戳） |
+| C-02 Adventurer Mgmt | `ISaveable` 實作 | 第 3 順位還原 `AdventurerInstance[]`（含 FT-03 idle 時間戳；**v1.1（2026-05-02 D-01 patch）** 含 `gender:int` / `bio:string` 欄位） |
 | C-06 World Danger | `ISaveable` 實作 | 第 2 順位還原 `currentDangerLevel` / `gameStartTimestamp` |
 | FT-01 Recruitment | `ISaveable` 實作 | 第 9 順位還原候選池與刷新狀態 |
 | FT-02 Mission Dispatch | `ISaveable` 實作 | 第 6 順位還原 `activeMissions[]` / `_nextActiveMissionID`；FT-02 自行重新訂閱 F-02 `OnSecondTick` |
@@ -458,7 +458,7 @@ Unity lifecycle.Start（同 frame 後）
 private static readonly Dictionary<string, int> OWNER_RESTORE_ORDER = new() {
     { "f03Resources",         1 },   // F-03 Resource Mgmt
     { "c06WorldDanger",       2 },   // C-06 World Danger
-    { "c02Adventurers",       3 },   // C-02 Adventurer Mgmt（含 FT-03 idle 時間戳）
+    { "c02Adventurers",       3 },   // C-02 Adventurer Mgmt（含 FT-03 idle 時間戳；v1.1 含 gender/bio）
     { "ft06Guild",            4 },   // FT-06 Guild Core
     { "ft07Buildings",        5 },   // FT-07 Guild Building
     { "ft02Dispatch",         6 },   // FT-02 Mission Dispatch

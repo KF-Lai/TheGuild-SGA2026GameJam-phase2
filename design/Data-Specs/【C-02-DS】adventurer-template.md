@@ -28,6 +28,7 @@
 | `randomTraitGroupIDs` | `int[]`（`\|` 分隔） | ✓ | — | FK → TraitGroupTable；每個群組各抽一次隨機特質；不需隨機特質填 `0`；不存在的 groupID 被跳過並 `Debug.LogWarning`（GDD §5.1） |
 | `factionID` | `int` | ✓ | ≥ 0 | 陣營歸屬；`0` = neutral |
 | `isUnique` | `int` | ✓ | 0 或 1 | `1` = 唯一角色（全局只能實例化一次，含 Dead 狀態）；`0` = 可重複招募（GDD §3.2） |
+| `bio` | `string` | ✓ | — | **v1.1（2026-05-02 D-01 patch）** 具名 NPC 靜態 bio 文字（不含 `{name}` / `{pronoun}` 變數）；隨機生成的冒險者透過 D-01 `GetRandomBio` 動態生成；具名 NPC 無 bio 留空字串 `""`；含逗號的 bio 必須以 `"..."` 包覆（GDD §3.2） |
 
 > **特質生成規則**：實例化時，先將 `fixedTraitIDs` 全部加入；再對每個 `randomTraitGroupIDs` 群組依 C-05 `pickCount` / `pickMode` 抽取後加入；最終 `traitIDs` = 固定 ∪ 隨機（去重）（GDD C-02 §3.2；實例化偽代碼見 GDD C-02 §4.3）。
 
@@ -70,5 +71,12 @@ fixedTraitIDs,0,0,0
 randomTraitGroupIDs,1|3,1|2,2|4
 factionID,0,1,0
 isUnique,1,1,0
+bio,"艾克·鐵拳，C 階戰士，獸人血脈。","莉亞·月影，D 階斥候，精靈血脈。",""
 ```
-（fixedTraitIDs=0 表示無固定特質；randomTraitGroupIDs 對應 TraitGroupTable.groupID；isUnique=1 角色為具名主線 NPC）
+（fixedTraitIDs=0 表示無固定特質；randomTraitGroupIDs 對應 TraitGroupTable.groupID；isUnique=1 角色為具名主線 NPC；bio 對應具名 NPC 靜態背景故事，非 unique 角色可留空 `""`）
+
+## 變更歷史
+
+| 日期 | 版本 | 變更摘要 |
+|---|---|---|
+| 2026-05-02 | v1.1 | D-01 patch：新增 `bio` 欄位（具名 NPC 靜態背景故事文字），對齊 C-02 GDD §3.2 v1.1 patch；隨機冒險者 bio 由 D-01 `GetRandomBio` 動態生成，具名 NPC 直接複製 `template.bio`。 |

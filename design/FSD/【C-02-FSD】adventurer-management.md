@@ -4,12 +4,12 @@
 
 | 欄位 | 內容 |
 | --- | --- |
-| 對應 GDD | `【C-02】adventurer-management.md`（版本：2026-04-27） |
-| 對應 Data-Specs | `【C-02-DS】adventurer-template.md`<br>`【C-02-DS】recruit-cost-table.md`<br>`【F-01-DS】system-constants.md`（共用 `WOUNDED_RECOVERY_HOURS`） |
+| 對應 GDD | `【C-02】adventurer-management.md`（版本：v1.1 / 2026-05-02 D-01 patch） |
+| 對應 Data-Specs | `【C-02-DS】adventurer-template.md`（v1.1 含 `bio` 欄位）<br>`【C-02-DS】recruit-cost-table.md`<br>`【F-01-DS】system-constants.md`（共用 `WOUNDED_RECOVERY_HOURS`）<br>D-01 Data-Specs（待建：`NamePool` / `BioPool`） |
 | 撰寫者 | unity-specialist subagent |
-| Review 者 | — |
-| 狀態 | 審查中 |
-| 最近更新 | 2026-04-27 |
+| Review 者 | Claude Code 主體（Opus 4.7 + xhigh，2026-05-02 D-01 patch） |
+| 狀態 | v1.1 patched |
+| 最近更新 | 2026-05-02 |
 
 ---
 
@@ -34,6 +34,7 @@ C-02 Adventurer Management 管理公會名冊（Roster）中所有冒險者的�
 - **v3.1 新增（P3.1-005）** `DismissAdventurer` 放寬：Idle 狀態在 FT-07 審查處解鎖後可除名
 - **v3.1 新增（P3.1-005）** `OnAdventurerDismissed` 事件發布
 - **v3.1 新增（P3.1-005）** `GetRoster()` 奧菲莉雅優先排序（`OPHELIA_TEMPLATE_ID` 從 SystemConstants 取）
+- **v1.1 新增（2026-05-02 D-01 patch）** `AdventurerInstance` 新增 `gender:int` / `bio:string` 欄位、`AdventurerTemplate` 新增 `bio:string` 欄位、`CreateRandomInstance` 改呼叫 D-01 `PickRandomNameWithGender` + `GetRandomBio`、`CreateFromTemplate` 複製 template.bio
 
 **Out-of-Scope**
 - 招募邏輯（FT-01）
@@ -109,6 +110,7 @@ C-02 Adventurer Management 管理公會名冊（Roster）中所有冒險者的�
 | C-03 Profession System | 驗證 `professionID` 合法性 | `IProfessionService.GetProfession(professionID)` |
 | C-04 Race System | `raceID = 0` 時依職業隨機抽種族 | `IRaceService.RollRace(professionID)` |
 | C-05 Trait System | 依 `randomTraitGroupIDs` 抽取隨機特質 | `ITraitService.GetTraitGroup(groupID)`、`ITraitService.RollTraits(group)` |
+| D-01 Character Content Database | **v1.1（2026-05-02）** 隨機冒險者建立時取得 name + gender + bio | `ICharacterContentDB.PickRandomNameWithGender(raceID)`、`ICharacterContentDB.GetRandomBio(raceID, professionID, name, gender)`；服務未就緒時走降級分支（`name="冒險者" / gender=0 / bio=""` + LogWarning 一次） |
 
 ### 2.4 下游被依賴系統
 
@@ -231,7 +233,7 @@ AdventurerRoster  ──實作──►  IAdventurerRoster
 | 方法 | 簽名 | 說明 |
 | --- | --- | --- |
 | CreateFromTemplate | `CreateFromTemplate(int templateID) : AdventurerInstance` | isUnique 驗證；模板不存在或驗證失敗回傳 `null` |
-| CreateRandomInstance | `CreateRandomInstance(string rank, int professionID, int raceID, int[] traitIDs) : AdventurerInstance` | 分配 instanceID，不加入名冊 |
+| CreateRandomInstance | `CreateRandomInstance(string rank, int professionID, int raceID, int[] traitIDs) : AdventurerInstance` | 分配 instanceID，不加入名冊。**v1.1（2026-05-02 D-01 patch）**：呼叫 `ICharacterContentDB.PickRandomNameWithGender(raceID)` 取 name + gender，再呼叫 `GetRandomBio(raceID, professionID, name, gender)` 一次性生成 bio；服務未注入時降級為 `name="冒險者" / gender=0 / bio=""` 並 LogWarning（一次） |
 
 **IAdventurerTemplateLoader（由 AdventurerTemplateLoader 實作）**
 
@@ -259,6 +261,8 @@ AdventurerInstance
     int   instanceID               // Runtime 唯一 ID，由 AdventurerRoster 自增；0 = null sentinel
     int   templateID               // 來源模板 ID；0 = 隨機生成
     string name
+    int   gender                   // v1.1：0=男（他）/ 1=女（她）/ 2=中性（其）；隨機生成由 D-01 取得，具名 NPC 預設 0
+    string bio                     // v1.1：背景故事文字（已替換 {name}/{pronoun}）；具名 NPC 取自 AdventurerTemplate.bio
     string rank                    // "F" | "E" | "D" | "C" | "B" | "A" | "S"
     int   professionID             // FK → ProfessionTable
     int   raceID                   // FK → RaceTable
@@ -290,6 +294,7 @@ AdventurerTemplate
     int[]  randomTraitGroupIDs     // '|' 分隔；0 為 null sentinel
     int    factionID
     int    isUnique                // 1 = 唯一
+    string bio                     // v1.1：具名 NPC 靜態 bio 文字（不含 {name}/{pronoun} 變數）；無 bio 留空字串
 ```
 
 **RecruitCostEntry（對應 CSV）**
@@ -317,6 +322,7 @@ FT-01.TryRecruitFromTemplate(templateID)
       ├─ 4：instance.raceID = (template.raceID != 0) ? template.raceID : IRaceService.RollRace(professionID)
       ├─ 5：instance.traitIDs = BuildTraitList(template.fixedTraitIDs, template.randomTraitGroupIDs)
       ├─ 6：instance.factionID = template.factionID
+      ├─ 6.1（v1.1）：instance.gender = 0; instance.bio = template.bio ?? ""
       ├─ 7：instance.status = Idle; 其餘欄位 = 0
       └─ 8：return instance
 
@@ -521,6 +527,7 @@ class C02SaveDTO {
 | 日期 | GDD 檔案 | 章節 | 回註摘要 |
 | --- | --- | --- | --- |
 | — | — | — | 無（本 FSD 無需回註 GDD，GDD §3.4~§3.5 規則完整且無歧義） |
+| 2026-05-02 | `【C-02】adventurer-management.md` | §3.1 / §3.2 / §4.3 / §4.3a / §6.1 / §6.4 / §九 | **v1.1（D-01 patch）**：`AdventurerInstance` 新增 `gender:int` / `bio:string`、`AdventurerTemplate` 新增 `bio:string`、`CreateFromTemplate` 偽碼補 gender=0/bio 複製、`CreateRandomInstance` 偽碼改用 `D01.PickRandomNameWithGender` + `D01.GetRandomBio`、§6.1 上游依賴新增 D-01、§6.4 ISaveable 序列化欄位列表新增 gender/bio。FSD §1.2 / §2.3 / §5.1 / §5.3 / §5.4 / §8 同步更新。 |
 
 ### 8.5 衝突處理紀錄
 

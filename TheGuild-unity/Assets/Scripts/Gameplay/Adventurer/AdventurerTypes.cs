@@ -35,6 +35,12 @@ namespace TheGuild.Gameplay.Adventurer
         /// <summary>顯示名稱（來自模板或隨機生成）。</summary>
         public string name;
 
+        /// <summary>v1.1 D-01 patch：0=男 / 1=女 / 2=中性。</summary>
+        public int gender;
+
+        /// <summary>v1.1 D-01 patch：隨機冒險者一次性生成並已替換 {name}/{pronoun}；具名 NPC 取自 AdventurerTemplate.bio。</summary>
+        public string bio;
+
         /// <summary>階級字串：F / E / D / C / B / A / S。</summary>
         public string rank;
 
@@ -97,6 +103,9 @@ namespace TheGuild.Gameplay.Adventurer
 
         /// <summary>1 = 唯一角色（全局只能實例化一次）；0 = 可重複。</summary>
         public int isUnique;
+
+        /// <summary>v1.1 D-01 patch：具名 NPC 靜態 bio 文字（不含模板變數），無則空字串。</summary>
+        public string bio;
     }
 
     /// <summary>

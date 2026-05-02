@@ -172,6 +172,29 @@ namespace Tests.EditMode.Gameplay.Adventurer
             Assert.IsFalse(ok, "Should not register non-unique adventurer as unique");
         }
 
+        [Test]
+        public void CreateFromTemplate_v11_CopiesBioFromTemplate()
+        {
+            AdventurerInstance instance = _ctx.Roster.GetFactory().CreateFromTemplate(901);
+
+            Assert.IsNotNull(instance);
+            Assert.AreEqual(0, instance.gender);
+            Assert.AreEqual("Ophelia test bio.", instance.bio);
+        }
+
+        [Test]
+        public void CreateRandomInstance_v11_StubFallback()
+        {
+            ReflectionTools.SetStaticField(typeof(AdventurerFactory), "_d01StubWarningLogged", false);
+            LogAssert.Expect(LogType.Warning, "[AdventurerFactory] CreateRandomInstance: D-01 Character Content Database is not implemented; using stub name/gender/bio fallback.");
+
+            AdventurerInstance instance = _ctx.Roster.GetFactory().CreateRandomInstance("F", 1, 1, Array.Empty<int>());
+
+            Assert.AreEqual("冒險者", instance.name);
+            Assert.AreEqual(0, instance.gender);
+            Assert.AreEqual(string.Empty, instance.bio);
+        }
+
         private Dictionary<string, string> BuildTableMap()
         {
             Dictionary<string, string> map = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -220,7 +243,8 @@ namespace Tests.EditMode.Gameplay.Adventurer
                 "fixedTraitIDs,0,0,999\n" +
                 "randomTraitGroupIDs,1|3,2|4,0\n" +
                 "factionID,0,0,1\n" +
-                "isUnique,1,0,1\n";
+                "isUnique,1,0,1\n" +
+                "bio,Template one bio.,,Ophelia test bio.\n";
 
             map["StaffTable"] =
                 "staffID,103\n" +
@@ -357,6 +381,7 @@ namespace Tests.EditMode.Gameplay.Adventurer
             ReflectionTools.InvokeStatic(typeof(BuildingService), "ResetForTests");
             ReflectionTools.InvokeStatic(typeof(GuildCoreService), "ResetForTests");
             ReflectionTools.InvokeStatic(typeof(AdventurerRoster), "ResetForTests");
+            ReflectionTools.SetStaticField(typeof(AdventurerFactory), "_d01StubWarningLogged", true);
             ReflectionTools.InvokeStatic(typeof(TraitService), "ResetForTests");
             ReflectionTools.InvokeStatic(typeof(RaceService), "ResetForTests");
             ReflectionTools.InvokeStatic(typeof(ProfessionService), "ResetForTests");
@@ -421,6 +446,13 @@ namespace Tests.EditMode.Gameplay.Adventurer
             FieldInfo field = target.GetType().GetField(fieldName, AnyInstance);
             Assert.IsNotNull(field, $"Missing field: {target.GetType().Name}.{fieldName}");
             field.SetValue(target, value);
+        }
+
+        public static void SetStaticField(Type type, string fieldName, object value)
+        {
+            FieldInfo field = type.GetField(fieldName, AnyStatic);
+            Assert.IsNotNull(field, $"Missing static field: {type.Name}.{fieldName}");
+            field.SetValue(null, value);
         }
 
         public static void SetStaticProperty(Type type, string propertyName, object value)

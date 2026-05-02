@@ -356,7 +356,7 @@ P-02 訂閱契約：以 OnLoadCompleted 作為「Bootstrap 完成、可進主畫
 |---|---|---|---|
 | 1 | F-03 Resource | `currentGold` / `currentReputation` / `_warningState` / `_bankruptcyWarningStartTime` / `_warningDurationSec` / `_currentBankruptcyThreshold` | 無 |
 | 2 | C-06 World Danger | `currentDangerLevel` / `gameStartTimestamp` | F-03（若 SetBankruptcyThreshold push 觸發） |
-| 3 | C-02 Adventurer | `AdventurerInstance[]`（含 FT-03 `idleSinceTimestamp` / `lastAutoPickupTimestamp`） | F-01（驗證 templateID） |
+| 3 | C-02 Adventurer | `AdventurerInstance[]`（含 FT-03 `idleSinceTimestamp` / `lastAutoPickupTimestamp`，**v1.1（2026-05-02 D-01 patch）** 含 `gender` / `bio` 欄位） | F-01（驗證 templateID） |
 | 4 | FT-06 Guild Core | `GuildState`（`guildName` / `displayName` / `foundingTimestamp` / `currentLevel` / `gameOverState`） | F-03（聲望門檻判定） |
 | 5 | FT-07 Buildings | `BuildingState[]`（6 棟 `currentLevel`） | FT-06（聲望閘） |
 | 6 | FT-02 Dispatch | `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`；`activeMissions` 還原即可立即被檢查，無需額外 API 呼叫 | C-01（驗證 missionID）/ C-02（驗證 adventurerID） |
@@ -1058,7 +1058,7 @@ FT-10 為 ALL-依賴系統，但**消費層級僅限 owner 系統暴露的 `ISav
 | 1 | F-01 DataManager | `Get<T>(int id)` / `GetAll<T>()` | Bootstrap Phase C 期間，各 owner 在自身 `RestoreFromSave` 內呼叫驗證 ID 合法性；FT-10 本身**不直接呼叫**，但前置條件依賴 F-01 已完成 CSV 載入 | F-01 §6 line 185 |
 | 2 | F-02 Time System | `Initialize(long lastActiveTimestamp)` | Phase D 離線計算交棒；FT-10 為**唯一呼叫者** | F-02 §3 line 24 / §6 line 210 |
 | 3 | F-03 Resource Mgmt | `ISaveable` 實作（`Serialize` / `RestoreFromSave` / `InitializeAsNewGame`） | 序列化 `currentGold` / `currentReputation` / `_warningState` / `_bankruptcyWarningStartTime` / `_warningDurationSec` / `_currentBankruptcyThreshold` | §1 設計來源 + F-03 §6.2 |
-| 4 | C-02 Adventurer Mgmt | `ISaveable` 實作 | 序列化 `AdventurerInstance[]` 完整名冊（含 FT-03 idle 時間戳） | §1 設計來源 + C-02 §3.1 / §6 |
+| 4 | C-02 Adventurer Mgmt | `ISaveable` 實作 | 序列化 `AdventurerInstance[]` 完整名冊（含 FT-03 idle 時間戳；**v1.1（2026-05-02 D-01 patch）** 含 `gender:int` / `bio:string` 欄位） | §1 設計來源 + C-02 §3.1 / §6 |
 | 5 | C-06 World Danger | `ISaveable` 實作 | 序列化 `currentDangerLevel` / `gameStartTimestamp` | §1 設計來源 + C-06 §3 |
 | 6 | FT-01 Recruitment | `ISaveable` 實作 | 序列化候選池 / 刷新時間戳 / 免費刷新次數 | §1 設計來源 + FT-01 §5.4 / §6 |
 | 7 | FT-02 Mission Dispatch | `ISaveable` 實作 | 序列化 `activeMissions[]` / `_nextActiveMissionID`；還原後 FT-02 自行重新訂閱 F-02 `OnSecondTick` 觸發 `TickCompletionCheck`，不需呼叫任何 F-02 計時器 API | §1 設計來源 + FT-02 §5.5 / §6 |

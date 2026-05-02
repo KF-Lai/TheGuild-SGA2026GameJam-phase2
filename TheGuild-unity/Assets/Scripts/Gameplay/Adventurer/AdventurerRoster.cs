@@ -639,6 +639,18 @@ namespace TheGuild.Gameplay.Adventurer
                     inst.woundedUntilTimestamp = 0;
                 }
 
+                // v1.1 D-01 patch：bio null 正規化（Unity JsonUtility 對舊存檔可能填 null，不影響功能但避免後續呼叫 NRE）
+                if (inst.bio == null)
+                {
+                    inst.bio = string.Empty;
+                }
+
+                // gender 範圍正規化（合法 0/1/2，超出範圍轉 0）
+                if (inst.gender < 0 || inst.gender > 2)
+                {
+                    inst.gender = 0;
+                }
+
                 _roster.Add(inst);
             }
 

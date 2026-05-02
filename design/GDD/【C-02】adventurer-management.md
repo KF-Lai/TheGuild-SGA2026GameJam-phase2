@@ -31,6 +31,8 @@ C-02 Adventurer Management 管理公會名冊中所有冒險者的靜態定義�
 | `instanceID` | `int` | Runtime 唯一 ID，由 C-02 自增分配；`0` 為 null sentinel |
 | `templateID` | `int` | 來源模板 ID；`0` = 隨機生成（無固定模板） |
 | `name` | `string` | 顯示名稱（來自模板或 D-01 NamePool 隨機） |
+| `gender` | `int` | **v1.1（2026-05-02 D-01 patch）** 性別代碼：`0`=男（他）/`1`=女（她）/`2`=中性（其）；隨機生成由 `D01.PickRandomNameWithGender` 取得，具名 NPC 無對應欄位時預設 `0` |
+| `bio` | `string` | **v1.1（2026-05-02 D-01 patch）** 背景故事文字；隨機生成由 `D01.GetRandomBio` 一次性產出（已替換 `{name}` / `{pronoun}`）；具名 NPC 取自 `AdventurerTemplate.bio`（無則為空字串） |
 | `rank` | `string` | F / E / D / C / B / A / S |
 | `professionID` | `int` | FK → ProfessionTable（C-03） |
 | `raceID` | `int` | FK → RaceTable（C-04） |
@@ -59,6 +61,7 @@ C-02 Adventurer Management 管理公會名冊中所有冒險者的靜態定義�
 | `randomTraitGroupIDs` | `int[]`（`\|` 分隔） | 隨機抽取用的特質群組 ID 列表（FK → TraitGroupTable，C-05）；不需要隨機特質填 `0` |
 | `factionID` | `int` | 陣營歸屬；`0` = neutral |
 | `isUnique` | `int` | `1` = 唯一角色（全局只能實例化一次）；`0` = 可重複招募 |
+| `bio` | `string` | **v1.1（2026-05-02 D-01 patch）** 具名 NPC 的靜態背景故事文字；不參與模板替換（無 `{name}` / `{pronoun}` 變數），直接複製到 `AdventurerInstance.bio`；無 bio 留空字串 `""` |
 
 > **特質生成規則**：實例化時，先將 `fixedTraitIDs` 全部加入；再對每個 `randomTraitGroupIDs` 中的群組，依 C-05 TraitGroup 的 `pickCount` 與 `pickMode` 隨機抽取後加入。最終 `traitIDs` = 固定特質 ∪ 隨機抽取特質，去重。
 
@@ -190,6 +193,8 @@ CreateFromTemplate(templateID):
     instance.traitIDs      = BuildTraitList(template.fixedTraitIDs,
                                             template.randomTraitGroupIDs)
     instance.factionID     = template.factionID
+    instance.gender        = 0                          // v1.1：具名 NPC 預設 0；如未來 AdventurerTemplate 加 gender 欄位再對接
+    instance.bio           = template.bio ?? ""         // v1.1：具名 NPC 靜態 bio，無則空字串
     instance.status        = Idle
     instance.currentMissionID       = 0
     instance.woundedUntilTimestamp  = 0
@@ -206,8 +211,9 @@ CreateFromTemplate(templateID):
 CreateRandomInstance(rank, professionID, raceID, traitIDs):
     instance = new AdventurerInstance()
     instance.instanceID = NextInstanceID()
-    instance.templateID = 0                    // 隨機生成，無模板
-    instance.name = D01.PickRandomName(raceID) // 由 D-01 NamePool 決定；Jam 階段未實作可暫用「隨機生成」字串
+    instance.templateID = 0                                                // 隨機生成，無模板
+    (instance.name, instance.gender) = D01.PickRandomNameWithGender(raceID) // v1.1：tuple API（D-01 §4.1）
+    instance.bio = D01.GetRandomBio(raceID, professionID, instance.name, instance.gender) // v1.1：bio 一次性生成（D-01 §4.2）
     instance.rank = rank
     instance.professionID = professionID
     instance.raceID = raceID
@@ -222,6 +228,8 @@ CreateRandomInstance(rank, professionID, raceID, traitIDs):
 ```
 
 > `CreateRandomInstance` 僅分配 `instanceID` 並組裝資料，**不加入名冊、不觸發狀態機**。呼叫方（FT-01）需接著呼叫 `AddAdventurer(instance)` 完成加入；`AddAdventurer` 內部檢查 status == Idle 後會自動設定 `idleSinceTimestamp = NowUTC`。
+>
+> **v1.1（D-01 patch）**：D-01 服務尚未實作時的暫時降級——若 `D01` 為 null：`name = "冒險者"`、`gender = 0`、`bio = ""`，並 `Debug.LogWarning` 一次。Codex 實作時請以 `IRandomNameService` 介面解耦，方便後續 D-01 落地後切換。
 
 ---
 
@@ -312,6 +320,7 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | C-03 Profession System | 驗證 `professionID` 合法性；UI 顯示職業名稱 | `GetProfession(professionID)` |
 | C-04 Race System | `raceID = 0` 時依職業隨機抽種族 | `RollRace(professionID)` |
 | C-05 Trait System | 依 `randomTraitGroupIDs` 抽取隨機特質 | `GetTraitGroup(groupID)`、`RollTraits(group)` |
+| D-01 Character Content Database | **v1.1（2026-05-02）** 隨機冒險者生成時取得 name + gender + bio | `D01.PickRandomNameWithGender(raceID)`、`D01.GetRandomBio(raceID, professionID, name, gender)` |
 
 ---
 
@@ -351,6 +360,8 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | `instanceID` | `int` | 實例唯一 ID |
 | `templateID` | `int` | 模板 ID；0 代表隨機生成實例（無固定模板） |
 | `name` | `string` | 顯示名稱 |
+| `gender` | `int` | **v1.1（2026-05-02 D-01 patch）** 性別代碼 0/1/2 |
+| `bio` | `string` | **v1.1（2026-05-02 D-01 patch）** 已替換變數的背景故事文字 |
 | `rank` | `string` | 階級（F/E/D/C/B/A/S） |
 | `professionID` | `int` | 職業 ID |
 | `raceID` | `int` | 種族 ID |
@@ -432,3 +443,4 @@ BuildTraitList(fixedTraitIDs, randomTraitGroupIDs):
 | 日期 | 版本 | 變更摘要 |
 |------|------|---------|
 | 2026-04-30 | v3.1 | v3.1 patch P3.1-005：新增 `RegisterUniqueAdventurer` API + `DismissAdventurer` Rule 4 放寬（審查處解鎖後 Idle 可除名）+ `OnAdventurerDismissed` 事件 + `GetRoster` 排序奧菲莉雅永遠第一格。涉及章節：§3.4 Rule 4、§3.5、§4.3b、§5.2、§6.2、§7.1、§8。 |
+| 2026-05-02 | v1.1 | D-01 patch（cross-system from `【D-01】character-content-database.md` §6.3）：`AdventurerInstance` 新增 `gender:int` / `bio:string` 欄位（§3.1）、`AdventurerTemplate` 新增 `bio:string` 欄位（§3.2）、`CreateFromTemplate` 偽碼補 gender=0/bio 欄位複製（§4.3）、`CreateRandomInstance` 偽碼改用 `D01.PickRandomNameWithGender` + `D01.GetRandomBio`（§4.3a）、§6.1 上游依賴新增 D-01、§6.4 ISaveable 序列化欄位補 gender/bio。 |
