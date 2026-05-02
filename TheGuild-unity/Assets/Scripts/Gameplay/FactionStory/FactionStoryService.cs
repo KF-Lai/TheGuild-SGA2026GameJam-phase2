@@ -137,6 +137,18 @@ namespace TheGuild.Gameplay.FactionStory
                 : 0;
         }
 
+        // v3.1 patch P3.1-006（P-02 design-review）：P-02 OnUIReady step 3 主動查詢用。
+        // 從 _scoreAccumulator.PendingDialogueStages 取 FIFO 快照（不可變）。
+        public IReadOnlyList<int> GetPendingDialogueStages()
+        {
+            if (!_isEnabled || _scoreAccumulator == null)
+            {
+                return Array.Empty<int>();
+            }
+
+            return _scoreAccumulator.PendingDialogueStages.ToArray();
+        }
+
         public bool IsRouteCompleted(int factionID)
         {
             return _routeCompletedFlags.Contains(factionID);
@@ -724,11 +736,109 @@ namespace TheGuild.Gameplay.FactionStory
             }
         }
 
-        // TODO baseline fix：v3.1 patch P3.1-004 漏實作；待依 FT-09 GDD §3.6 補讀取 SystemConstants 邏輯。
-        private void LoadSystemConstants() { }
+        // v3.1 patch P3.1-004：讀 SystemConstants 5 個 v3.1 常數至 service 快取。
+        // 依 FT-09 GDD §3.4.9 / §3.6.9 規格，於 Bootstrap 期間呼叫；找不到 key 時保留 default 值（silent，不 LogError）。
+        private void LoadSystemConstants()
+        {
+            if (DataManager.Instance == null)
+            {
+                return;
+            }
 
-        // TODO baseline fix：v3.1 patch P3.1-004 漏實作；待依 FT-09 GDD §3.6 / §5 EC-? 補 _blockedStages 重檢邏輯。
-        private void TriggerDeferredStageCheck() { }
+            if (DataManager.Instance.TryGetInt("LIGHT_THRESHOLD", out int light) && light > 0)
+            {
+                _lightThreshold = light;
+            }
+
+            if (DataManager.Instance.TryGetInt("MIXED_THRESHOLD", out int mixed) && mixed > 0)
+            {
+                _mixedThreshold = mixed;
+            }
+
+            if (DataManager.Instance.TryGetInt("OPHELIA_MISSING_RECOVERY_HOURS", out int recovery) && recovery > 0)
+            {
+                _ophelia_missing_recovery_hours = recovery;
+            }
+
+            if (DataManager.Instance.TryGetInt("OPHELIA_TEMPLATE_ID", out int templateID) && templateID > 0)
+            {
+                _opheliaTemplateID = templateID;
+            }
+        }
+
+        // v3.1 patch P3.1-004：OnAdventurerRecovered（奧菲莉雅 Wounded → Idle）後重檢 _blockedStages，
+        // 依 GDD §3.4.8 / §3.6.9 規格：blocker 解除者補觸發解鎖（mutate _scoreAccumulator + 重發 OnFactionStoryStageUnlockedEvent）。
+        private void TriggerDeferredStageCheck()
+        {
+            if (!_isEnabled || _scoreAccumulator == null || _blockedStages.Count == 0)
+            {
+                return;
+            }
+
+            int[] snapshot = new int[_blockedStages.Count];
+            _blockedStages.CopyTo(snapshot);
+
+            for (int i = 0; i < snapshot.Length; i++)
+            {
+                int stageID = snapshot[i];
+                StoryStageData stage = _tableLoader.GetByStageID(stageID);
+                if (stage == null)
+                {
+                    _blockedStages.Remove(stageID);
+                    continue;
+                }
+
+                if (EvaluateBlocker(stage.unlockBlockerCondition))
+                {
+                    continue; // 仍 blocked
+                }
+
+                _blockedStages.Remove(stageID);
+                _scoreAccumulator.UnblockStage(stage.factionID, stage.stageIndex, stage.stageID);
+                EventBus.Publish(new OnFactionStoryStageUnlockedEvent(
+                    stage.stageID,
+                    stage.factionID,
+                    stage.stageIndex,
+                    stage.missionID,
+                    stage.dialogueKey));
+            }
+        }
+
+        // v3.1 patch P3.1-004：解析 unlockBlockerCondition 語法。
+        // Jam 版僅支援 "npc:ophelia:status==Idle"；不識別語法 → LogWarning + 視為無 blocker。
+        // GDD §3.4.8 EvaluateBlocker 表格：查 C-02 roster 以 templateID==OPHELIA_TEMPLATE_ID 找實例。
+        private bool EvaluateBlocker(string condition)
+        {
+            if (string.IsNullOrEmpty(condition))
+            {
+                return false;
+            }
+
+            if (condition == "npc:ophelia:status==Idle")
+            {
+                IReadOnlyList<AdventurerInstance> roster = RosterProviderForTests != null
+                    ? RosterProviderForTests.Invoke()
+                    : (AdventurerRoster.Instance != null ? AdventurerRoster.Instance.GetRoster() : null);
+
+                if (roster == null)
+                {
+                    return true; // 無 roster 視為 blocked
+                }
+
+                for (int i = 0; i < roster.Count; i++)
+                {
+                    if (roster[i] != null && roster[i].templateID == _opheliaTemplateID)
+                    {
+                        return roster[i].status != AdventurerStatus.Idle;
+                    }
+                }
+
+                return true; // 找不到奧菲莉雅 → blocked
+            }
+
+            Debug.LogWarning($"[FactionStoryService] Unknown blocker syntax: {condition}");
+            return false;
+        }
     }
 }
 

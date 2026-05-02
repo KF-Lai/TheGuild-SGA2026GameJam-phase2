@@ -492,6 +492,36 @@ namespace TheGuild.Core.Data
             }
         }
 
+        // 公開的 silent 查詢：找不到 key 不 LogError，回 false。
+        // 用於消費端可選 SystemConstants 讀取（例如 v3.1 patch 引入的新常數，舊測試 fixture 未含）。
+        public bool TryGetFloat(string key, out float value)
+        {
+            value = 0f;
+            if (string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+            if (!_systemConstants.TryGetValue(key, out string raw))
+            {
+                return false;
+            }
+            return float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+        }
+
+        public bool TryGetInt(string key, out int value)
+        {
+            value = 0;
+            if (string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+            if (!_systemConstants.TryGetValue(key, out string raw))
+            {
+                return false;
+            }
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
         private bool TryGetSystemConstantRawValue(string key, out string value)
         {
             value = null;

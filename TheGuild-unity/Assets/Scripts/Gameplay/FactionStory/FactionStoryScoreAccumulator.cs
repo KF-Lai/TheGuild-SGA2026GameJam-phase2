@@ -145,6 +145,27 @@ namespace TheGuild.Gameplay.FactionStory
             }
         }
 
+        // v3.1 patch P3.1-004：unlockBlockerCondition 解除後由 FactionStoryService.TriggerDeferredStageCheck 呼叫，
+        // 補觸發已 block 但 blocker 已解除的 stage 的解鎖流程（mutate 內部 dict + queue）。
+        internal void UnblockStage(int factionID, int stageIndex, int stageID)
+        {
+            if (!_tableLoader.HasFaction(factionID))
+            {
+                return;
+            }
+
+            int currentMax = _unlockedStageIndices.TryGetValue(factionID, out int existing) ? existing : 0;
+            if (stageIndex > currentMax)
+            {
+                _unlockedStageIndices[factionID] = stageIndex;
+            }
+
+            if (!_pendingDialogueStages.Contains(stageID))
+            {
+                _pendingDialogueStages.Enqueue(stageID);
+            }
+        }
+
         public int GetMaxFactionScore()
         {
             int max = 0;

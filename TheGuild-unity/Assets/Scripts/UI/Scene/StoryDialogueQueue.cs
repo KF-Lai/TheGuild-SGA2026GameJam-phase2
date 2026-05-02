@@ -63,10 +63,22 @@ namespace TheGuild.UI.Scene
 
         public void RestorePendingFromService()
         {
-            // FSD-A §8.3 A-02 / EC-04 fallback：
-            // FT-09 尚未實作 GetPendingDialogueStages query API（design-review patch 6 為事後追補）；
-            // Bootstrap 復原暫靠 FT-09 Step F 重發 OnFactionStoryStageUnlockedEvent + 本系統 step 2 訂閱補位。
-            // 待 FT-09 補 API 後改回主動查詢。
+            // FSD-A §3.8 OnUIReady step 3 / EC-04 雙重保險（main 路徑）：主動 query FT-09 取目前 pending stage queue。
+            if (FactionStoryService.Instance == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<int> stages = FactionStoryService.Instance.GetPendingDialogueStages();
+            if (stages == null || stages.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < stages.Count; i++)
+            {
+                EnqueueIfAbsent(stages[i], string.Empty);
+            }
         }
 
         public bool EnqueueIfAbsent(int stageID, string dialogueKey)
