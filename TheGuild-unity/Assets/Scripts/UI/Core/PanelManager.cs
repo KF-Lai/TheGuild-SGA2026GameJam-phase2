@@ -312,5 +312,21 @@ namespace TheGuild.UI.Core
         {
             return _tuning == null ? 0.15f : _tuning.PanelTransitionSeconds;
         }
+
+        /// <summary>
+        /// 回傳主場景 UIDocument 的 IPanel，供 P-01 WindowHitTester 執行 panel.Pick 查詢。
+        /// UIBootstrapController 未就緒或 document 未指派時回傳 null（呼叫方需防禦 null）。
+        /// </summary>
+        public UnityEngine.UIElements.IPanel GetMainSceneRootPanel()
+        {
+            UIBootstrapController bootstrap = UIBootstrapController.Instance;
+            if (bootstrap == null || bootstrap.MainSceneDocument == null)
+            {
+                return null;
+            }
+
+            VisualElement root = bootstrap.MainSceneDocument.rootVisualElement;
+            return root?.panel;
+        }
     }
 }

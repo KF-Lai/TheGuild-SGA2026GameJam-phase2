@@ -16,6 +16,9 @@ namespace TheGuild.UI.Core
         public static UIBootstrapController Instance { get; private set; }
         public bool IsUIReady { get; private set; }
 
+        /// <summary>主場景 UIDocument（P-01 WindowHitTester 取 IPanel 使用）。</summary>
+        public UIDocument MainSceneDocument => _mainSceneDocument;
+
         // 測試專用：直接設定 IsUIReady 避免 reflection 在 NUnit + EditMode 下偶發未生效。
         internal void SetUIReadyForTests(bool value)
         {

@@ -1,0 +1,19 @@
+{
+    "name": "TheGuild.UI.Platform.Win32",
+    "rootNamespace": "TheGuild.UI.Platform.Win32",
+    "references": [
+        "TheGuild.Core.Events",
+        "TheGuild.Core.SaveContract",
+        "TheGuild.Gameplay.Save",
+        "TheGuild.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

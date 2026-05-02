@@ -27,6 +27,9 @@ namespace TheGuild.Gameplay.Save
 
         private static SaveLoadService _instance;
 
+        /// <summary>SaveLoadService Singleton 實例（P-01 等需主動觸發 MarkDirty 的系統使用）。</summary>
+        public static SaveLoadService Instance => _instance;
+
         private List<ISaveable> _saveables = new List<ISaveable>(16);
         private readonly List<Action> _eventUnsubscribers = new List<Action>(16);
 
