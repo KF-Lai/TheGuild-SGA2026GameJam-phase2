@@ -3,6 +3,7 @@
     "rootNamespace": "TheGuild.UI.Panels",
     "references": [
         "TheGuild.UI",
+        "TheGuild.UI.Platform.Win32",
         "TheGuild.Core.Data",
         "TheGuild.Core.Events",
         "TheGuild.Core.Time",

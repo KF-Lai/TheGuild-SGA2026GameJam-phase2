@@ -365,6 +365,21 @@ namespace TheGuild.UI.Platform.Win32
         }
 
         /// <summary>
+        /// 回傳玩家縮放的合法範圍與步進幅度（來自 P01Tuning.asset）。
+        /// 供 P-02 SettingsPanel Slider 設定 lowValue / highValue / pageSize。
+        /// </summary>
+        public (float min, float max, float step) GetUserScaleRange()
+        {
+            if (_tuning == null)
+            {
+                // _tuning 未指派時回傳與 P01Tuning 預設值對齊的安全值
+                return (0.5f, 2.0f, 0.1f);
+            }
+
+            return (_tuning.UserScaleMin, _tuning.UserScaleMax, _tuning.UserScaleStep);
+        }
+
+        /// <summary>
         /// 註冊 effectiveScale 變更 callback。
         /// 註冊後立即 invoke 一次當前值（FSD §5.4.6 / DoD-12）。
         /// </summary>

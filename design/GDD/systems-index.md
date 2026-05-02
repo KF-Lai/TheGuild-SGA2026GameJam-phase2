@@ -330,7 +330,7 @@ World Danger ─(push)──────────► Resource Mgmt（Start / 
 | P-02 Main UI Framework          | ✅   | ✅（v0.6 / 2026-05-01 五輪 design-review APPROVED）| ✅（A/B 拆分，2026-05-02）| ✅（2026-05-02）| ✅（2026-05-02）|
 | P-03 Notification System        | ✅   | ✅（v1.0 / 2026-04-26）                   | ⬜（Jam 不實作）| ⬜（Jam 不實作）| ⬜（Jam 不實作）|
 | D-01 Character Content DB       | ✅   | ✅（v1.0 / 2026-05-02）                   | ⬜     | ⬜   | ⬜   |
-| D-02 Mission Content DB         | ✅   | ✅（v1.0 / 2026-05-02）                   | ⬜     | ⬜   | ⬜   |
+| D-02 Mission Content DB         | ✅   | ✅（v1.0 / 2026-05-02）                   | ⚠️（無獨立 FSD，service 內嵌於 Gameplay.Mission）| ✅（MissionTextFacade.cs 已實作；CommissionBoardPanel.cs:96 已接入；2026-05-03 補登）| ⬜（依 EditMode baseline）|
 
 ---
 

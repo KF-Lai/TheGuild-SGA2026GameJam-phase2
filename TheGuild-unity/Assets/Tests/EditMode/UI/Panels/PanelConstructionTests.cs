@@ -117,9 +117,10 @@ namespace Tests.EditMode.UI.Panels
         }
 
         [Test]
-        public void DoD_B14_SettingsPanel_IsNotCreated()
+        public void DoD_B14_SettingsPanel_IsCreated()
         {
-            Assert.IsNull(System.Type.GetType("TheGuild.UI.Panels.SettingsPanel, TheGuild.UI.Panels"));
+            // B2 scope（2026-05-03 落地）：SettingsPanel 已實作，原 B1 斷言「不存在」反轉為「存在」。
+            Assert.IsNotNull(System.Type.GetType("TheGuild.UI.Panels.SettingsPanel, TheGuild.UI.Panels"));
         }
 
         [Test]
