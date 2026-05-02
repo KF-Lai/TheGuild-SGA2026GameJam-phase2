@@ -80,10 +80,10 @@ P-02-FSD-B 不擁有任何 Data-Specs；以下為消費端引用：
 
 | Data-Specs | 對應 CSV | 引用欄位 | 用途 |
 | --- | --- | --- | --- |
-| `【P-02-DS】ui-text.md`（_待建_，owner = P-02-FSD-A） | `UIText.csv` | `key, zhTW` | 全面板標題、按鈕、tooltip、確認彈窗、錯誤提示文字 |
+| `【P-02-DS】ui-text.md`（已建，owner = P-02-FSD-A） | `UIText.csv` | `key, zhTW` | 全面板標題、按鈕、tooltip、確認彈窗、錯誤提示文字 |
 | `【FT-07-DS】building-table.md` | `BuildingTable.csv` | `level, name, upgradeCost, guildLevelReq, effectValue` | GuildBuildingPanel 自查下一級 cost / guildLevelReq / effectValue（消費端） |
-| `【FT-08-DS】staff-refresh-cost-table.md`（_待建_）| `StaffRefreshCostTable.csv` | `refreshCount, manualRefreshCost` | StaffGachaPanel 顯示刷新費用 |
-| `【FT-12-DS】staff-table.md`（_待建_）| `StaffTable.csv` | `staffID, name, rarity, salary, effectIDs, effectValues` | StaffRoster / StaffGacha 顯示職員名稱、稀有度、effect 摘要 |
+| `【FT-08-DS】staff-refresh-cost-table.md`（已建）| `StaffRefreshCostTable.csv` | `refreshCount, manualRefreshCost` | StaffGachaPanel 顯示刷新費用 |
+| `【FT-12-DS】staff-table.md`（已建）| `StaffTable.csv` | `staffID, name, rarity, salary, effectIDs, effectValues` | StaffRoster / StaffGacha 顯示職員名稱、稀有度、effect 摘要 |
 | `【C-01-DS】mission-template.md` | `MissionTemplate.csv` | `missionID, missionName, difficulty, typeID, factionID` | 委託卡靜態資料（透過 FT-02 取 missionID 後查詢，或透過 D-02 facade）|
 | `【C-01-DS】mission-difficulty-table.md` | `MissionDifficultyTable.csv` | `difficulty, baseReward` | 委託卡基準報酬顯示（最終值由 FT-02/FT-05 計算後提供） |
 | `【FT-09-DS】faction-route-table.md` | `FactionRouteTable.csv` | `factionID, name` | GuildOverviewPanel 陣營分數標籤、StoryDialoguePanel 紙條樣式選擇 |
@@ -722,12 +722,12 @@ EC-17（dropdown 列出已斷開螢幕）：
 
 | 表名 | 欄位 | 對應 Data-Specs | 用途 | 載入時機 |
 | --- | --- | --- | --- | --- |
-| `UIText.csv` | `key, zhTW` | `【P-02-DS】ui-text.md`（_待建_，owner = P-02-FSD-A） | 全面板文字 | 透過 FSD-A UITextService.Lookup |
+| `UIText.csv` | `key, zhTW` | `【P-02-DS】ui-text.md`（已建，owner = P-02-FSD-A） | 全面板文字 | 透過 FSD-A UITextService.Lookup |
 | `MissionTemplate.csv` | `missionID, missionName, difficulty, typeID, factionID, categoryID` | `【C-01-DS】mission-template.md` | CommissionBoardPanel 委託卡靜態資料（消費端） | F-01 啟動時載入 |
 | `MissionDifficultyTable.csv` | `difficulty, baseReward, baseDuration` | `【C-01-DS】mission-difficulty-table.md` | 委託卡基準數據（消費端） | 同上 |
 | `BuildingTable.csv` | `buildingID, level, name, upgradeCost, guildLevelReq, effectValue` | `【FT-07-DS】building-table.md` | GuildBuildingPanel 下一級資訊（消費端） | 同上 |
-| `StaffTable.csv` | `staffID, name, rarity, salary, effectIDs, effectValues` | `【FT-12-DS】staff-table.md`（_待建_） | StaffRoster / StaffGacha 職員資料（消費端） | 同上 |
-| `StaffRefreshCostTable.csv` | `refreshCount, manualRefreshCost` | `【FT-08-DS】staff-refresh-cost-table.md`（_待建_） | StaffGachaPanel 刷新費用（消費端） | 同上 |
+| `StaffTable.csv` | `staffID, name, rarity, salary, effectIDs, effectValues` | `【FT-12-DS】staff-table.md`（已建） | StaffRoster / StaffGacha 職員資料（消費端） | 同上 |
+| `StaffRefreshCostTable.csv` | `refreshCount, manualRefreshCost` | `【FT-08-DS】staff-refresh-cost-table.md`（已建） | StaffGachaPanel 刷新費用（消費端） | 同上 |
 | `GuildLevelTable.csv` | `level, title, reputationThreshold, maxDifficulty` | `【FT-06-DS】guild-level-table.md` | GuildOverviewPanel 等級進度條 | 同上 |
 | `FactionRouteTable.csv` | `factionID, name` | `【FT-09-DS】faction-route-table.md` | GuildOverviewPanel 陣營分數標籤；StoryDialoguePanel 紙條樣式 | 同上 |
 | `RaceTable.csv` / `ProfessionTable.csv` / `TraitTable.csv` | 各自 PK + name | `【C-04-DS】` / `【C-03-DS】` / `【C-05-DS】` | AdventurerRosterPanel 職業/種族/Trait 顯示 | 同上 |

@@ -5,7 +5,7 @@
 | 欄位 | 內容 |
 | --- | --- |
 | 對應 GDD | `【P-02】main-ui-framework.md`（版本：v0.6 / 2026-05-01） |
-| 對應 Data-Specs | `【P-02-DS】ui-text.md`（_待建_，CSV：`UIText.csv`，owner = P-02）<br>`【P-02-DS】scene-object-state-table.md`（_待建_，CSV：`SceneObjectStateTable.csv`，owner = P-02，v3.1 P3.1-010） |
+| 對應 Data-Specs | `【P-02-DS】ui-text.md`（已建，CSV：`UIText.csv`，owner = P-02）<br>`【P-02-DS】scene-object-state-table.md`（已建，CSV：`SceneObjectStateTable.csv`，owner = P-02，v3.1 P3.1-010） |
 | 撰寫者 | Claude Code 主體（Opus 4.7 + xhigh） |
 | Review 者 | Claude Code 主體 |
 | 狀態 | 已完成 |
@@ -79,8 +79,8 @@ P-02-FSD-A 涵蓋 P-02 Main UI Framework 的「框架核心 + 場景整合 + 啟
 
 | Data-Specs | 對應 CSV | 引用欄位 | 用途 |
 | --- | --- | --- | --- |
-| `【P-02-DS】ui-text.md`（_待建_） | `UIText.csv` | `key, zhTW, en` | 全 UI 玩家可見字串資料源；`UITextLookup(key)` 由本系統取得對應語言字串 |
-| `【P-02-DS】scene-object-state-table.md`（_待建_） | `SceneObjectStateTable.csv` | `objectID, stageCondition, spriteVariant, dialogueKey, priority, audioCue` | SceneObjectController 解析資料源；v3.1 P3.1-010 5 個 objectID × 10 row |
+| `【P-02-DS】ui-text.md`（已建） | `UIText.csv` | `key, zhTW, en` | 全 UI 玩家可見字串資料源；`UITextLookup(key)` 由本系統取得對應語言字串 |
+| `【P-02-DS】scene-object-state-table.md`（已建） | `SceneObjectStateTable.csv` | `objectID, stageCondition, spriteVariant, dialogueKey, priority, audioCue` | SceneObjectController 解析資料源；v3.1 P3.1-010 5 個 objectID × 10 row |
 
 ### 2.3 上游依賴系統
 
@@ -570,8 +570,8 @@ caller.Lookup(key, fallback = null)
 
 | 表名 | 欄位 | 對應 Data-Specs | 用途 | 載入時機 |
 | --- | --- | --- | --- | --- |
-| `UIText.csv` | `key, zhTW, en` | `【P-02-DS】ui-text.md`（_待建_） | 全 UI 玩家可見字串資料源；UITextService.Initialize() 一次性載入後快取 | OnUIReady step 4 |
-| `SceneObjectStateTable.csv` | `objectID, stageCondition, spriteVariant, dialogueKey, priority, audioCue` | `【P-02-DS】scene-object-state-table.md`（_待建_） | SceneObjectController 解析來源；SceneObjectStateLoader.Initialize() 載入後依 objectID 分組、依 priority 由高至低排序快取 | OnUIReady step 4 |
+| `UIText.csv` | `key, zhTW, en` | `【P-02-DS】ui-text.md`（已建） | 全 UI 玩家可見字串資料源；UITextService.Initialize() 一次性載入後快取 | OnUIReady step 4 |
+| `SceneObjectStateTable.csv` | `objectID, stageCondition, spriteVariant, dialogueKey, priority, audioCue` | `【P-02-DS】scene-object-state-table.md`（已建） | SceneObjectController 解析來源；SceneObjectStateLoader.Initialize() 載入後依 objectID 分組、依 priority 由高至低排序快取 | OnUIReady step 4 |
 | `DialogueTable`（消費端，owner 待 P-02 啟動 design-review 後決定）| `dialogueID, speakerId, context, text` | （消費端，本 FSD 不擁有 DS） | 對話文字內容；DialogueRenderer / SceneObjectController 點擊互動時透過 DataManager 查詢 | OnUIReady step 4（懶載入也可） |
 
 ### 6.2 引用的 ScriptableObject
@@ -666,7 +666,7 @@ caller.Lookup(key, fallback = null)
 | A-01 | 開除按鈕「審查處 buildingID」未在 GDD 與 FT-07 表格化 | 暫時阻塞 | Jam 版採程式碼常量 `REVIEW_OFFICE_BUILDING_ID`（值待 FT-07 P3.1-009 補登）+ `IBuildingService.GetBuildingLevel(REVIEW_OFFICE_BUILDING_ID) > 0` 判斷；常量值未確認（≤ 0）時 AdventurerRosterPanel.OnEnable LogWarning + 隱藏所有 Idle 冒險者「開除」按鈕；FT-07 P3.1-009 補登後改用 `IsBuildingUnlocked(buildingID)` 統一接口（§6.3 已對齊此決議）|
 | A-02 | DialogueTable owner 待定 | 跨 FSD | 短期 P-02 從 F-01 DataManager 直查 DialogueTable；長期 owner 由 P-02 啟動 design-review 或 narrative 模組決定（依 FSD-self-check-log T6 暫緩）|
 | A-03 | P-03 Critical 通知插隊 chain | 建議性 | EC-26 需 P-03 提供 `INotificationService.IsCriticalNotificationActive() : bool` 查詢或 `OnCriticalNotificationStateChangedEvent` 事件；P-03 §3 / §5 待 patch；本 FSD §5.4.6 `IsP03CriticalActive()` helper 已明示 fallback 邏輯：API 未提供時 return false（暫不阻塞 chain start，EC-26 採此 fallback；P-03 補 API 後 helper 內改呼叫真實 API）|
-| A-04 | P-02-DS UIText / SceneObjectStateTable 待建 | 文件 | DS-designer 後續以 `/design-DS P-02` 補；本 FSD §6.1 / §2.2 標 _待建_ |
+| A-04 | P-02-DS UIText / SceneObjectStateTable | 已解除 | DS 與 CSV 已落地（2026-05-02 前）：`design/Data-Specs/【P-02-DS】ui-text.md` / `【P-02-DS】scene-object-state-table.md`、`Assets/Resources/Data/Tables/UIText.csv` / `SceneObjectStateTable.csv`；data-index.md 狀態 ✅／✅ |
 | A-05 | userScale slider step `USER_SCALE_STEP` 引用 | 跨 FSD | 設定彈窗實作於 FSD-B；FSD-A 不直接持有；FSD-B 透過 P-01 §7 取常量 |
 | A-06 | ISaveable 實作（P-02 「最後關閉的 base panel ID」可選持久化） | 建議性 | GDD §6.1 FT-10 row 提到 P-02 僅持久化「最後關閉 base panel ID（可選）」；Jam 版可選擇不實作；若實作則 OwnerKey = `"P-02-LastPanel"`，Serialize/RestoreFromSave 直接寫 PanelID int；本 FSD 預留介面待人類覆核決定 |
 
@@ -706,3 +706,4 @@ caller.Lookup(key, fallback = null)
 | --- | --- | --- | --- | --- | --- |
 | 2026-05-02 | Claude Code 主體（Opus 4.7 + xhigh）| 通過 | 通過 | 通過 | 結構：8 節 + 附錄 A 全填、編號順序對齊 FSD-index §三；邏輯：Script 職責 SRP 明確、API/事件/資料流前後一致、雙重保險（OnUIReady step 3 + FT-09 Step F）對 EC-04 妥善處理；GDD 對齊：§3.1~§3.9 / §4 全節 / §5 EC-01~EC-26 中 17 條與 FSD-A 相關全有對策、§7.1/§7.2/§7.4/§7.5 全納入 P02UITuning + 程式碼常量、§8 AC 對應 DoD 14 條；建議項 A-01~A-06 皆不阻擋實作 |
 | 2026-05-02 | Claude Code 主體（Opus 4.7 + xhigh）—— `/design-review P-02-FSD` NEEDS REVISION patch | 通過 | 通過 | 通過 | design-review 14 條 issue 全修。**FSD-A 修補項**：(C2) §5.2 OnOpheliaMissingNightEvent publisher 明示為 FSD-B StoryDialoguePanel；表格末加 publisher / subscriber 註解。(C3) §2.5 / §5.2 全部事件名稱統一加 `Event` 後綴對齊 FT-12 既定慣例。(C4) §2.3 補 FT-07 IBuildingService row、FT-09 訂閱事件清單補完（5 個事件）。(C5) §4.4 PanelManager 依賴介面 `IBootstrapState` → `UIBootstrapController`（讀 IsUIReady）。(C1) §5.4.8 SceneObjectController 點擊互動改用 typed `StoryDialogueOpenArgs`（移除匿名物件 dialoguePages 欄位），統一兩條觸發路徑（FT-09 事件 / 場景物件互動）由 FSD-B 自行 SplitDialogue。(I4) §6.3 + §8.3 A-01 審查處 buildingID fallback 二擇一決議：Jam 版採 `REVIEW_OFFICE_BUILDING_ID` 程式碼常量 + `GetBuildingLevel(...) > 0` 判斷；常量值 ≤ 0 時 LogWarning + 隱藏開除按鈕。(I5) §5.4.6 chain start 補 `IsP03CriticalActive()` helper 與 fallback 邏輯（API 未提供時 return false）；§8.3 A-03 同步說明。本次 patch 不變動章節結構、不影響 §1.3 DoD / §8.1 / §8.2 / §8.5 既有判定 |
+| 2026-05-02 | Claude Code 主體（Opus 4.7 + xhigh）—— 實作層落差修補（commit 458e844）| 通過 | 通過 | 通過 | DoD-A4 / EC-08 chain continue 寫測試時發現實作層與 §5.4.6 不一致：原 `StoryDialogueQueue.ConfirmCurrentDialogue` 同步呼叫 `TryStartNext()`，但 `PanelManager.ClosePanel` 內部 `RemoveFromStack` 在 Closing 動畫完成 callback 才執行，導致 GetTopPanel 仍回 StoryDialogue，chain continue 永遠 return false。**修補**：`PanelManager.ClosePanel` 簽章加 `Action onClosed = null`（default 參數，原 call site 全相容），透過 `PanelStateMachine.Close` 完成 callback 串接；`StoryDialogueQueue.ConfirmCurrentDialogue` 改傳 `TryStartNextOnClose` 進 ClosePanel，符合 §5.4.6「Closing 動畫結束後 chain continue」的 spec。FSD §5.4.6 規格未變更，僅實作對齊。**測試**：新增 `Tests.PlayMode.UI.StoryDialogueQueuePlayModeTests.DoD_A4_EC08_ConfirmCurrentDialogue_ChainsNextStage`（含 FakeFactionStoryService）；EditMode 同名 `[Ignore]` 訊息更新為「責任移交 PlayMode」。**驗證**：Tests.PlayMode.UI 7/7 pass、Tests.EditMode.UI 12/19 pass + 7 [Ignore] / 0 fail。**附帶 seam**：StoryDialogueQueue 加 `internal SetServiceForTests(IFactionStoryService)` 注入點，解除 FT-09 concrete singleton 對 PlayMode 測試的限制；production 路徑 fall back 至 `FactionStoryService.Instance` 不變 |
