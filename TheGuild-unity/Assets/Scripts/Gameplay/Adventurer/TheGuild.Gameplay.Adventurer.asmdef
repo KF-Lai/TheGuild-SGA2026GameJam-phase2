@@ -8,6 +8,7 @@
                        "TheGuild.Gameplay.Profession",
                        "TheGuild.Gameplay.Race",
                        "TheGuild.Gameplay.Trait",
+                       "TheGuild.Gameplay.Building",
                        "TheGuild.Core.SaveContract"
                    ],
     "includePlatforms":  [

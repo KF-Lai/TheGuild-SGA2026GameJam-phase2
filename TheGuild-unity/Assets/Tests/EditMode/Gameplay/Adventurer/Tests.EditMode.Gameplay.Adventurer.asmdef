@@ -11,6 +11,7 @@
     "TheGuild.Gameplay.Staff",
     "TheGuild.Gameplay.Resources",
     "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.Recruitment",
     "TheGuild.Core.Data",
     "TheGuild.Core.Time",
     "TheGuild.Core.Events",

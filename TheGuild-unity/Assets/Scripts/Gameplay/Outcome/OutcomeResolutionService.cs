@@ -4,7 +4,6 @@ using System.Linq;
 using TheGuild.Core.Data;
 using TheGuild.Core.Events;
 using TheGuild.Gameplay.Adventurer;
-using TheGuild.Gameplay.FactionStory;
 using TheGuild.Gameplay.Mission;
 using TheGuild.Gameplay.MissionDispatch;
 using TheGuild.Gameplay.MissionDispatch.Events;

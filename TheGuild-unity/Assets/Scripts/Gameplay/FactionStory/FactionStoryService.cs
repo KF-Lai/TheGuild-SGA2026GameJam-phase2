@@ -505,12 +505,12 @@ namespace TheGuild.Gameplay.FactionStory
             int opheliaTemplateID = (int)DataManager.Instance.GetFloat("OPHELIA_TEMPLATE_ID");
             if (AdventurerRoster.Instance == null) return;
 
-            var ophelia = AdventurerRoster.Instance.GetAdventurer(evt.instanceID);
+            var ophelia = AdventurerRoster.Instance.GetAdventurer(evt.InstanceID);
             if (ophelia == null || ophelia.templateID != opheliaTemplateID) return;
 
             // 識別為奧菲莉雅
             _pendingMissingNight = false;
-            EventBus.Publish(new OnOpheliaReturnedEvent(evt.instanceID));
+            EventBus.Publish(new OnOpheliaReturnedEvent(evt.InstanceID));
 
             // 重新檢查 _blockedStages（Stage 5 npc:ophelia:status==Idle 解除）
             TriggerDeferredStageCheck();
@@ -723,6 +723,12 @@ namespace TheGuild.Gameplay.FactionStory
                 DontDestroyOnLoad(gameObject);
             }
         }
+
+        // TODO baseline fix：v3.1 patch P3.1-004 漏實作；待依 FT-09 GDD §3.6 補讀取 SystemConstants 邏輯。
+        private void LoadSystemConstants() { }
+
+        // TODO baseline fix：v3.1 patch P3.1-004 漏實作；待依 FT-09 GDD §3.6 / §5 EC-? 補 _blockedStages 重檢邏輯。
+        private void TriggerDeferredStageCheck() { }
     }
 }
 
