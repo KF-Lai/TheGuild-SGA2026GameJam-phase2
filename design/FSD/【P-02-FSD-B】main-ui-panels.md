@@ -8,7 +8,7 @@
 | 對應 Data-Specs | 無（本 FSD 不擁有 DS；UIText.csv / SceneObjectStateTable.csv 由 FSD-A owner；其他資料表為消費端引用 owner 系統 DS） |
 | 撰寫者 | Claude Code 主體（Opus 4.7 + xhigh） |
 | Review 者 | Claude Code 主體 |
-| 狀態 | 審查中 |
+| 狀態 | 已完成（B1 scope；B2 deferred 詳見 §1.2 / §8.5）|
 | 最近更新 | 2026-05-02 |
 
 ---
@@ -21,19 +21,24 @@ P-02-FSD-B 涵蓋 P-02 Main UI Framework 的 10 個 L2 覆蓋面板（Commission
 
 ### 1.2 In-Scope / Out-of-Scope
 
-**In-Scope**：
-- §3.5.1 委託板（CommissionBoardPanel + 推薦冒險者子面板）
-- §3.5.2 冒險者名冊（AdventurerRosterPanel + 卡片展開）
+**B1 In-Scope（Jam 落地，本次實作範圍）**：
+- §3.5.1 委託板（CommissionBoardPanel + 推薦冒險者子面板）—— D-02 facade 不可用時 fallback：`MissionTemplate.MissionName` 直顯、介紹短文顯 placeholder「（暫無敘述）」
+- §3.5.2 冒險者名冊（AdventurerRosterPanel + 卡片展開）—— D-01 facade 不可用時 fallback：介紹短文顯 placeholder「（暫無敘述）」
 - §3.5.3 公會建設（GuildBuildingPanel）
 - §3.5.4 職員名冊（StaffRosterPanel）
 - §3.5.5 職員面試（StaffGachaPanel）
 - §3.5.6 公會總覽（GuildOverviewPanel）
-- §3.5.7 通知 Log（P-02 host UXML container；綁定邏輯在 FSD-A LogFloatingWindowHost；本 FSD 僅提供 UXML 模板與 host 區塊版面）
-- §3.5.8 故事面板（StoryDialoguePanel；事件路由與 chain 邏輯在 FSD-A，本 FSD 負責「對話文字 + 確認按鈕」UI 渲染）
+- §3.5.7 通知 Log（P-02 host UXML container；綁定邏輯在 FSD-A LogFloatingWindowHost；本 FSD 僅提供 UXML 模板與 host 區塊版面）—— P-03 BindLogWindow 不可用時 FSD-A LogFloatingWindowHost 已有 fallback（LogFloatingWindowHost.cs:75 TODO P-03）
+- §3.5.8 故事面板（StoryDialoguePanel；事件路由與 chain 邏輯在 FSD-A，本 FSD 負責「對話文字 + 確認按鈕」UI 渲染）—— DialogueTable owner 待定（§8.3 B-02）時 fallback：dialogueKey 命中失敗顯 placeholder「[對話缺失：{dialogueKey}]」（對齊 FSD-A EC-20 既有處理）
 - §3.5.9 確認彈窗（ConfirmPopup 視覺實作；API 簽章在 FSD-A）
-- §3.5.10 設定彈窗（SettingsPanel）
 
-**Out-of-Scope**：
+**B2 Deferred（暫緩，待上游補齊後另起 patch）**：
+- §3.5.10 設定彈窗（SettingsPanel）—— 整體仰賴 P-01 IDesktopWindow（7 個 API：GetEffectiveScale / SetUserScale / EnumerateAvailableMonitors / SwitchTargetScreen / GetCurrentTargetMonitorID / Minimize / ResetUserScaleToDefault），無合理 fallback；待 P-01 FSD 啟動後再實作
+- AdventurerRosterPanel 介紹短文整合 —— B1 採 placeholder；D-01 Character Content Database 落地後改呼叫 facade（GDD 待設計，需 narrative 配合）
+- CommissionBoardPanel 介紹短文整合 —— 同上，D-02 Mission Content Database 落地後改呼叫 facade
+- StoryDialoguePanel DialogueTable 對話內容整合 —— B1 採 placeholder + EC-20 處理；DialogueTable owner 仲裁後（§8.3 B-02）再導入實際對話文字渲染
+
+**Out-of-Scope**（不論 B1 / B2 都不在本 FSD）：
 - 三層 Scene-First 版面、面板狀態機、堆疊規則、ESC 路由 → FSD-A
 - 6 個導覽用場景物件路由與 hover outline → FSD-A
 - L1 持久 HUD（金幣、劇情指示器、設定按鈕、Log host container）→ FSD-A
@@ -63,7 +68,7 @@ P-02-FSD-B 涵蓋 P-02 Main UI Framework 的 10 個 L2 覆蓋面板（Commission
 - **DoD-B12**：EditMode test「死亡通知（P-03 Critical）+ epilogue 同 frame 觸發時，先呈現死亡通知、確認後再呈現 epilogue」通過（對應 AC-31）
 - **DoD-B13**：EditMode test「紙條視覺依 `GetCurrentStyleTagBias()` 切換 light/dark/neutral 三版」通過（對應 AC-32）
 - **DoD-B14**：EditMode test「ConfirmPopup `Destructive` 樣式紅底；ESC 等同點「取消」」通過（對應 AC-17、AC-22）
-- **DoD-B15**：手動驗收「SettingsPanel：UI 縮放 slider 範圍對齊 P-01 USER_SCALE_*；目標螢幕 dropdown；最小化/離開按鈕」（對應 AC-39）
+- **DoD-B15**：[B2 deferred] 手動驗收「SettingsPanel：UI 縮放 slider 範圍對齊 P-01 USER_SCALE_*；目標螢幕 dropdown；最小化/離開按鈕」（對應 AC-39）—— 待 P-01 FSD 啟動後再驗收
 - **DoD-B16**：EditMode test「面板事件訂閱：CommissionBoard 訂 `OnCommissionPosted/Accepted/Settled/AutoPickup`；AdventurerRoster 訂 `OnAdventurerDied/Recovered/Dismissed`；GuildBuilding 訂 `OnBuildingUpgraded`；StaffRoster 訂 `OnStaffHired/Fired/Assigned/StateChanged`；GuildOverview 訂 `OnGoldChanged/ReputationChanged/BankruptcyWarningStateChanged/GuildLevelChanged/DangerLevelChanged`」通過
 
 ---
@@ -113,9 +118,9 @@ P-02-FSD-B 需要呼叫／訂閱：
 | FT-08 Gacha System | `GetCurrentCandidates()`、`GetCurrentPoolID()`、`TryManualRefresh()`、`TrySwitchPool(poolID)`、`TryRecruit(slotIndex)`、`TryRejectCandidate(slotIndex)`、`TryReserveCandidate(slotIndex)`、`TryReleaseReserve(slotIndex)`、`GetCurrentRefreshCount() : int`（**待 FT-08 §3.3.4 補登**，Jam 版 fallback 由 P-02 自行維護面板開啟以來的本地 counter，見 §5.4.6 + §8.3 B-03）；訂閱 `OnStaffSystemBootEvent` | StaffGachaPanel 資料源與 7 個動作 API；polling 模式刷新候選 |
 | FT-09 Faction Story System | `GetCurrentFactionScore(factionID)`、`GetCurrentStyleTagBias()`、`GetUnlockedStageIndex(factionID)`、`ConfirmDialogue(stageID) : ConfirmDialogueResult`；訂閱 `OnFactionStoryStageEpilogue`（透過 FSD-A 路由）、`OnFactionRouteCompleted` | StoryDialoguePanel 確認流程；GuildOverviewPanel 陣營分數；紙條樣式選擇 |
 | FT-12 Staff System | `GetActiveRoster()`、`GetRosterCap()`、`GetStaffStateView(instanceID)`、`IsSuccessRatePreviewEnabled()`、`TryAssignStaff(instanceID, slotID)`、`TryFireStaff(instanceID)`、`TryStartLeave(instanceID)`、`IsStaffHired(staffID)`；訂閱 `OnStaffHired`、`OnStaffFired`、`OnStaffAssigned`、`OnStaffStateChanged` | StaffRosterPanel；委託卡成功率預覽旗標 |
-| P-01 Desktop Transparent Window | `GetEffectiveScale()`、`SetUserScale(value)`、`ResetUserScaleToDefault()`、`GetUserScale()`、`EnumerateAvailableMonitors()`、`SwitchTargetScreen(monitorID)`、`GetCurrentTargetMonitorID()`、`Minimize()` | SettingsPanel UI 縮放、螢幕切換、最小化按鈕 |
-| D-01 Character Content Database | facade `GetAdventurerIntroText(instanceID)` | AdventurerRosterPanel 介紹短文 |
-| D-02 Mission Content Database | facade `GetMissionName(missionID)`、`GetMissionIntroText(missionID)` | CommissionBoardPanel 名稱與介紹短文 |
+| P-01 Desktop Transparent Window | **[B2 deferred]** `GetEffectiveScale()`、`SetUserScale(value)`、`ResetUserScaleToDefault()`、`GetUserScale()`、`EnumerateAvailableMonitors()`、`SwitchTargetScreen(monitorID)`、`GetCurrentTargetMonitorID()`、`Minimize()` | SettingsPanel UI 縮放、螢幕切換、最小化按鈕（B1 不實作 SettingsPanel） |
+| D-01 Character Content Database | **[B1 fallback / B2 整合]** facade `GetAdventurerIntroText(instanceID)` | AdventurerRosterPanel 介紹短文（B1：facade 不可用時顯 placeholder「（暫無敘述）」；B2：D-01 落地後接入） |
+| D-02 Mission Content Database | **[B1 fallback / B2 整合]** facade `GetMissionName(missionID)`、`GetMissionIntroText(missionID)` | CommissionBoardPanel 名稱與介紹短文（B1：facade 不可用時 fallback：MissionName 取 MissionTemplate.csv 同名欄、IntroText 顯 placeholder；B2：D-02 落地後接入） |
 
 ### 2.4 下游被依賴系統
 
@@ -186,10 +191,14 @@ P-02-FSD-B 為玩家所有「具體操作」的著陸點：審核委託、派遣
 | GuildOverviewPanel | `Assets/Scripts/UI/Panels/GuildOverviewPanel.cs` | 公會等級/聲望/金幣/破產倒數/陣營分數/styleTag bias（§3.5.6） | IGuildCoreService、IResourceService、IBuildingService、IFactionStoryService、IWorldDangerService、UITextService | 200~260 行 |
 | StoryDialoguePanel | `Assets/Scripts/UI/Panels/StoryDialoguePanel.cs` | 故事面板對話文字 + 確認按鈕；styleTag bias 紙條樣式；Stage 4 / Stage 5 特殊呈現；publish OnOpheliaMissingNight 觸發點（§3.5.8） | IFactionStoryService、IDataManager（DialogueTable / FactionRouteTable）、DialogueRenderer（FSD-A）、UITextService、PanelManager、EventBus | 220~280 行 |
 | ConfirmPopup | `Assets/Scripts/UI/Panels/ConfirmPopup.cs` | 確認彈窗視覺實作（Normal / Destructive 樣式）；UITextLookup 套入文字；ESC 等同取消（§3.5.9） | UITextService、PanelManager | 150~190 行 |
-| SettingsPanel | `Assets/Scripts/UI/Panels/SettingsPanel.cs` | UI 縮放 slider / 目標螢幕 dropdown / 最小化 / 離開遊戲（§3.5.10） | IDesktopWindow（P-01）、UITextService、PanelManager（ShowConfirm Destructive 「離開遊戲」） | 220~280 行 |
+| **[B2 deferred]** SettingsPanel | `Assets/Scripts/UI/Panels/SettingsPanel.cs` | UI 縮放 slider / 目標螢幕 dropdown / 最小化 / 離開遊戲（§3.5.10） | IDesktopWindow（P-01）、UITextService、PanelManager（ShowConfirm Destructive 「離開遊戲」） | 220~280 行（B1 不實作；待 P-01 FSD 啟動後另起 patch） |
 | LogFloatingWindow（UXML/USS 資產，非 Script）| `Assets/UI/Panels/LogFloatingWindow.uxml` + `Assets/UI/Panels/LogFloatingWindow.uss` | Log host 區塊版面與預設 layout 資產；UXML container 由 FSD-A LogFloatingWindowHost 在 OnUIReady step 8 instantiate 並呼叫 P-03 BindLogWindow（§3.5.7）| n/a（純資產，無依賴介面）| n/a（資產，無 C# 行數）|
 
-**預估合計：1990~2500 行 / 11 Script（含 IPanel interface + 9 panel + 1 subpanel）+ 1 組 LogFloatingWindow UXML/USS 資產**（原 LogFloatingWindowTemplate.cs 撤銷，職責移轉為 UXML/USS 資產；綁定邏輯統一收於 FSD-A LogFloatingWindowHost）。
+**B1 預估合計：1770~2220 行 / 10 Script（含 IPanel interface + 8 panel + 1 subpanel；扣除 SettingsPanel 220~280 行）+ 1 組 LogFloatingWindow UXML/USS 資產**
+
+**B2 待補：220~280 行 / 1 Script（SettingsPanel）+ 3 處 facade 整合（D-01 介紹短文 / D-02 介紹短文 / DialogueTable 對話內容）**
+
+（原 LogFloatingWindowTemplate.cs 撤銷，職責移轉為 UXML/USS 資產；綁定邏輯統一收於 FSD-A LogFloatingWindowHost）
 
 ### 4.5 類別關係（可選）
 
@@ -766,8 +775,8 @@ EC-17（dropdown 列出已斷開螢幕）：
 | EC-12：建設面板升級失敗（金幣同時被扣款）| GuildBuildingPanel 接 `TryUpgradeBuilding` 回傳值；非 SUCCESS → UIToast 顯示對應錯誤鍵 + RefreshAll；不重複扣款（FT-07 內部冪等保證） | GuildBuildingPanel | EditMode test：模擬 TryUpgradeBuilding 回 GOLD_INSUFFICIENT，斷言 toast + 面板重整 |
 | EC-13：職員名冊開啟期間 OnStaffSalaryDue 但 FT-05 拒付（Phase 2）| Jam 版不發薪水（FT-12 §3.9 標 Phase 2）→ 此情境 Jam 版不會發生；UI 不實作 | （無，Phase 2）| Phase 2 補測 |
 | EC-14：故事面板呈現 Stage 4 期間玩家對奧菲莉雅推薦 | C-02 與 FT-02 前置檢查阻擋（status != Idle）；推薦子面板已過濾 Wounded 冒險者，玩家看不到她；本 FSD 不額外處理 | RecommendAdventurerSubpanel | 觀察：推薦子面板列表自然不含 Wounded |
-| EC-17：設定彈窗螢幕 dropdown 列出已斷開螢幕 | SettingsPanel dropdown 解析 `isConnected` 旗標 → 已斷開項顯示灰；玩家選擇已斷開 → P01.SwitchTargetScreen 內部 fallback 至主螢幕 → toast | SettingsPanel | 多螢幕手動測試（拔線 → 開設定彈窗 → dropdown 顯示「(已斷開)」）|
-| EC-18：userScale 滑桿被拖至範圍外 | SettingsPanel slider `lowValue / highValue` 對齊 `[USER_SCALE_MIN, USER_SCALE_MAX]`；P01.SetUserScale 內部 clamp；UI slider visual 跟隨 clamp 後值 | SettingsPanel | EditMode test：模擬 SetUserScale(超出值) → P01 回 clamp 後值 → slider visual 對齊 |
+| **[B2 deferred]** EC-17：設定彈窗螢幕 dropdown 列出已斷開螢幕 | SettingsPanel dropdown 解析 `isConnected` 旗標 → 已斷開項顯示灰；玩家選擇已斷開 → P01.SwitchTargetScreen 內部 fallback 至主螢幕 → toast | SettingsPanel | 多螢幕手動測試（拔線 → 開設定彈窗 → dropdown 顯示「(已斷開)」）—— 待 P-01 FSD 啟動後另起 patch |
+| **[B2 deferred]** EC-18：userScale 滑桿被拖至範圍外 | SettingsPanel slider `lowValue / highValue` 對齊 `[USER_SCALE_MIN, USER_SCALE_MAX]`；P01.SetUserScale 內部 clamp；UI slider visual 跟隨 clamp 後值 | SettingsPanel | EditMode test：模擬 SetUserScale(超出值) → P01 回 clamp 後值 → slider visual 對齊 —— 待 P-01 FSD 啟動後另起 patch |
 | EC-26：P-03 Critical 通知與故事面板同 frame 觸發 | StoryDialoguePanel 不直接處理；FSD-A StoryDialogueQueue 統籌（依 P-02-FSD-A §7 EC-26）；本 FSD 為 chain end consumer | （由 FSD-A 處理）| 同上 |
 
 ---
@@ -787,7 +796,7 @@ EC-17（dropdown 列出已斷開螢幕）：
 | §3.5.7 通知 Log（host）| §4.4 LogFloatingWindowTemplate（UXML 模板）；綁定邏輯 FSD-A | 對齊 | 本 FSD 僅提供 UXML/USS 模板資源 |
 | §3.5.8 故事面板 | §4.4 StoryDialoguePanel、§5.4.8、§7 EC-20（透過 DialogueRenderer 處理） | 對齊 | confirm 流程 + Stage 4/5 特殊呈現 + OnOpheliaMissingNight publish |
 | §3.5.9 確認彈窗 | §4.4 ConfirmPopup、§5.4.9 | 對齊 | Normal / Destructive 兩樣式；ESC 等同取消（FSD-A 路由）|
-| §3.5.10 設定彈窗 | §4.4 SettingsPanel、§5.4.10、§7 EC-17/EC-18 | 對齊 | 透過 P-01 §3.8 對外 API surface 8 個方法 |
+| §3.5.10 設定彈窗 | §4.4 SettingsPanel、§5.4.10、§7 EC-17/EC-18 | **[B2 deferred]** | 整體仰賴 P-01 IDesktopWindow 8 個 API；P-01 FSD 暫緩（IG §5.4），無合理 fallback；待 P-01 啟動後另起 patch |
 
 ### 8.2 公式對齊或替代說明
 
@@ -819,6 +828,7 @@ EC-17（dropdown 列出已斷開螢幕）：
 | 日期 | 衝突摘要 | 涉及 GDD/FSD | 最終決議 |
 | --- | --- | --- | --- |
 | — | — | — | （無真實衝突；GDD v0.6 已通過五輪 design-review）|
+| 2026-05-02 | FSD-B 上游有三個系統列在 IG §5.4「暫緩／範疇外」（P-01 / D-01 / D-02），加上 DialogueTable owner 待定（B-02），導致 `/program-ipm P-02-FSD-B` §4 Checklist 全 fail | P-02-FSD-B vs ImplementationGuide §5.4 | **B1 / B2 拆分（Jam 急用版）**：將 SettingsPanel（仰賴 P-01 全部 8 API）整體標 [B2 deferred]；將 D-01 / D-02 / DialogueTable 三個 facade 整合改為 [B1 fallback]：D-01 `GetAdventurerIntroText` → placeholder「（暫無敘述）」；D-02 `GetMissionName/GetMissionIntroText` → MissionTemplate.MissionName + placeholder；DialogueTable miss → 對齊 FSD-A EC-20 既有 placeholder「[對話缺失：{key}]」處理。B1 scope = 10 Script + 1 UXML/USS 資產（IPanel + 8 panel + 1 subpanel；扣 SettingsPanel）；B2 scope = 1 Script + 3 facade 整合，待 P-01 / D-01 / D-02 / DialogueTable owner 落地後另起 patch。FSD §0 狀態於本決議後改為「已完成（B1 scope）」。本決議僅縮減 scope，不變更已存在 panel 的 API 契約 / 資料流 / DoD（除標 [B2 deferred] 之 DoD-B15 / EC-17 / EC-18）|
 
 ---
 
