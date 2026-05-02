@@ -57,7 +57,8 @@ namespace Tests.EditMode.Gameplay.Adventurer
         [Test]
         public void Test_v31_AC_AM_20_GetRoster_OpheliaFirst()
         {
-            // AC-AM-20: GetRoster 排序奧菲莉雅永遠第一
+            // AC-AM-20: GetRoster 排序奧菲莉雅永遠第一（templateID=901，由 SystemConstants OPHELIA_TEMPLATE_ID 定義）
+            const int OPHELIA_TEMPLATE_ID = 901;
             AdventurerInstance ophelia = null;
             for (int i = 0; i < 5; i++)
             {
@@ -65,26 +66,17 @@ namespace Tests.EditMode.Gameplay.Adventurer
                 Assert.IsTrue(_ctx.Roster.AddAdventurer(dummy));
             }
 
-            // 檢查名冊中是否有 templateID=1（奧菲莉雅）
-            IReadOnlyList<AdventurerInstance> roster = _ctx.Roster.GetRoster();
-            if (roster.Count > 0 && roster[0].templateID == 1)
+            // 手動建立奧菲莉雅（templateID=901）並加入名冊
+            ophelia = _ctx.Roster.GetFactory().CreateFromTemplate(OPHELIA_TEMPLATE_ID);
+            if (ophelia != null)
             {
-                ophelia = roster[0];
-            }
-            else
-            {
-                // 手動建立奧菲莉雅（templateID=1，isUnique=1）
-                ophelia = _ctx.Roster.GetFactory().CreateFromTemplate(1);
-                if (ophelia != null)
-                {
-                    _ctx.Roster.AddAdventurer(ophelia);
-                }
+                _ctx.Roster.AddAdventurer(ophelia);
             }
 
             // 驗證排序：奧菲莉雅在首位
-            roster = _ctx.Roster.GetRoster();
+            IReadOnlyList<AdventurerInstance> roster = _ctx.Roster.GetRoster();
             Assert.Greater(roster.Count, 0);
-            if (ophelia != null && ophelia.templateID == 1)
+            if (ophelia != null && ophelia.templateID == OPHELIA_TEMPLATE_ID)
             {
                 Assert.AreEqual(ophelia.adventurerID, roster[0].adventurerID, "Ophelia should be first in roster");
             }
@@ -220,15 +212,15 @@ namespace Tests.EditMode.Gameplay.Adventurer
                 "maintenanceCost,0,0,0,0,0,0,0\n";
 
             map["AdventurerTemplate"] =
-                "templateID,1,3\n" +
-                "name,艾克·鐵拳,傭兵甲\n" +
-                "rank,C,E\n" +
-                "professionID,1,7\n" +
-                "raceID,3,0\n" +
-                "fixedTraitIDs,0,0\n" +
-                "randomTraitGroupIDs,1|3,2|4\n" +
-                "factionID,0,0\n" +
-                "isUnique,1,0\n";
+                "templateID,1,3,901\n" +
+                "name,艾克·鐵拳,傭兵甲,奧菲莉雅\n" +
+                "rank,C,E,B\n" +
+                "professionID,1,7,1\n" +
+                "raceID,3,0,1\n" +
+                "fixedTraitIDs,0,0,999\n" +
+                "randomTraitGroupIDs,1|3,2|4,0\n" +
+                "factionID,0,0,1\n" +
+                "isUnique,1,0,1\n";
 
             map["StaffTable"] =
                 "staffID,103\n" +

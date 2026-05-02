@@ -181,6 +181,8 @@ namespace Tests.EditMode.Gameplay.Save
             InjectSaveables(new FakeSaveable("f03Resources", true));
 
             LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("Parse failed"));
+            // Bootstrap Step X 在無 AdventurerRoster.Instance 時 LogError「奧菲莉雅初始化失敗」並繼續；測試環境未注入 C-02，必然觸發。
+            LogAssert.Expect(LogType.Error, "[FT-10] Bootstrap Step X: AdventurerRoster.Instance 為 null，無法初始化奧菲莉雅。Bootstrap 繼續。");
             _service.Bootstrap();
 
             Assert.AreEqual("LoadFailed", _events.EventOrder[0]);

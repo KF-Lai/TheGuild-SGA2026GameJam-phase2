@@ -252,6 +252,9 @@ namespace Tests.EditMode.Gameplay.Staff
             ReflectionTools.SetStaticProperty(typeof(BuildingService), "Instance", ctx.Building);
             ReflectionTools.InvokeInstance(ctx.Building, "InitializeForTests");
             ctx.Building.InitializeAsNewGame();
+            // 解鎖職員系統：升級建築 6（職員休息室）至 level 1，否則 StaffService.HireStaff 等回 STAFF_SYSTEM_LOCKED
+            // 對齊 NpcDecisionServiceTests / GoldFlowServiceTests / RecruitmentServiceTests 既有先例
+            ctx.Building.TryUpgradeBuilding(6);
 
             ctx.Staff = new GameObject("Staff_Staff_Test").AddComponent<StaffService>();
             ReflectionTools.SetStaticProperty(typeof(StaffService), "Instance", ctx.Staff);

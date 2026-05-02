@@ -357,6 +357,12 @@ namespace Tests.EditMode.Gameplay.GoldFlow
             // dangerLevel=E (index=0) with minDangerLevel=3
             // Template with minDangerLevel=3 should be filtered out when danger level is E
 
+            // 先銷毀 SetUp 建立的 _ctx 並重設 DataManager 靜態註冊表，避免 RegisterTable 失敗 + 後續 NRE。
+            // CreateContext 內部會重新 SetTableTextProviderForTests + RegisterTable，本測試只需提供自訂 tableMap。
+            DestroyContext(_ctx);
+            _ctx = null;
+            ReflectionTools.InvokeStatic(typeof(DataManager), "ResetForTests");
+
             Dictionary<string, string> tableMap = BuildTableMap();
             tableMap["MissionTemplate"] =
                 "missionID,1,2\n" +
@@ -366,21 +372,11 @@ namespace Tests.EditMode.Gameplay.GoldFlow
                 "categoryID,0,0\n" +
                 "minDangerLevel,0,3\n";
 
-            ReflectionTools.InvokeStatic(
-                typeof(DataManager),
-                "SetTableTextProviderForTests",
-                new[] { typeof(Func<string, string>) },
-                (Func<string, string>)(name => tableMap.TryGetValue(name, out string csv) ? csv : null));
-
-            DataManager.RegisterTable<MissionTemplate>("MissionTemplate");
-
-            TestContext ctx = CreateContext(tableMap);
+            _ctx = CreateContext(tableMap);
 
             // At dangerLevel=E (index 0), mission 2 with minDangerLevel=3 should be filtered
             // This test verifies the filtering logic works correctly
             Assert.IsNotNull(_ctx.GoldFlow);
-
-            DestroyContext(ctx);
         }
 
         [Test]

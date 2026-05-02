@@ -221,8 +221,14 @@ namespace Tests.EditMode.Gameplay.Trait
         public void Test_v31_AC_TS_16_SilentTrait_999_EffectValuesCorrect()
         {
             // AC-TS-16：traitID=999 載入後 effectValue == -0.40、effectTarget == "willingness_all"、effectType == "behavior"
-            // 新增沉默 trait 到 TraitTable
-            string traitTableWith999 = _baseTables["TraitTable"] + "\n999,沉默,她不主動接受委託，需要玩家明確指派,behavior,willingness_all,-0.40";
+            // 新增沉默 trait 到 TraitTable（column-based 格式：append 一欄而非 append 一行）
+            string traitTableWith999 = AppendTraitColumn(_baseTables["TraitTable"],
+                traitID: "999",
+                name: "沉默",
+                description: "她不主動接受委託，需要玩家明確指派",
+                effectType: "behavior",
+                effectTarget: "willingness_all",
+                effectValue: "-0.40");
 
             TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWith999 } });
 
@@ -239,7 +245,13 @@ namespace Tests.EditMode.Gameplay.Trait
         public void Test_v31_AC_TS_17_SilentTrait_999_NotInGroups()
         {
             // AC-TS-17：traitID=999 不出現在任何 TraitGroupTable.traitIDs 中
-            string traitTableWith999 = _baseTables["TraitTable"] + "\n999,沉默,她不主動接受委託，需要玩家明確指派,behavior,willingness_all,-0.40";
+            string traitTableWith999 = AppendTraitColumn(_baseTables["TraitTable"],
+                traitID: "999",
+                name: "沉默",
+                description: "她不主動接受委託，需要玩家明確指派",
+                effectType: "behavior",
+                effectTarget: "willingness_all",
+                effectValue: "-0.40");
 
             TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWith999 } });
 
@@ -271,7 +283,12 @@ namespace Tests.EditMode.Gameplay.Trait
         {
             // AC-TS-18：C-05 驗證過濾邏輯（該測試屬 FT-04 範疇，C-05 只驗證 trait 資料正確）
             // 本測試確認 effectTarget == "on_death_survive" 與 "on_fail_survive" 的 trait 在 TraitTable 中定義正確
-            string traitTableWithSurvive = _baseTables["TraitTable"] + "\n10,死亡倖存,死後能活著,condition,on_death_survive,1.0\n11,失敗倖存,失敗後活著,condition,on_fail_survive,1.0";
+            string traitTableWithSurvive = AppendTraitColumn(
+                AppendTraitColumn(_baseTables["TraitTable"],
+                    traitID: "10", name: "死亡倖存", description: "死後能活著",
+                    effectType: "condition", effectTarget: "on_death_survive", effectValue: "1.0"),
+                traitID: "11", name: "失敗倖存", description: "失敗後活著",
+                effectType: "condition", effectTarget: "on_fail_survive", effectValue: "1.0");
 
             TraitService service = CreateService(new Dictionary<string, string> { { "TraitTable", traitTableWithSurvive } });
 
@@ -337,6 +354,44 @@ namespace Tests.EditMode.Gameplay.Trait
             ReflectionHelper.InvokeStatic(typeof(ProfessionService), "ResetForTests");
             ReflectionHelper.InvokeStatic(typeof(MissionDatabaseService), "ResetForTests");
             ReflectionHelper.InvokeStatic(typeof(DataManager), "ResetForTests");
+        }
+
+        /// <summary>
+        /// 對 column-based TraitTable CSV 末尾追加一個新 trait（一欄）。
+        /// 對應 6 個欄位列（traitID/name/description/effectType/effectTarget/effectValue）末尾各 append 一個 cell。
+        /// </summary>
+        private static string AppendTraitColumn(
+            string csvText,
+            string traitID,
+            string name,
+            string description,
+            string effectType,
+            string effectTarget,
+            string effectValue)
+        {
+            string[] lines = csvText.Replace("\r\n", "\n").Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                if (string.IsNullOrEmpty(line) || line.StartsWith("#")) continue;
+                int comma = line.IndexOf(',');
+                string field = comma >= 0 ? line.Substring(0, comma) : line;
+                string append = field switch
+                {
+                    "traitID" => traitID,
+                    "name" => name,
+                    "description" => description,
+                    "effectType" => effectType,
+                    "effectTarget" => effectTarget,
+                    "effectValue" => effectValue,
+                    _ => null,
+                };
+                if (append != null)
+                {
+                    lines[i] = line.TrimEnd() + "," + append;
+                }
+            }
+            return string.Join("\n", lines);
         }
 
         private static Dictionary<string, string> LoadBaseTables()
