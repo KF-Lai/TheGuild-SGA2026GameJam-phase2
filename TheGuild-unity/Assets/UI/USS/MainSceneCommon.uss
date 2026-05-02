@@ -1,4 +1,15 @@
-/* P-02 Main UI Common USS — placeholder, art assets pending */
+/* P-02 Main UI Common USS — art 接入中（A-01 公會橫幅 2026-05-03） */
+
+/* A-01：公會橫幅景觀 1920×312，置於場景頂部全寬 */
+.bg-banner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 312px;
+    background-image: url("project://database/Assets/Art/UI/Scene/A-01_default.png");
+    -unity-background-scale-mode: scale-and-crop;
+}
 
 .p02-panel {
     position: absolute;
