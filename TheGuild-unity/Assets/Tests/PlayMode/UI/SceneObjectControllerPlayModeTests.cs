@@ -9,6 +9,7 @@ using TheGuild.UI.Scene;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
+using OnOpheliaMissingNightEvent = TheGuild.Gameplay.FactionStory.Events.OnOpheliaMissingNightEvent;
 
 namespace Tests.PlayMode.UI
 {
@@ -56,7 +57,7 @@ namespace Tests.PlayMode.UI
                 Row("ophelia_chair", "event:missing", "hidden", 50),
                 Row("ophelia_chair", "event:ophelia_missing", "matched", 10));
 
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             yield return null;
 
             SceneObjectState state = _controller.ResolveSceneObjectState("ophelia_chair");
@@ -73,7 +74,7 @@ namespace Tests.PlayMode.UI
                 Row("ophelia_chair", "INVALID", "bad", 50),
                 Row("ophelia_chair", "event:ophelia_missing", "matched", 10));
 
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             yield return null;
 
             LogAssert.Expect(LogType.Error, "[SceneObjectController] Invalid stageCondition atom: INVALID");
@@ -86,7 +87,7 @@ namespace Tests.PlayMode.UI
         public IEnumerator EC23_MissingSpriteLogsErrorAndUsesPlaceholder()
         {
             SeedRows("ophelia_chair", Row("ophelia_chair", "event:ophelia_missing", "missing_sprite", 10));
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             yield return null;
 
             InjectBinding("ophelia_chair");

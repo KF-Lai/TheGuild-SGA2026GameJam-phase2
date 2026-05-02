@@ -1,0 +1,42 @@
+{
+  "name": "Tests.EditMode.UI.Panels",
+  "rootNamespace": "Tests.EditMode.UI.Panels",
+  "references": [
+    "TheGuild.UI",
+    "TheGuild.UI.Panels",
+    "TheGuild.Core.Data",
+    "TheGuild.Core.Events",
+    "TheGuild.Gameplay.Adventurer",
+    "TheGuild.Gameplay.Building",
+    "TheGuild.Gameplay.Decision",
+    "TheGuild.Gameplay.FactionStory",
+    "TheGuild.Gameplay.Gacha",
+    "TheGuild.Gameplay.GoldFlow",
+    "TheGuild.Gameplay.Guild",
+    "TheGuild.Gameplay.Mission",
+    "TheGuild.Gameplay.MissionDispatch",
+    "TheGuild.Gameplay.Outcome",
+    "TheGuild.Gameplay.Profession",
+    "TheGuild.Gameplay.Race",
+    "TheGuild.Gameplay.Recruitment",
+    "TheGuild.Gameplay.Resources",
+    "TheGuild.Gameplay.Staff",
+    "TheGuild.Gameplay.Trait",
+    "TheGuild.Gameplay.WorldDanger",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

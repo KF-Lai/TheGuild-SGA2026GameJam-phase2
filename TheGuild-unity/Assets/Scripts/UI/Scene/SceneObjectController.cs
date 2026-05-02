@@ -5,6 +5,7 @@ using TheGuild.Gameplay.FactionStory;
 using TheGuild.UI.Core;
 using UnityEngine;
 using OnFactionStoryStageUnlockedEvent = TheGuild.Gameplay.FactionStory.Events.OnFactionStoryStageUnlockedEvent;
+using OnOpheliaMissingNightEvent = TheGuild.Gameplay.FactionStory.Events.OnOpheliaMissingNightEvent;
 
 namespace TheGuild.UI.Scene
 {
@@ -92,7 +93,7 @@ namespace TheGuild.UI.Scene
                 return false;
             }
 
-            StoryDialogueOpenArgs args = new StoryDialogueOpenArgs(0, state.DialogueKey, string.Empty, objectID);
+            StoryDialogueOpenArgs args = new StoryDialogueOpenArgs(0, state.DialogueKey, string.Empty, objectID, false, false, true);
             return PanelManager.Instance.OpenPanel(PanelID.StoryDialogue, args);
         }
 

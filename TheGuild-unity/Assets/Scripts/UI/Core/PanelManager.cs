@@ -10,6 +10,7 @@ namespace TheGuild.UI.Core
     {
         private readonly Dictionary<PanelID, VisualElement> _panelRoots = new Dictionary<PanelID, VisualElement>();
         private readonly Dictionary<PanelID, PanelStateMachine> _machines = new Dictionary<PanelID, PanelStateMachine>();
+        private readonly Dictionary<PanelID, IPanel> _panels = new Dictionary<PanelID, IPanel>();
         private readonly Dictionary<PanelID, ConfirmArgs> _confirmArgs = new Dictionary<PanelID, ConfirmArgs>();
         private readonly List<PanelID> _panelStack = new List<PanelID>(2);
 
@@ -61,6 +62,18 @@ namespace TheGuild.UI.Core
             _machines[id] = new PanelStateMachine(root, GetTransitionSeconds());
         }
 
+        public void RegisterPanel(IPanel panel)
+        {
+            if (panel == null || panel.Id == PanelID.None || panel.Id == PanelID.Invalid || panel.Root == null)
+            {
+                Debug.LogError("[PanelManager] RegisterPanel invalid.");
+                return;
+            }
+
+            _panels[panel.Id] = panel;
+            RegisterPanelRoot(panel.Id, panel.Root);
+        }
+
         public bool OpenPanel(PanelID id, object args = null)
         {
             if (UIBootstrapController.Instance == null || !UIBootstrapController.Instance.IsUIReady)
@@ -82,6 +95,7 @@ namespace TheGuild.UI.Core
                 }
                 PushOrMoveTop(id);
                 _machines[id].Open();
+                DispatchPanelOpen(id, args);
                 return true;
             }
 
@@ -90,6 +104,7 @@ namespace TheGuild.UI.Core
                 CloseAllBasePanels();
                 PushOrMoveTop(id);
                 _machines[id].Open();
+                DispatchPanelOpen(id, args);
                 return true;
             }
 
@@ -98,6 +113,7 @@ namespace TheGuild.UI.Core
                 CloseAllBasePanels();
                 PushOrMoveTop(id);
                 _machines[id].Open();
+                DispatchPanelOpen(id, args);
                 return true;
             }
 
@@ -115,6 +131,7 @@ namespace TheGuild.UI.Core
             machine.Close(() =>
             {
                 RemoveFromStack(id);
+                DispatchPanelClose(id);
                 onClosed?.Invoke();
             });
             if (id == PanelID.ConfirmPopup)
@@ -236,6 +253,22 @@ namespace TheGuild.UI.Core
 
             Debug.LogError($"[PanelManager] Panel root is not registered: {id}");
             return false;
+        }
+
+        private void DispatchPanelOpen(PanelID id, object args)
+        {
+            if (_panels.TryGetValue(id, out IPanel panel))
+            {
+                panel.Open(args);
+            }
+        }
+
+        private void DispatchPanelClose(PanelID id)
+        {
+            if (_panels.TryGetValue(id, out IPanel panel))
+            {
+                panel.Close();
+            }
         }
 
         private bool IsBasePanel(PanelID id)

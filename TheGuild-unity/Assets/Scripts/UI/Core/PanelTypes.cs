@@ -123,21 +123,33 @@ namespace TheGuild.UI.Core
 
     public readonly struct StoryDialogueOpenArgs
     {
-        public StoryDialogueOpenArgs(int stageID, string dialogueKey, string specialEventKey, string sourceObjectID)
+        public StoryDialogueOpenArgs(
+            int stageID,
+            string dialogueKey,
+            string specialEventKey,
+            string sourceObjectID,
+            bool isEpilogue = false,
+            bool isOpheliaInteraction = false,
+            bool skipConfirmCallback = false)
         {
             StageID = stageID;
             DialogueKey = dialogueKey;
             SpecialEventKey = specialEventKey;
             SourceObjectID = sourceObjectID;
+            IsEpilogue = isEpilogue;
+            IsOpheliaInteraction = isOpheliaInteraction;
+            SkipConfirmCallback = skipConfirmCallback;
         }
 
         public int StageID { get; }
         public string DialogueKey { get; }
         public string SpecialEventKey { get; }
         public string SourceObjectID { get; }
+        public bool IsEpilogue { get; }
+        public bool IsOpheliaInteraction { get; }
+        public bool SkipConfirmCallback { get; }
     }
 
     public readonly struct OnUIReadyEvent { }
-    public readonly struct OnOpheliaMissingNightEvent { }
     public readonly struct OnOpheliaReturnedEvent { }
 }

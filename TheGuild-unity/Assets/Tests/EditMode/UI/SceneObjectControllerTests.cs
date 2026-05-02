@@ -9,6 +9,7 @@ using TheGuild.UI.Scene;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
+using OnOpheliaMissingNightEvent = TheGuild.Gameplay.FactionStory.Events.OnOpheliaMissingNightEvent;
 
 namespace Tests.EditMode.UI
 {
@@ -58,7 +59,7 @@ namespace Tests.EditMode.UI
                 Row("ophelia_chair", "event:missing", "hidden", 50),
                 Row("ophelia_chair", "event:ophelia_missing", "matched", 10));
 
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
 
             SceneObjectState state = _controller.ResolveSceneObjectState("ophelia_chair");
             Assert.AreEqual("matched", state.SpriteVariant);
@@ -75,7 +76,7 @@ namespace Tests.EditMode.UI
                 Row("ophelia_chair", "INVALID", "bad", 50),
                 Row("ophelia_chair", "event:ophelia_missing", "matched", 10));
 
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             LogAssert.Expect(LogType.Error, "[SceneObjectController] Invalid stageCondition atom: INVALID");
 
             SceneObjectState state = _controller.ResolveSceneObjectState("ophelia_chair");
@@ -85,7 +86,7 @@ namespace Tests.EditMode.UI
         [Test]
         public void DoD_A6_OpheliaEventsMaintainActiveEventSet()
         {
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             HashSet<string> activeEvents = GetField<HashSet<string>>(_controller, "_activeEvents");
             Assert.IsTrue(activeEvents.Contains("ophelia_missing"));
 
@@ -98,7 +99,7 @@ namespace Tests.EditMode.UI
         public void EC23_MissingSpriteLogsErrorAndUsesPlaceholder()
         {
             SeedRows("ophelia_chair", Row("ophelia_chair", "event:ophelia_missing", "missing_sprite", 10));
-            EventBus.Publish(new OnOpheliaMissingNightEvent());
+            EventBus.Publish(new OnOpheliaMissingNightEvent(4));
             InjectBinding("ophelia_chair");
 
             LogAssert.Expect(LogType.Error, "[SceneObjectController] Sprite load failed: ophelia_chair_missing_sprite");

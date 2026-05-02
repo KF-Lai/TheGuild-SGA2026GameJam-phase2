@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="log-floating-window" class="log-floating-window">
+        <ui:VisualElement name="log-floating-header" class="log-floating-header">
+            <ui:Label name="log-floating-title" class="log-floating-title" />
+            <ui:Button name="log-floating-close" class="log-floating-close" />
+        </ui:VisualElement>
+        <ui:ScrollView name="log-floating-scroll" class="log-floating-scroll">
+            <ui:VisualElement name="log-floating-list" class="log-floating-list" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>
