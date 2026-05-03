@@ -23,7 +23,8 @@ import type { GuildLevel } from '../../types'
 import type { RecruitmentState, RecruitCandidate } from '../../systems/recruitment'
 import { getNextAutoRefreshTimestamp, getFreeRefreshRemaining } from '../../systems/recruitment'
 import { PROFESSION_TRAITS } from '../../data/traits'
-import { RACE_MODIFIERS } from '../../data/races'
+// Phase 2 Jam 種族 trait 停用，UI 不再顯示種族
+const PORTRAIT_BASE_PATH = '/images/characters/adventurers/'
 import { DAILY_FREE_REFRESH, REFRESH_COST } from '../../data/constants'
 import { eventBus } from '../../core/events'
 import type { GuildState } from '../../types'
@@ -277,10 +278,17 @@ function buildRookieCard(
   row1.appendChild(nameEl)
   card.appendChild(row1)
 
-  // 行 2：職業 + 種族
+  // 行 2：portrait + 職業（Phase 2 Jam 種族 trait 停用）
   const row2 = div('display:flex;align-items:center;gap:6px')
+  if (adv.portrait) {
+    const portraitImg = document.createElement('img')
+    portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
+    portraitImg.alt = adv.name
+    portraitImg.style.cssText = 'width:28px;height:28px;border-radius:4px;object-fit:cover;object-position:top center;flex-shrink:0;border:1px solid #4a4a4a'
+    portraitImg.onerror = () => { portraitImg.style.display = 'none' }
+    row2.appendChild(portraitImg)
+  }
   const profName = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
-  const raceName = RACE_MODIFIERS[adv.raceId]?.name ?? adv.raceId
 
   const profTag = span(profName, [
     'font-size:12px',
@@ -290,15 +298,6 @@ function buildRookieCard(
     'color:#b0a0e0',
   ].join(';'))
   row2.appendChild(profTag)
-
-  const raceTag = span(raceName, [
-    'font-size:12px',
-    'padding:1px 6px',
-    'border-radius:3px',
-    'background:#2a4030',
-    'color:#90b890',
-  ].join(';'))
-  row2.appendChild(raceTag)
 
   const freeTag = span('免費', [
     'font-size:11px',
@@ -406,10 +405,17 @@ function buildVeteranCard(
   row1.appendChild(nameEl)
   card.appendChild(row1)
 
-  // 行 2：職業 + 種族
+  // 行 2：portrait + 職業（Phase 2 Jam 種族 trait 停用）
   const row2 = div('display:flex;align-items:center;gap:6px')
+  if (adv.portrait) {
+    const portraitImg = document.createElement('img')
+    portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
+    portraitImg.alt = adv.name
+    portraitImg.style.cssText = 'width:28px;height:28px;border-radius:4px;object-fit:cover;object-position:top center;flex-shrink:0;border:1px solid #4a4a4a'
+    portraitImg.onerror = () => { portraitImg.style.display = 'none' }
+    row2.appendChild(portraitImg)
+  }
   const profName = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
-  const raceName = RACE_MODIFIERS[adv.raceId]?.name ?? adv.raceId
 
   const profTag = span(profName, [
     'font-size:12px',
@@ -419,15 +425,6 @@ function buildVeteranCard(
     'color:#b0a0e0',
   ].join(';'))
   row2.appendChild(profTag)
-
-  const raceTag = span(raceName, [
-    'font-size:12px',
-    'padding:1px 6px',
-    'border-radius:3px',
-    'background:#2a4030',
-    'color:#90b890',
-  ].join(';'))
-  row2.appendChild(raceTag)
   card.appendChild(row2)
 
   // 行 3：bio（單行截斷）

@@ -16,6 +16,14 @@ import type { Adventurer, Rank, RaceId } from '../types'
 import { getRandomProfessionId, type ProfessionId } from '../data/traits'
 import { getRandomRace } from '../data/races'
 import { generateBio } from '../data/bios'
+import {
+  pickRandomTemplate,
+  pickTemplateProfession,
+  pickTemplateRank,
+} from '../data/adventurer-templates'
+
+/** 走 template path 的機率（Phase 2 Jam 簡化：30% 機率生成具名冒險者）。 */
+const TEMPLATE_PICK_PROBABILITY = 0.30
 
 // Re-export ProfessionId so callers can import it from this module if needed.
 export type { ProfessionId }
@@ -166,6 +174,29 @@ function randomVeteranRank(): Rank {
  * @param raceId - If provided, uses specified race; otherwise picks at random.
  */
 export function createAdventurer(rank?: Rank, raceId?: RaceId): Adventurer {
+  // Phase 2 Jam：30% 機率走 template path 生成具名冒險者（含立繪 portrait）
+  if (Math.random() < TEMPLATE_PICK_PROBABILITY) {
+    const tpl = pickRandomTemplate(rank)
+    if (tpl) {
+      const resolvedRank = rank ?? pickTemplateRank(tpl)
+      const professionId = pickTemplateProfession(tpl)
+      return {
+        id: generateId(),
+        name: tpl.name,
+        rank: resolvedRank,
+        professionId,
+        raceId: raceId ?? getRandomRace(),
+        status: 'idle',
+        currentMissionId: null,
+        xp: 0,
+        growthTraits: [],
+        bio: generateBio(professionId, resolvedRank),
+        gender: tpl.gender,
+        portrait: tpl.portrait,
+      }
+    }
+  }
+  // 純 random path：name 從 NAME_POOL 隨機抽，無立繪 portrait 欄位（UI fallback）
   const resolvedRank = rank ?? randomNoviceRank()
   const professionId = getRandomProfessionId()
   return {

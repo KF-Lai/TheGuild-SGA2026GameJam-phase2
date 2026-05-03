@@ -19,9 +19,11 @@
 import type { Adventurer, GuildState } from '../../types'
 import { sortRoster } from '../../systems/adventurer'
 import { PROFESSION_TRAITS } from '../../data/traits'
-import { RACE_MODIFIERS } from '../../data/races'
 import { GROWTH_TRAITS, nextXPMilestone, XP_MILESTONES } from '../../data/growth-traits'
 import { eventBus } from '../../core/events'
+
+/** 立繪基底路徑（public/ 內路徑，Vite 會自動處理） */
+const PORTRAIT_BASE_PATH = '/images/characters/adventurers/'
 
 // ---------------------------------------------------------------------------
 // 公開介面
@@ -184,12 +186,29 @@ function buildAdventurerCard(
 
   card.appendChild(row1)
 
-  // ── 行 2：職業 + 種族 ──
+  // ── 行 2：portrait（若有）+ 職業 ──
+  // Phase 2 Jam：種族 trait 停用，UI 不顯示種族
   const row2 = div('display:flex;align-items:center;gap:6px')
 
-  const profName  = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
-  const raceName  = RACE_MODIFIERS[adv.raceId]?.name ?? adv.raceId
+  // 立繪：若 adv.portrait 有值，顯示縮圖；無則跳過（fallback 用職業 emoji 之後可加）
+  if (adv.portrait) {
+    const portraitImg = document.createElement('img')
+    portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
+    portraitImg.alt = adv.name
+    portraitImg.style.cssText = [
+      'width:32px',
+      'height:32px',
+      'border-radius:4px',
+      'object-fit:cover',
+      'object-position:top center',
+      'flex-shrink:0',
+      `border:1px solid ${isUnique ? '#f0c060' : '#4a4a4a'}`,
+    ].join(';')
+    portraitImg.onerror = () => { portraitImg.style.display = 'none' }
+    row2.appendChild(portraitImg)
+  }
 
+  const profName = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
   const profTag = span(profName, [
     'font-size:12px',
     'padding:1px 6px',
@@ -198,15 +217,6 @@ function buildAdventurerCard(
     'color:#b0a0e0',
   ].join(';'))
   row2.appendChild(profTag)
-
-  const raceTag = span(raceName, [
-    'font-size:12px',
-    'padding:1px 6px',
-    'border-radius:3px',
-    'background:#2a4030',
-    'color:#90b890',
-  ].join(';'))
-  row2.appendChild(raceTag)
 
   card.appendChild(row2)
 

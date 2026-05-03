@@ -143,6 +143,7 @@ export function setResourceHandlers(deps: XxxResourceDeps): void {
 |---|---|---|
 | F-01 DataManager | 完全砍掉 | 所有資料表硬編碼於 `.ts` 模組頂部 |
 | F-02 Time System | 砍 OnMinuteTick / OnDailyReset 訂閱 | 改用 `Date.now()` + 外部 tick 函式 |
+| C-04 race trait | 完全停用 | RACE_MODIFIERS 所有 success/death modifier 改 0；UI（5.2 / 5.4）移除種族顯示；adventurer.raceId 欄位仍保留供 fallback |
 | C-05 behavior trait | 暫無資料 | `getBehaviorWillingnessDelta` 永遠 return 0（stub） |
 | FT-08 Gacha | 簡化版 | 三角色固定（米拉 501 / 譚恩 502 / 凱拉 503），無保底、無垃圾物品 |
 | FT-09 Faction Story | 完全停用 | `OnFactionScoreUpdated` 為 stub，`cachedMaxFactionScore` 恆 0 |
