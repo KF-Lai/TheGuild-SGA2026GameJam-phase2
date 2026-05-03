@@ -53,6 +53,33 @@ export interface EventMap {
     adventurerId: string;
     missionId: string;
   };
+  // FT-07 Guild Building
+  'building:upgraded': {
+    buildingID: number;
+    fromLevel: number;
+    toLevel: number;
+  };
+  // FT-05 Guild Gold Flow
+  'commission:prepaid': {
+    missionId: string;
+    prepaidAmount: number;
+  };
+  'commission:settled': {
+    missionId: string;
+    netDelta: number;
+    /** CommissionBreakdown — subscriber cast to import('../systems/gold-flow').CommissionBreakdown */
+    breakdown: unknown;
+  };
+  'maintenance:charged': {
+    totalAmount: number;
+    /** MaintenanceBreakdown — subscriber cast to import('../systems/gold-flow').MaintenanceBreakdown */
+    breakdown: unknown;
+  };
+  'salary:charged': {
+    totalAmount: number;
+    /** SalaryBreakdown — subscriber cast to import('../systems/gold-flow').SalaryBreakdown */
+    breakdown: unknown;
+  };
 }
 
 // ---- EventBus 實作 ----
