@@ -240,9 +240,28 @@ function _buildRepBar(
   const labelRow = document.createElement('div')
   labelRow.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;opacity:0.8'
 
+  // 共用：產生帶聲望 icon 的 left label
+  const buildRepLeftLabel = (text: string): HTMLSpanElement => {
+    const wrapSpan = document.createElement('span')
+    wrapSpan.style.cssText = 'display:inline-flex;align-items:center;gap:4px'
+    const repIcon = document.createElement('img')
+    repIcon.src = '/images/icons/F-C-01_reputation.png'
+    repIcon.alt = '聲望'
+    repIcon.style.cssText = 'width:14px;height:14px;object-fit:contain;flex-shrink:0'
+    repIcon.onerror = () => { repIcon.style.display = 'none' }
+    wrapSpan.appendChild(repIcon)
+    wrapSpan.appendChild(document.createTextNode(text))
+    return wrapSpan
+  }
+
   if (nextThresh === null) {
     // 最高等級
-    labelRow.innerHTML = '<span>聲望</span><span style="color:#f0c060">已達最高等級</span>'
+    const leftLabel = buildRepLeftLabel('聲望')
+    const rightLabel = document.createElement('span')
+    rightLabel.style.cssText = 'color:#f0c060'
+    rightLabel.textContent = '已達最高等級'
+    labelRow.appendChild(leftLabel)
+    labelRow.appendChild(rightLabel)
     wrap.appendChild(labelRow)
 
     const barBg = _createBarBg()
@@ -254,8 +273,7 @@ function _buildRepBar(
     const displayed = Math.max(rep, 0)
     const pct = Math.min(Math.floor((displayed / nextThresh) * 100), 100)
 
-    const leftLabel = document.createElement('span')
-    leftLabel.textContent = `聲望 ${rep}`
+    const leftLabel = buildRepLeftLabel(`聲望 ${rep}`)
 
     const rightLabel = document.createElement('span')
     rightLabel.textContent = `下一級 ${nextThresh}（Lv${(currentLevel + 1) as number}）`
@@ -289,16 +307,19 @@ function _fillResourceSection(section: HTMLElement, guild: GuildState): void {
   const goldColor = isNeg ? '#f44336' : '#c8b98a'
 
   const row = document.createElement('div')
-  row.style.cssText = `display:flex;align-items:center;gap:8px;font-size:13px;color:${goldColor}`
+  row.style.cssText = `display:flex;align-items:center;gap:6px;font-size:13px;color:${goldColor}`
 
-  const label = document.createElement('span')
-  label.textContent = '金幣：'
+  const goldIcon = document.createElement('img')
+  goldIcon.src = '/images/icons/F-C-01_gold.png'
+  goldIcon.alt = '金幣'
+  goldIcon.style.cssText = 'width:18px;height:18px;flex-shrink:0;object-fit:contain'
+  goldIcon.onerror = () => { goldIcon.style.display = 'none' }
 
   const value = document.createElement('span')
   value.style.cssText = `font-weight:bold;color:${goldColor}`
   value.textContent = `${gold}g`
 
-  row.appendChild(label)
+  row.appendChild(goldIcon)
   row.appendChild(value)
 
   if (isNeg) {

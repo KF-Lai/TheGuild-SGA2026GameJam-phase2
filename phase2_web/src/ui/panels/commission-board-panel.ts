@@ -242,7 +242,18 @@ export function mountCommissionBoardPanel(
       'font-size:12px',
       'font-weight:bold',
       'letter-spacing:1px',
-    ].join(';'), mission.difficulty)
+      'display:flex',
+      'align-items:center',
+      'gap:4px',
+    ].join(';'))
+    const rankIconImg = document.createElement('img')
+    rankIconImg.src = `/images/icons/rank/F-C-05_${mission.difficulty}.png`
+    rankIconImg.alt = mission.difficulty
+    rankIconImg.style.cssText = 'width:14px;height:14px;object-fit:contain'
+    rankIconImg.onerror = () => { rankIconImg.style.display = 'none' }
+    const diffText = el('span', '', mission.difficulty)
+    diffBadge.appendChild(rankIconImg)
+    diffBadge.appendChild(diffText)
     topRow.appendChild(diffBadge)
 
     if (mission.tier !== 'common') {

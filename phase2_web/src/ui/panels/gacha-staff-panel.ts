@@ -82,6 +82,35 @@ const SEVERANCE_PAY: Record<number, number> = {
   503: 80,
 }
 
+/** 各角色立繪檔名（不含 .png；對應 public/images/characters/staff/） */
+const STAFF_PORTRAIT_NAMES: Record<number, string> = {
+  501: 'mira_default',
+  502: 'tan_default',
+  503: 'kaira_default',
+}
+const STAFF_PORTRAIT_BASE = '/images/characters/staff/'
+
+/** 建立 staff portrait img；查無對映則回傳隱藏占位 */
+function buildStaffPortraitImg(staffID: number, alt: string): HTMLImageElement {
+  const img = document.createElement('img')
+  const portrait = STAFF_PORTRAIT_NAMES[staffID]
+  if (portrait) {
+    img.src = `${STAFF_PORTRAIT_BASE}${portrait}.png`
+    img.alt = alt
+  }
+  img.style.cssText = [
+    'width:36px',
+    'height:36px',
+    'border-radius:4px',
+    'object-fit:cover',
+    'object-position:top center',
+    'flex-shrink:0',
+    'border:1px solid #4a4a4a',
+  ].join(';')
+  img.onerror = () => { img.style.display = 'none' }
+  return img
+}
+
 /** 建築邊框顏色（依建築 ID） */
 const BUILDING_BORDER_COLOR: Record<number, string> = {
   1: '#40805040',  // 委託板 — 綠
@@ -270,8 +299,9 @@ function buildCandidateCard(
     'gap:6px',
   ].join(';'))
 
-  // ── 行 1：稀有度星 + 名稱 ──
+  // ── 行 1：portrait + 稀有度星 + 名稱 ──
   const row1 = div('display:flex;align-items:center;gap:8px')
+  row1.appendChild(buildStaffPortraitImg(candidate.staffID, candidate.name))
   const starsEl = div('font-size:13px;flex-shrink:0', rarityStars(candidate.rarity))
   starsEl.style.color = rarityColor(candidate.rarity)
   row1.appendChild(starsEl)
@@ -447,8 +477,9 @@ function buildStaffCard(
     'gap:6px',
   ].join(';'))
 
-  // ── 行 1：稀有度星 + 名稱 + 當前指派建築 ──
+  // ── 行 1：portrait + 稀有度星 + 名稱 + 當前指派建築 ──
   const row1 = div('display:flex;align-items:center;gap:8px')
+  row1.appendChild(buildStaffPortraitImg(staff.staffID, staff.name))
   const starsEl = div('font-size:13px;flex-shrink:0', rarityStars(staff.rarity))
   starsEl.style.color = rarityColor(staff.rarity)
   row1.appendChild(starsEl)

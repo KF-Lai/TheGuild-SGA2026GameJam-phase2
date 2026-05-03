@@ -289,14 +289,24 @@ function buildRookieCard(
     row2.appendChild(portraitImg)
   }
   const profName = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
-
-  const profTag = span(profName, [
+  const profTag = document.createElement('div')
+  profTag.style.cssText = [
     'font-size:12px',
     'padding:1px 6px',
     'border-radius:3px',
     'background:#3a3060',
     'color:#b0a0e0',
-  ].join(';'))
+    'display:inline-flex',
+    'align-items:center',
+    'gap:3px',
+  ].join(';')
+  const profIcon = document.createElement('img')
+  profIcon.src = `/images/icons/profession/F-C-02_${adv.professionId}.png`
+  profIcon.alt = adv.professionId
+  profIcon.style.cssText = 'width:14px;height:14px;object-fit:contain'
+  profIcon.onerror = () => { profIcon.style.display = 'none' }
+  profTag.appendChild(profIcon)
+  profTag.appendChild(document.createTextNode(profName))
   row2.appendChild(profTag)
 
   const freeTag = span('免費', [
@@ -416,14 +426,24 @@ function buildVeteranCard(
     row2.appendChild(portraitImg)
   }
   const profName = PROFESSION_TRAITS[adv.professionId]?.name ?? adv.professionId
-
-  const profTag = span(profName, [
+  const profTag = document.createElement('div')
+  profTag.style.cssText = [
     'font-size:12px',
     'padding:1px 6px',
     'border-radius:3px',
     'background:#3a3060',
     'color:#b0a0e0',
-  ].join(';'))
+    'display:inline-flex',
+    'align-items:center',
+    'gap:3px',
+  ].join(';')
+  const profIcon = document.createElement('img')
+  profIcon.src = `/images/icons/profession/F-C-02_${adv.professionId}.png`
+  profIcon.alt = adv.professionId
+  profIcon.style.cssText = 'width:14px;height:14px;object-fit:contain'
+  profIcon.onerror = () => { profIcon.style.display = 'none' }
+  profTag.appendChild(profIcon)
+  profTag.appendChild(document.createTextNode(profName))
   row2.appendChild(profTag)
   card.appendChild(row2)
 
