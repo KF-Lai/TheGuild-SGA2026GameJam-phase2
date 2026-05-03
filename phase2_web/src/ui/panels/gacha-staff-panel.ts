@@ -98,15 +98,7 @@ function buildStaffPortraitImg(staffID: number, alt: string): HTMLImageElement {
     img.src = `${STAFF_PORTRAIT_BASE}${portrait}.png`
     img.alt = alt
   }
-  img.style.cssText = [
-    'width:36px',
-    'height:36px',
-    'border-radius:4px',
-    'object-fit:cover',
-    'object-position:top center',
-    'flex-shrink:0',
-    'border:1px solid #4a4a4a',
-  ].join(';')
+  img.className = 'portrait-staff'
   img.onerror = () => { img.style.display = 'none' }
   return img
 }
@@ -634,11 +626,8 @@ export function mountGachaStaffPanel(
     'font-family:monospace,sans-serif',
     'overflow:hidden',
     'position:relative',
-    'background-image:url(/images/scene/A-14_default.png)',
-    'background-repeat:repeat-x',
-    'background-position:bottom',
-    'background-size:auto 24px',
   ].join(';'))
+  root.classList.add('bg-wood-floor')
 
   parent.appendChild(root)
 
@@ -647,7 +636,7 @@ export function mountGachaStaffPanel(
     const plant = document.createElement('img')
     plant.src = '/images/scene/A-17_default.png'
     plant.alt = ''
-    plant.style.cssText = 'position:absolute;top:8px;right:8px;width:42px;height:42px;object-fit:contain;opacity:0.85;pointer-events:none;z-index:1'
+    plant.className = 'deco deco-gacha-plant'
     plant.onerror = () => { plant.style.display = 'none' }
     root.appendChild(plant)
   }
@@ -674,7 +663,7 @@ export function mountGachaStaffPanel(
     const gachaHeroIcon = document.createElement('img')
     gachaHeroIcon.src = '/images/scene/A-06_default.png'
     gachaHeroIcon.alt = ''
-    gachaHeroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0;margin-right:8px'
+    gachaHeroIcon.className = 'hero-icon hero-icon-gacha-staff'
     gachaHeroIcon.onerror = () => { gachaHeroIcon.style.display = 'none' }
 
     const gachaTitleWrap = div('display:flex;align-items:center')

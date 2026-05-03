@@ -1,0 +1,154 @@
+/**
+ * Phase 2 Web — 美術裝飾樣式集中表
+ *
+ * 所有 panel 的 hero icon / deco（絕對定位裝飾）/ inline icon / portrait
+ * 大小、位置、透明度集中於此檔案。
+ *
+ * 修改規範：
+ *   - 調整數值直接改本檔，不需動 .ts
+ *   - Vite HMR 自動套用，不必 rebuild
+ *   - 各 deco 對應 panel 已在 className 註明（見每節 comment）
+ */
+
+/* =========================================================================
+ * Panel Header Hero Icons（場景 cutout 元素跟 title 並排）
+ * ========================================================================= */
+
+.hero-icon {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.hero-icon-commission   { height: 36px; }                  /* 5.1 — A-02_idle / A-02_new */
+.hero-icon-recruitment  { height: 36px; margin-right: 8px; } /* 5.4 — A-07 */
+.hero-icon-building     { height: 40px; }                  /* 5.5 — A-04 */
+.hero-icon-gacha-staff  { height: 36px; margin-right: 8px; } /* 5.6 — A-06 */
+.hero-icon-settings     { height: 32px; }                  /* 5.7 — A-05 */
+
+/* =========================================================================
+ * Decorations（絕對定位裝飾，不阻擋互動）
+ * 父容器需有 position:relative
+ * ========================================================================= */
+
+.deco {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 5.3 公會總覽 panel */
+.deco-overview-plant {
+  top: 8px;
+  right: 8px;
+  width: 48px;
+  height: 48px;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.deco-overview-ledger {
+  top: 8px;
+  left: 8px;
+  width: 36px;
+  height: 36px;
+  opacity: 0.65;
+  z-index: 1;
+}
+
+/* 5.6 面試 / 職員 panel */
+.deco-gacha-plant {
+  top: 8px;
+  right: 8px;
+  width: 42px;
+  height: 42px;
+  opacity: 0.85;
+  z-index: 1;
+}
+
+/* 5.7 設定 panel */
+.deco-settings-bookshelf {
+  top: 8px;
+  right: 8px;
+  height: 280px;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+/* =========================================================================
+ * Background Decorations（CSS background-image 紋理）
+ * ========================================================================= */
+
+/* 5.6 面試 / 職員 panel 底部木地板（職員休息室語意） */
+.bg-wood-floor {
+  background-image: url(/images/scene/A-14_default.png);
+  background-repeat: repeat-x;
+  background-position: bottom;
+  background-size: auto 24px;
+}
+
+/* =========================================================================
+ * Inline Icons（chip / badge 內的小圖）
+ * ========================================================================= */
+
+/* 職業 icon（5.1 dropdown / 5.2 / 5.4 chip） */
+.icon-profession {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+/* 難度 icon（5.1 mission card rank badge） */
+.icon-rank {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+/* HUD icon — 金幣（5.3 公會總覽資源 section） */
+.icon-hud-gold {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* HUD icon — 聲望（5.3 公會總覽聲望進度條） */
+.icon-hud-rep {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+ * Character Portraits（card 內角色立繪）
+ * ========================================================================= */
+
+.portrait-card {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: top center;
+  flex-shrink: 0;
+  border: 1px solid #4a4a4a;
+}
+
+.portrait-card-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: top center;
+  flex-shrink: 0;
+  border: 1px solid #4a4a4a;
+}
+
+.portrait-staff {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: top center;
+  flex-shrink: 0;
+  border: 1px solid #4a4a4a;
+}

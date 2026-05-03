@@ -284,7 +284,7 @@ function buildRookieCard(
     const portraitImg = document.createElement('img')
     portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
     portraitImg.alt = adv.name
-    portraitImg.style.cssText = 'width:28px;height:28px;border-radius:4px;object-fit:cover;object-position:top center;flex-shrink:0;border:1px solid #4a4a4a'
+    portraitImg.className = 'portrait-card-sm'
     portraitImg.onerror = () => { portraitImg.style.display = 'none' }
     row2.appendChild(portraitImg)
   }
@@ -303,7 +303,7 @@ function buildRookieCard(
   const profIcon = document.createElement('img')
   profIcon.src = `/images/icons/profession/F-C-02_${adv.professionId}.png`
   profIcon.alt = adv.professionId
-  profIcon.style.cssText = 'width:14px;height:14px;object-fit:contain'
+  profIcon.className = 'icon-profession'
   profIcon.onerror = () => { profIcon.style.display = 'none' }
   profTag.appendChild(profIcon)
   profTag.appendChild(document.createTextNode(profName))
@@ -421,7 +421,7 @@ function buildVeteranCard(
     const portraitImg = document.createElement('img')
     portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
     portraitImg.alt = adv.name
-    portraitImg.style.cssText = 'width:28px;height:28px;border-radius:4px;object-fit:cover;object-position:top center;flex-shrink:0;border:1px solid #4a4a4a'
+    portraitImg.className = 'portrait-card-sm'
     portraitImg.onerror = () => { portraitImg.style.display = 'none' }
     row2.appendChild(portraitImg)
   }
@@ -440,7 +440,7 @@ function buildVeteranCard(
   const profIcon = document.createElement('img')
   profIcon.src = `/images/icons/profession/F-C-02_${adv.professionId}.png`
   profIcon.alt = adv.professionId
-  profIcon.style.cssText = 'width:14px;height:14px;object-fit:contain'
+  profIcon.className = 'icon-profession'
   profIcon.onerror = () => { profIcon.style.display = 'none' }
   profTag.appendChild(profIcon)
   profTag.appendChild(document.createTextNode(profName))
@@ -599,7 +599,7 @@ export function mountRecruitmentPanel(
   const heroIcon = document.createElement('img')
   heroIcon.src = '/images/scene/A-07_default.png'
   heroIcon.alt = ''
-  heroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0;margin-right:8px'
+  heroIcon.className = 'hero-icon hero-icon-recruitment'
   heroIcon.onerror = () => { heroIcon.style.display = 'none' }
 
   const titleWrap = div('display:flex;align-items:center')

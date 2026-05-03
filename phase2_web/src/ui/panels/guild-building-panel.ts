@@ -129,7 +129,7 @@ export function mountGuildBuildingPanel(
   const buildingHeroIcon = document.createElement('img')
   buildingHeroIcon.src = '/images/scene/A-04_default.png'
   buildingHeroIcon.alt = ''
-  buildingHeroIcon.style.cssText = 'height:40px;object-fit:contain;flex-shrink:0'
+  buildingHeroIcon.className = 'hero-icon hero-icon-building'
   buildingHeroIcon.onerror = () => { buildingHeroIcon.style.display = 'none' }
   const buildingTitleSpan = document.createElement('span')
   buildingTitleSpan.textContent = '公會建設'

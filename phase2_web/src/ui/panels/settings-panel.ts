@@ -85,7 +85,7 @@ export function mountSettingsPanel(
   const settingsBookshelf = document.createElement('img')
   settingsBookshelf.src = '/images/scene/A-16_default.png'
   settingsBookshelf.alt = ''
-  settingsBookshelf.style.cssText = 'position:absolute;top:8px;right:8px;height:280px;object-fit:contain;opacity:0.6;pointer-events:none;z-index:0'
+  settingsBookshelf.className = 'deco deco-settings-bookshelf'
   settingsBookshelf.onerror = () => { settingsBookshelf.style.display = 'none' }
   root.appendChild(settingsBookshelf)
 
@@ -122,7 +122,7 @@ export function mountSettingsPanel(
   const settingsHeroIcon = document.createElement('img')
   settingsHeroIcon.src = '/images/scene/A-05_default.png'
   settingsHeroIcon.alt = ''
-  settingsHeroIcon.style.cssText = 'height:32px;object-fit:contain;flex-shrink:0'
+  settingsHeroIcon.className = 'hero-icon hero-icon-settings'
   settingsHeroIcon.onerror = () => { settingsHeroIcon.style.display = 'none' }
   const settingsTitleSpan = document.createElement('span')
   settingsTitleSpan.textContent = '存檔管理'

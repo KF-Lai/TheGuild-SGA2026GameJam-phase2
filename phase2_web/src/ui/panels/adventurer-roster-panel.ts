@@ -182,15 +182,7 @@ function buildAdventurerCard(
     const portraitImg = document.createElement('img')
     portraitImg.src = `${PORTRAIT_BASE_PATH}${adv.portrait}.png`
     portraitImg.alt = adv.name
-    portraitImg.style.cssText = [
-      'width:32px',
-      'height:32px',
-      'border-radius:4px',
-      'object-fit:cover',
-      'object-position:top center',
-      'flex-shrink:0',
-      'border:1px solid #4a4a4a',
-    ].join(';')
+    portraitImg.className = 'portrait-card'
     portraitImg.onerror = () => { portraitImg.style.display = 'none' }
     row2.appendChild(portraitImg)
   }
@@ -210,7 +202,7 @@ function buildAdventurerCard(
   const profIcon = document.createElement('img')
   profIcon.src = `/images/icons/profession/F-C-02_${adv.professionId}.png`
   profIcon.alt = adv.professionId
-  profIcon.style.cssText = 'width:14px;height:14px;object-fit:contain'
+  profIcon.className = 'icon-profession'
   profIcon.onerror = () => { profIcon.style.display = 'none' }
   profTag.appendChild(profIcon)
   profTag.appendChild(document.createTextNode(profName))

@@ -166,7 +166,7 @@ export function mountCommissionBoardPanel(
     const heroIcon = document.createElement('img')
     heroIcon.src = hasNewMission ? '/images/scene/A-02_new.png' : '/images/scene/A-02_idle.png'
     heroIcon.alt = ''
-    heroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0'
+    heroIcon.className = 'hero-icon hero-icon-commission'
     heroIcon.onerror = () => { heroIcon.style.display = 'none' }
 
     const title = el('div', [
@@ -262,7 +262,7 @@ export function mountCommissionBoardPanel(
     const rankIconImg = document.createElement('img')
     rankIconImg.src = `/images/icons/rank/F-C-05_${mission.difficulty}.png`
     rankIconImg.alt = mission.difficulty
-    rankIconImg.style.cssText = 'width:14px;height:14px;object-fit:contain'
+    rankIconImg.className = 'icon-rank'
     rankIconImg.onerror = () => { rankIconImg.style.display = 'none' }
     const diffText = el('span', '', mission.difficulty)
     diffBadge.appendChild(rankIconImg)

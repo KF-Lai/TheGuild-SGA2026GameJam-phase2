@@ -114,7 +114,7 @@ export function mountGuildOverviewPanel(
   const overviewPlant = document.createElement('img')
   overviewPlant.src = '/images/scene/A-17_default.png'
   overviewPlant.alt = ''
-  overviewPlant.style.cssText = 'position:absolute;top:8px;right:8px;width:48px;height:48px;object-fit:contain;opacity:0.8;pointer-events:none;z-index:1'
+  overviewPlant.className = 'deco deco-overview-plant'
   overviewPlant.onerror = () => { overviewPlant.style.display = 'none' }
   root.appendChild(overviewPlant)
 
@@ -122,7 +122,7 @@ export function mountGuildOverviewPanel(
   const ledgerDeco = document.createElement('img')
   ledgerDeco.src = '/images/props/guild_ledger.png'
   ledgerDeco.alt = ''
-  ledgerDeco.style.cssText = 'position:absolute;top:8px;left:8px;width:36px;height:36px;object-fit:contain;opacity:0.65;pointer-events:none;z-index:1'
+  ledgerDeco.className = 'deco deco-overview-ledger'
   ledgerDeco.onerror = () => { ledgerDeco.style.display = 'none' }
   root.appendChild(ledgerDeco)
 
@@ -264,7 +264,7 @@ function _buildRepBar(
     const repIcon = document.createElement('img')
     repIcon.src = '/images/icons/F-C-01_reputation.png'
     repIcon.alt = '聲望'
-    repIcon.style.cssText = 'width:14px;height:14px;object-fit:contain;flex-shrink:0'
+    repIcon.className = 'icon-hud-rep'
     repIcon.onerror = () => { repIcon.style.display = 'none' }
     wrapSpan.appendChild(repIcon)
     wrapSpan.appendChild(document.createTextNode(text))
@@ -329,7 +329,7 @@ function _fillResourceSection(section: HTMLElement, guild: GuildState): void {
   const goldIcon = document.createElement('img')
   goldIcon.src = '/images/icons/F-C-01_gold.png'
   goldIcon.alt = '金幣'
-  goldIcon.style.cssText = 'width:18px;height:18px;flex-shrink:0;object-fit:contain'
+  goldIcon.className = 'icon-hud-gold'
   goldIcon.onerror = () => { goldIcon.style.display = 'none' }
 
   const value = document.createElement('span')
