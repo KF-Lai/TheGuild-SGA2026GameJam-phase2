@@ -90,8 +90,8 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 3.1 | `src/systems/building.ts`：FT-07 Guild Building System（~400 行：6 棟升級、雙軌閘門、effect API） | Medium | Sonnet subagent | 未開始 |
-| 3.2 | `src/systems/gold-flow.ts`：FT-05 Guild Gold Flow（~450 行：預收 / 結算 / 維護費 / 薪水觸發） | Medium | Sonnet subagent | 未開始 |
+| 3.1 | `src/systems/building.ts`：FT-07 Guild Building System（~400 行：6 棟升級、雙軌閘門、effect API） | Medium | Sonnet subagent | 完成 |
+| 3.2 | `src/systems/gold-flow.ts`：FT-05 Guild Gold Flow（~450 行：預收 / 結算 / 維護費 / 薪水觸發） | Medium | Sonnet subagent | 完成 |
 
 ---
 
