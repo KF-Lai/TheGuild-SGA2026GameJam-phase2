@@ -124,9 +124,9 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 5.4 | 招募 panel（FT-01：自薦池 + 邀請費用顯示） | Medium | Sonnet subagent | 未開始 |
-| 5.5 | 公會建設 panel（FT-07：6 棟建築升級，雙軌閘門顯示） | Medium | Sonnet subagent | 未開始 |
-| 5.6 | 面試 + 職員名冊 panel（FT-08 簡化抽卡 + FT-12 三角色管理） | Medium | Sonnet subagent | 未開始 |
+| 5.4 | 招募 panel（FT-01：自薦池 + 邀請費用顯示） | Medium | Sonnet subagent | 完成 |
+| 5.5 | 公會建設 panel（FT-07：6 棟建築升級，雙軌閘門顯示） | Medium | Sonnet subagent | 完成 |
+| 5.6 | 面試 + 職員名冊 panel（FT-08 簡化抽卡 + FT-12 三角色管理） | Medium | Sonnet subagent | 完成 |
 
 #### Wave 5C（並行 2）
 
