@@ -142,6 +142,10 @@ export async function loadAppState(slot: string): Promise<AppState | null> {
           staffRoster: Array.isArray(record.guild.staffRoster) ? record.guild.staffRoster : [],
           dangerLevel: typeof record.guild.dangerLevel === 'number' ? record.guild.dangerLevel : 0,
         }
+        // 舊存檔 activeMissions 缺 difficulty 欄位時補 fallback
+        for (const r of guildState.activeMissions) {
+          if (!(r as any).difficulty) (r as any).difficulty = 'F'
+        }
 
         const restoredState: AppState = {
           guild:        guildState,
