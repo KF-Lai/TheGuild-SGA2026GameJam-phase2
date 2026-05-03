@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Does the dispatch→wait→resolve loop feel tense and readable in MUD-style text UI? -->
+<!-- Date: 2026-04-07 -->
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>The Guild — Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0d0d;
+    color: #c8b98a;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+  }
+  h1 { color: #e8d4a0; font-size: 18px; letter-spacing: 2px; }
+  .status-bar {
+    display: flex; gap: 20px; padding: 6px 10px;
+    border: 1px solid #3a3020; background: #111;
+    color: #ffd700;
+  }
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+  .panel {
+    border: 1px solid #3a3020;
+    background: #0f0f0a;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-title {
+    background: #1a1508;
+    padding: 4px 8px;
+    color: #e8d4a0;
+    border-bottom: 1px solid #3a3020;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .panel-body { padding: 8px; overflow-y: auto; flex: 1; }
+  .log-panel { grid-column: 1 / -1; max-height: 180px; }
+  .adventurer-card, .mission-card {
+    border: 1px solid #2a2010;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .adventurer-card:hover { background: #1a1508; }
+  .adventurer-card.selected { border-color: #ffd700; background: #1a1200; }
+  .adventurer-card.on-mission { opacity: 0.5; cursor: default; }
+  .adventurer-card.dead { opacity: 0.3; cursor: default; border-color: #500; color: #844; }
+  .mission-card:hover { background: #1a1508; }
+  .mission-card.active { border-color: #4a8; }
+  .rank { font-weight: bold; }
+  .rank-F { color: #888; }
+  .rank-E { color: #8bc; }
+  .rank-D { color: #6a8; }
+  .rank-C { color: #ca6; }
+  .rank-B { color: #a6c; }
+  .rank-A { color: #f80; }
+  .rank-S { color: #f40; }
+  .btn {
+    background: #1a1200; border: 1px solid #5a4010;
+    color: #c8b98a; padding: 4px 10px;
+    cursor: pointer; font-family: inherit; font-size: 13px;
+    margin-top: 4px;
+  }
+  .btn:hover { background: #2a2000; border-color: #ffd700; color: #ffd700; }
+  .btn:disabled { opacity: 0.3; cursor: default; }
+  .dispatch-section {
+    border-top: 1px solid #3a3020;
+    padding: 8px;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #1a1508; }
+  .log-entry.success { color: #6d8; }
+  .log-entry.fail { color: #c84; }
+  .log-entry.death { color: #d44; font-weight: bold; }
+  .log-entry.info { color: #88a; }
+  .log-entry.refused { color: #866; }
+  .progress-bar {
+    height: 4px; background: #2a2010; margin-top: 3px;
+    position: relative; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: #5a8;
+    transition: width 0.5s linear;
+  }
+  .timer { font-size: 11px; color: #777; }
+  small { color: #666; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>⚔ THE GUILD</h1>
+
+<div class="status-bar">
+  <span>💰 Gold: <span id="gold">120</span></span>
+  <span>🏅 Rep: <span id="rep">Known</span></span>
+  <span>⏱ Day: <span id="day">1</span></span>
+  <span style="color:#555">[ 1 real-sec = 1 game-min ]</span>
+</div>
+
+<div class="main">
+  <!-- ADVENTURERS -->
+  <div class="panel">
+    <div class="panel-title">▶ ADVENTURERS</div>
+    <div class="panel-body" id="adventurer-list"></div>
+    <div class="dispatch-section">
+      <button class="btn" id="recruit-btn" onclick="recruitAdventurer()">Recruit (30g)</button>
+      <span id="selected-label" style="color:#666;font-size:12px">No one selected</span>
+    </div>
+  </div>
+
+  <!-- MISSIONS -->
+  <div class="panel">
+    <div class="panel-title">▶ COMMISSION BOARD</div>
+    <div class="panel-body" id="mission-list"></div>
+    <div class="dispatch-section">
+      <button class="btn" id="dispatch-btn" onclick="dispatch()" disabled>Dispatch</button>
+      <button class="btn" onclick="refreshPool()" style="font-size:11px">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- ACTIVE MISSIONS -->
+  <div class="panel">
+    <div class="panel-title">▶ ACTIVE MISSIONS</div>
+    <div class="panel-body" id="active-list"></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="panel log-panel">
+    <div class="panel-title">▶ GUILD LOG</div>
+    <div class="panel-body" id="log" style="display:flex;flex-direction:column-reverse;"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS (from GDD) ────────────────────────────────────────────────────
+const RANKS = ['F','E','D','C','B','A','S'];
+const DIFFICULTIES = ['F','E','D','C','B','A','S','SS','SSS'];
+const BASE_SUCCESS = { 3:0.95, 2:0.85, 1:0.70, 0:0.55, [-1]:0.35, [-2]:0.20, [-3]:0.10 };
+const BASE_DEATH_RATE = { F:0.02,E:0.06,D:0.10,C:0.13,B:0.18,A:0.25,S:0.30,SS:0.38,SSS:0.50 };
+const RANK_DIFF_DEATH_MOD = { 3:-0.20, 2:-0.10, 1:-0.05, 0:0, [-1]:0.05, [-2]:0.15, [-3]:0.25 };
+const DEATH_AVERSION = 0.5;
+const ACCEPTANCE_THRESHOLD = 0.25;
+const ACCEPTANCE_JITTER = 0.10;
+const TIME_SCALE = 1; // 1 real-second = 1 game-minute
+
+const MISSION_TYPES = ['討伐','護送','採集','調查'];
+const TRAIT_SUCCESS_MOD = { '討伐': { '討伐':0.10, '護送':0, '採集':-0.05, '調查':0 },
+                             '採集': { '討伐':-0.05, '護送':0, '採集':0.10, '調查':0.05 },
+                             '防護': { '討伐':0, '護送':0.10, '採集':0, '調查':0 } };
+const TRAIT_DEATH_MOD =   { '討伐': { '討伐':-0.05, '護送':0, '採集':0, '調查':0 },
+                             '採集': { '討伐':0, '護送':0, '採集':-0.15, '調查':0 },
+                             '防護': { '討伐':0, '護送':-0.10, '採集':0, '調查':0 } };
+const REP_LABELS = ['惡名昭彰','聲名狼藉','默默無聞','Known','小有名氣','聞名遐邇','傳奇公會'];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  gold: 120,
+  reputation: 0,  // -3 to +3 index
+  day: 1,
+  adventurers: [],
+  missionPool: [],
+  activeMissions: [],
+  completedIds: new Set(),
+  nextId: 100,
+  selectedAdventurerId: null,
+  selectedMissionId: null,
+};
+
+// ─── STATIC MISSION TEMPLATES ────────────────────────────────────────────────
+const MISSION_TEMPLATES = [
+  { id:1, name:'村莊鼠患', type:'討伐', difficulty:'F', reward:15, duration:2, desc:'清除糧倉害蟲' },
+  { id:2, name:'草藥採集', type:'採集', difficulty:'F', reward:12, duration:3, desc:'採集山丘草藥' },
+  { id:3, name:'商旅護送', type:'護送', difficulty:'E', reward:25, duration:5, desc:'護送商人至鄰城' },
+  { id:4, name:'地窟探索', type:'調查', difficulty:'D', reward:40, duration:8, desc:'調查廢棄地窟' },
+  { id:5, name:'狼群清剿', type:'討伐', difficulty:'E', reward:20, duration:4, desc:'清剿山道狼群' },
+  { id:6, name:'遺跡調查', type:'調查', difficulty:'C', reward:60, duration:12, desc:'古遺跡異常調查' },
+  { id:7, name:'貴族護衛', type:'護送', difficulty:'C', reward:55, duration:10, desc:'護送貴族返都' },
+  { id:8, name:'礦坑災難', type:'調查', difficulty:'B', reward:90, duration:15, desc:'礦坑深處怪物出沒' },
+];
+
+// ─── ADVENTURER NAMES ────────────────────────────────────────────────────────
+const ADV_NAMES = ['艾倫','雷姆','賽拉','托比','維拉','奧斯','伊莎','凱斯','魯恩','多拉',
+                   '菲恩','克萊','諾亞','席格','阿娜','鮑比','艾薇','庫納','葉塔','梅洛'];
+const ADV_TRAITS = ['討伐','採集','防護'];
+let namePool = [...ADV_NAMES];
+
+function pickName() {
+  if (!namePool.length) namePool = [...ADV_NAMES];
+  const i = Math.floor(Math.random() * namePool.length);
+  return namePool.splice(i, 1)[0];
+}
+
+function makeAdventurer(rank) {
+  return {
+    id: state.nextId++,
+    name: pickName(),
+    rank: rank || RANKS[Math.floor(Math.random() * 3)], // F/E/D for starters
+    trait: ADV_TRAITS[Math.floor(Math.random() * ADV_TRAITS.length)],
+    status: 'idle',  // idle | on_mission | dead
+    currentMissionId: null,
+  };
+}
+
+// ─── FORMULA HELPERS ─────────────────────────────────────────────────────────
+function rankIndex(r)   { return RANKS.indexOf(r); }
+function diffIndex(d)   { return DIFFICULTIES.indexOf(d); }
+function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function calcRates(adv, mission) {
+  const rd = clamp(rankIndex(adv.rank) - diffIndex(mission.difficulty), -3, 3);
+  // success rate
+  const baseSuccess = BASE_SUCCESS[rd] ?? 0.10;
+  const sMod = (TRAIT_SUCCESS_MOD[adv.trait]?.[mission.type]) ?? 0;
+  const finalSuccess = clamp(baseSuccess + sMod, 0, 1);
+  // death rate
+  const baseDeath = BASE_DEATH_RATE[mission.difficulty];
+  const dMod = (TRAIT_DEATH_MOD[adv.trait]?.[mission.type]) ?? 0;
+  const rdDeathMod = RANK_DIFF_DEATH_MOD[rd] ?? 0;
+  const finalDeath = clamp(baseDeath + dMod + rdDeathMod, 0, 1);
+  return { finalSuccess, finalDeath, rd };
+}
+
+function willingnessScore(adv, mission) {
+  const { finalSuccess, finalDeath } = calcRates(adv, mission);
+  return finalSuccess - finalDeath * DEATH_AVERSION;
+}
+
+// ─── DISPATCH LOGIC ──────────────────────────────────────────────────────────
+function dispatch() {
+  const adv = state.adventurers.find(a => a.id === state.selectedAdventurerId);
+  const mission = state.missionPool.find(m => m.id === state.selectedMissionId);
+  if (!adv || !mission) return;
+  if (adv.status !== 'idle') return;
+
+  const { finalSuccess, finalDeath } = calcRates(adv, mission);
+  const ws = willingnessScore(adv, mission);
+  const jitter = (Math.random() * 2 - 1) * ACCEPTANCE_JITTER;
+  const effective = ws + jitter;
+
+  if (effective < ACCEPTANCE_THRESHOLD) {
+    log(`${adv.name} 搖了搖頭，拒絕接受「${mission.name}」。 (意願${(effective*100).toFixed(0)}% < ${ACCEPTANCE_THRESHOLD*100}%)`, 'refused');
+    return;
+  }
+
+  // Accept
+  adv.status = 'on_mission';
+  adv.currentMissionId = mission.id;
+  const now = Date.now();
+  const durationMs = mission.duration * TIME_SCALE * 1000;
+  const record = {
+    id: state.nextId++,
+    missionId: mission.id,
+    missionName: mission.name,
+    adventurerId: adv.id,
+    adventurerName: adv.name,
+    startTime: now,
+    endTime: now + durationMs,
+    finalSuccess, finalDeath,
+    preCollectedAmount: mission.reward,
+  };
+  state.activeMissions.push(record);
+  state.missionPool = state.missionPool.filter(m => m.id !== mission.id);
+  state.completedIds.add(mission.id);
+
+  log(`${adv.name}【${adv.rank}】接受「${mission.name}」(${mission.difficulty}難度)，預計 ${mission.duration} 分鐘後返回。`, 'info');
+  state.selectedAdventurerId = null;
+  state.selectedMissionId = null;
+  render();
+}
+
+// ─── OUTCOME RESOLUTION ──────────────────────────────────────────────────────
+function resolveOutcome(record) {
+  state.activeMissions = state.activeMissions.filter(r => r.id !== record.id);
+  const adv = state.adventurers.find(a => a.id === record.adventurerId);
+  if (!adv) return;
+
+  const successRoll = Math.random();
+  const deathRoll   = Math.random();
+  const success = successRoll < record.finalSuccess;
+  const died    = deathRoll   < record.finalDeath;
+
+  if (success) {
+    state.gold += record.preCollectedAmount;
+    state.reputation = clamp(state.reputation + 1, -3, 3);
+    adv.status = 'idle';
+    adv.currentMissionId = null;
+    log(`✓ ${adv.name} 完成「${record.missionName}」！獲得 ${record.preCollectedAmount} 金幣。`, 'success');
+  } else if (died) {
+    adv.status = 'dead';
+    state.gold -= Math.floor(record.preCollectedAmount * 0.5);
+    state.reputation = clamp(state.reputation - 1, -3, 3);
+    log(`✗ ${adv.name} 在「${record.missionName}」任務中陣亡。公會賠付 ${Math.floor(record.preCollectedAmount*0.5)} 金幣。`, 'death');
+  } else {
+    adv.status = 'idle';
+    adv.currentMissionId = null;
+    state.gold -= Math.floor(record.preCollectedAmount * 0.2);
+    log(`✗ ${adv.name} 任務「${record.missionName}」失敗，賠付違約金 ${Math.floor(record.preCollectedAmount*0.2)} 金幣。`, 'fail');
+  }
+  render();
+}
+
+// ─── TICK: check timers ───────────────────────────────────────────────────────
+function tick() {
+  const now = Date.now();
+  // resolve completed missions
+  state.activeMissions
+    .filter(r => now >= r.endTime)
+    .forEach(r => resolveOutcome(r));
+
+  // advance game day every 60 real-seconds (= 60 game-minutes)
+  const elapsed = (now - sessionStart) / 1000;
+  state.day = 1 + Math.floor(elapsed / 60);
+
+  renderActive();
+  document.getElementById('day').textContent = state.day;
+}
+
+// ─── RECRUITMENT ─────────────────────────────────────────────────────────────
+function recruitAdventurer() {
+  if (state.gold < 30) { log('金幣不足，無法招募。', 'fail'); return; }
+  state.gold -= 30;
+  const rank = RANKS[Math.min(Math.floor(Math.random()*2 + Math.random()*1), 2)]; // mostly F/E
+  const adv = makeAdventurer(rank);
+  state.adventurers.push(adv);
+  log(`${adv.name}【${adv.rank}階 ${adv.trait}型】加入公會。`, 'info');
+  render();
+}
+
+// ─── MISSION POOL ─────────────────────────────────────────────────────────────
+function refreshPool() {
+  const available = MISSION_TEMPLATES.filter(m =>
+    !state.completedIds.has(m.id) &&
+    !state.activeMissions.some(r => r.missionId === m.id)
+  );
+  const shuffled = available.sort(() => Math.random() - 0.5);
+  state.missionPool = shuffled.slice(0, 6);
+  // Fallback: always at least one mission
+  if (state.missionPool.length === 0) {
+    state.missionPool = [{
+      id: state.nextId++, name:'哥布林突襲', type:'討伐', difficulty:'F',
+      reward:15, duration:2, desc:'附近村莊遭哥布林騷擾'
+    }];
+  }
+  state.selectedMissionId = null;
+  renderMissions();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('gold').textContent = state.gold;
+  document.getElementById('rep').textContent = REP_LABELS[state.reputation + 3];
+  renderAdventurers();
+  renderMissions();
+  renderActive();
+  updateDispatchBtn();
+}
+
+function renderAdventurers() {
+  const el = document.getElementById('adventurer-list');
+  el.innerHTML = state.adventurers.map(adv => {
+    const cls = adv.status === 'dead' ? 'dead' :
+                adv.status === 'on_mission' ? 'on-mission' :
+                adv.id === state.selectedAdventurerId ? 'selected' : '';
+    const statusStr = adv.status === 'dead' ? '✞ 陣亡' :
+                      adv.status === 'on_mission' ? '⚔ 出任務' : '● 待命';
+    return `<div class="adventurer-card ${cls}" onclick="selectAdventurer(${adv.id})">
+      <b><span class="rank rank-${adv.rank}">[${adv.rank}]</span> ${adv.name}</b>
+      <small> · ${adv.trait}型</small><br>
+      <small>${statusStr}</small>
+    </div>`;
+  }).join('') || '<small style="color:#555">尚無冒險者</small>';
+}
+
+function renderMissions() {
+  const el = document.getElementById('mission-list');
+  el.innerHTML = state.missionPool.map(m => {
+    const isSelected = m.id === state.selectedMissionId;
+    const adv = state.adventurers.find(a => a.id === state.selectedAdventurerId);
+    let rateInfo = '';
+    if (adv && adv.status === 'idle') {
+      const { finalSuccess, finalDeath } = calcRates(adv, m);
+      rateInfo = ` <small style="color:#888">成${(finalSuccess*100).toFixed(0)}%/死${(finalDeath*100).toFixed(0)}%</small>`;
+    }
+    return `<div class="mission-card ${isSelected ? 'selected' : ''}" onclick="selectMission(${m.id})">
+      <b>${m.name}</b> <span class="rank rank-${m.difficulty.replace('S','S')}">[${m.difficulty}]</span>${rateInfo}<br>
+      <small>${m.type} · ${m.desc}</small><br>
+      <small>💰${m.reward}g · ⏱${m.duration}分</small>
+    </div>`;
+  }).join('') || '<small style="color:#555">委託板為空</small>';
+}
+
+function renderActive() {
+  const el = document.getElementById('active-list');
+  const now = Date.now();
+  el.innerHTML = state.activeMissions.map(r => {
+    const total = r.endTime - r.startTime;
+    const elapsed = now - r.startTime;
+    const pct = Math.min(100, (elapsed / total) * 100);
+    const remaining = Math.max(0, Math.ceil((r.endTime - now) / 1000));
+    return `<div style="margin-bottom:8px;">
+      <b>${r.adventurerName}</b> → 「${r.missionName}」<br>
+      <span class="timer">還剩 ${remaining}秒</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('') || '<small style="color:#555">無進行中任務</small>';
+}
+
+function updateDispatchBtn() {
+  const btn = document.getElementById('dispatch-btn');
+  const adv = state.adventurers.find(a => a.id === state.selectedAdventurerId);
+  const ok = adv && adv.status === 'idle' && state.selectedMissionId !== null;
+  btn.disabled = !ok;
+}
+
+// ─── SELECTION ────────────────────────────────────────────────────────────────
+function selectAdventurer(id) {
+  const adv = state.adventurers.find(a => a.id === id);
+  if (!adv || adv.status !== 'idle') return;
+  state.selectedAdventurerId = id;
+  document.getElementById('selected-label').textContent = adv.name + ' 就緒';
+  renderAdventurers();
+  renderMissions(); // refresh rate preview
+  updateDispatchBtn();
+}
+
+function selectMission(id) {
+  state.selectedMissionId = id;
+  renderMissions();
+  updateDispatchBtn();
+}
+
+// ─── LOG ──────────────────────────────────────────────────────────────────────
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const d = new Date();
+  const ts = `[Day ${state.day} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}]`;
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.textContent = `${ts} ${msg}`;
+  el.prepend(div);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+const sessionStart = Date.now();
+
+// Starting adventurers
+state.adventurers.push(makeAdventurer('E'));
+state.adventurers.push(makeAdventurer('F'));
+state.adventurers.push(makeAdventurer('F'));
+
+refreshPool();
+render();
+log('公會大門正式開啟。願冒險者們一路平安。', 'info');
+
+setInterval(tick, 500);
+</script>
+</body>
+</html>
