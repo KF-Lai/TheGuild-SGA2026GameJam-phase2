@@ -132,8 +132,8 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 5.7 | 設定 panel + 結算彈窗 + 確認彈窗 | Medium | Sonnet subagent | 未開始 |
-| 5.8 | 主選單 + 通知區 + Game Over 畫面 | Small | Sonnet subagent | 未開始 |
+| 5.7 | 設定 panel + 結算彈窗 + 確認彈窗 | Medium | Sonnet subagent | 完成 |
+| 5.8 | 主選單 + 通知區 + Game Over 畫面 | Small | Sonnet subagent | 完成 |
 
 ---
 
