@@ -4,7 +4,6 @@
  *
  * 相對於 Phase 1 guild-hall-scene.ts buildAdventurerHall，本模組新增：
  *   - bio 顯示（最多兩行）
- *   - isUnique 角色排在第一格（透過 sortRoster）
  *   - gender icon（♂/♀ 顏色區分）
  *   - wounded 狀態 badge（woundedUntil 透過事件取得但 Adventurer type 無此欄位，僅顯示 status）
  *   - growthTraits chip 列表
@@ -17,7 +16,6 @@
  */
 
 import type { Adventurer, GuildState } from '../../types'
-import { sortRoster } from '../../systems/adventurer'
 import { PROFESSION_TRAITS } from '../../data/traits'
 import { GROWTH_TRAITS, nextXPMilestone, XP_MILESTONES } from '../../data/growth-traits'
 import { eventBus } from '../../core/events'
@@ -107,7 +105,6 @@ function buildAdventurerCard(
   adv: Adventurer,
   onSelect?: (id: string) => void,
 ): HTMLElement {
-  const isUnique  = adv.isUnique === true
   const isWounded = adv.status === 'wounded'
   const isDead    = adv.status === 'dead'
 
@@ -117,7 +114,7 @@ function buildAdventurerCard(
   card.style.cssText = [
     'list-style:none',
     'padding:10px 12px',
-    `border:1px solid ${isUnique ? '#f0c060' : '#3a3a3a'}`,
+    'border:1px solid #3a3a3a',
     'border-radius:6px',
     'background:#2a2a2a',
     `opacity:${isDead ? '0.5' : '1'}`,
@@ -130,16 +127,16 @@ function buildAdventurerCard(
   ].join(';')
 
   card.addEventListener('mouseenter', () => {
-    card.style.borderColor = isUnique ? '#ffd878' : '#5a5a6a'
+    card.style.borderColor = '#5a5a6a'
   })
   card.addEventListener('mouseleave', () => {
-    card.style.borderColor = isUnique ? '#f0c060' : '#3a3a3a'
+    card.style.borderColor = '#3a3a3a'
   })
   if (onSelect) {
     card.addEventListener('click', () => onSelect(adv.id))
   }
 
-  // ── 行 1：rank badge + name + gender icon + unique 標籤 ──
+  // ── 行 1：rank badge + name + gender icon ──
   const row1 = div('display:flex;align-items:center;gap:6px;overflow:hidden')
 
   // Rank badge
@@ -174,16 +171,6 @@ function buildAdventurerCard(
   const gIcon = span(GENDER_ICONS[gIdx], `font-size:12px;color:${GENDER_COLORS[gIdx]};flex-shrink:0`)
   row1.appendChild(gIcon)
 
-  // Unique 標籤
-  if (isUnique) {
-    const uniqueTag = span('★', [
-      'font-size:12px',
-      'color:#f0c060',
-      'flex-shrink:0',
-    ].join(';'))
-    row1.appendChild(uniqueTag)
-  }
-
   card.appendChild(row1)
 
   // ── 行 2：portrait（若有）+ 職業 ──
@@ -202,7 +189,7 @@ function buildAdventurerCard(
       'object-fit:cover',
       'object-position:top center',
       'flex-shrink:0',
-      `border:1px solid ${isUnique ? '#f0c060' : '#4a4a4a'}`,
+      'border:1px solid #4a4a4a',
     ].join(';')
     portraitImg.onerror = () => { portraitImg.style.display = 'none' }
     row2.appendChild(portraitImg)
@@ -385,7 +372,7 @@ export function mountAdventurerRosterPanel(
   function render(): void {
     const guild   = ctx.getGuild()
     const cap     = ctx.getRosterCap()
-    const sorted  = sortRoster(guild.adventurers)
+    const sorted  = guild.adventurers
     const visible = sorted.filter(a => a.status !== 'dead')
     const total   = guild.adventurers.length
     const atCap   = total >= cap

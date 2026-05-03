@@ -82,8 +82,6 @@ export interface Adventurer {
   fixedRecruitCost?: number
   // Phase 2 新增
   gender: 0 | 1
-  isUnique?: boolean
-  factionId?: number
   /** 立繪檔名前綴（不含 .png）；對應 public/images/characters/adventurers/<portrait>.png。
    *  由 adventurer-templates.ts 的 template path 設定；純 random path 不設此欄位（UI fallback 用職業圖示）。 */
   portrait?: string

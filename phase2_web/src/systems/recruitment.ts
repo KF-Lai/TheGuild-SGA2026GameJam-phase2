@@ -15,7 +15,6 @@
  *   - FT-07 Guild Building 不存在 → 刷新間隔固定 24h
  *   - FT-12 Staff 不存在 → recruitRefreshReductionSec = 0
  *   - C-05 Trait 暫無 → growthTraits 使用預設 [] (createAdventurer 已處理)
- *   - AdventurerTemplate / isUnique 過濾邏輯延後
  */
 
 import type { Adventurer, Rank, GuildLevel } from '../types'
@@ -482,7 +481,7 @@ export function recruitVeteran(
   // 嘗試加入名冊
   const success = addToRoster(candidate.adventurer)
   if (!success) {
-    // 加入失敗（名冊已滿或 isUnique 衝突），回滾扣款
+    // 加入失敗（名冊已滿），回滾扣款
     _deps.addGold(+candidate.cost)
     return false
   }
@@ -610,10 +609,7 @@ export function deserialize(data: SerializedRecruitmentState): RecruitmentState 
 // 1. AdventurerTemplate 具名模板優先邏輯（GDD §3.3 Phase 1 / §3.4 Phase 1）
 //    → 目前全部隨機生成，無 templateID 優先池
 //
-// 2. isUnique 過濾（GDD §3.3 rule 4 / §5.2 isUnique 衝突處理）
-//    → createAdventurer 不回傳 templateID；isUnique 衝突判斷跳過
-//
-// 3. C-05 Trait 職業群組抽取（GDD §3.3 rule 3 / §4.5 Phase 2）
+// 2. C-05 Trait 職業群組抽取（GDD §3.3 rule 3 / §4.5 Phase 2）
 //    → growthTraits 固定 []（由 createAdventurer 預設）
 //
 // 4. FT-07 Guild Building 刷新間隔（GDD §7.4）

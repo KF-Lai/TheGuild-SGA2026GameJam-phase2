@@ -312,18 +312,6 @@ export function markDead(adv: Adventurer): void {
 }
 
 /**
- * 排序名冊：isUnique=true 的冒險者永遠排在第一位。
- * Implements: C-02 Adventurer Management § unique 角色排序
- */
-export function sortRoster(adventurers: Adventurer[]): Adventurer[] {
-  return [...adventurers].sort((a, b) => {
-    if (a.isUnique && !b.isUnique) return -1
-    if (!a.isUnique && b.isUnique) return 1
-    return 0
-  })
-}
-
-/**
  * 判斷 wounded 冒險者是否已恢復（woundedUntil 為恢復時間戳記 ms）。
  * Implements: C-02 § wounded 狀態 / WOUNDED_RECOVERY_HOURS=6
  *

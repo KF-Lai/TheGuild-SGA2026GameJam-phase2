@@ -5,7 +5,6 @@
  * createAdventurer 30% 機率走 template path 生成具名冒險者，70% 純隨機。
  *
  * 設計來源：使用者於 2026-05-03 提供的立繪 mapping（基於 PNG 視覺判斷）。
- * ophelia_default.png 不使用，故無 isUnique 角色。
  */
 
 import type { Rank, ProfessionId } from '../types'
