@@ -26,23 +26,23 @@ C-02 Adventurer Management 管理公會名冊中所有冒險者的靜態定義�
 
 `AdventurerInstance` 是 runtime 物件，不對應任何 CSV 表格（由 C-02 在記憶體中管理，並由 FT-10 Save/Load 序列化）。
 
-| 欄位 | 型別 | 說明 |
-|------|------|------|
-| `instanceID` | `int` | Runtime 唯一 ID，由 C-02 自增分配；`0` 為 null sentinel |
-| `templateID` | `int` | 來源模板 ID；`0` = 隨機生成（無固定模板） |
-| `name` | `string` | 顯示名稱（來自模板或 D-01 NamePool 隨機） |
-| `gender` | `int` | **v1.1（2026-05-02 D-01 patch）** 性別代碼：`0`=男（他）/`1`=女（她）/`2`=中性（其）；隨機生成由 `D01.PickRandomNameWithGender` 取得，具名 NPC 無對應欄位時預設 `0` |
-| `bio` | `string` | **v1.1（2026-05-02 D-01 patch）** 背景故事文字；隨機生成由 `D01.GetRandomBio` 一次性產出（已替換 `{name}` / `{pronoun}`）；具名 NPC 取自 `AdventurerTemplate.bio`（無則為空字串） |
-| `rank` | `string` | F / E / D / C / B / A / S |
-| `professionID` | `int` | FK → ProfessionTable（C-03） |
-| `raceID` | `int` | FK → RaceTable（C-04） |
-| `traitIDs` | `int[]` | FK → TraitTable（C-05），固定 + 隨機抽取的合集 |
-| `factionID` | `int` | 陣營歸屬；隨機生成的冒險者填 `0`（neutral） |
-| `status` | `enum` | `Idle` / `Dispatched` / `Wounded` / `Dead` |
-| `currentMissionID` | `int` | 派遣中的任務 instanceID；非 `Dispatched` 狀態填 `0`。此 invariant 由 C-02 `UpdateStatus` / `SetWounded` 內部維護，上游呼叫者不需手動清除 |
-| `woundedUntilTimestamp` | `long` | Unix timestamp（秒），`Wounded` 恢復截止時間；非 Wounded 填 `0` |
-| `idleSinceTimestamp` | `long` | 進入 `Idle` 狀態時的 UTC timestamp（Unix 秒）；非 `Idle` 時為 `0`；由 C-02 內部於狀態轉移時自動設定/清除（見 §3.4） |
-| `lastAutoPickupTimestamp` | `long` | FT-03 自主接單最近一次計算的 UTC timestamp；初始為 `0`；由 FT-03 透過 `C02.SetLastAutoPickupTimestamp(instanceID, timestamp)` 寫入，C-02 不自動管理 |
+| 欄位                        | 型別       | 說明                                                                                                                                           |
+| ------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `instanceID`              | `int`    | Runtime 唯一 ID，由 C-02 自增分配；`0` 為 null sentinel                                                                                                |
+| `templateID`              | `int`    | 來源模板 ID；`0` = 隨機生成（無固定模板）                                                                                                                    |
+| `name`                    | `string` | 顯示名稱（來自模板或 D-01 NamePool 隨機）                                                                                                                 |
+| `gender`                  | `int`    | **v1.1（2026-05-02 D-01 patch）** 性別代碼：`0`=男（他）/`1`=女（她）/`2`=中性（其）；隨機生成由 `D01.PickRandomNameWithGender` 取得，具名 NPC 無對應欄位時預設 `0`                 |
+| `bio`                     | `string` | **v1.1（2026-05-02 D-01 patch）** 背景故事文字；隨機生成由 `D01.GetRandomBio` 一次性產出（已替換 `{name}` / `{pronoun}`）；具名 NPC 取自 `AdventurerTemplate.bio`（無則為空字串） |
+| `rank`                    | `string` | F / E / D / C / B / A / S                                                                                                                    |
+| `professionID`            | `int`    | FK → ProfessionTable（C-03）                                                                                                                   |
+| `raceID`                  | `int`    | FK → RaceTable（C-04）                                                                                                                         |
+| `traitIDs`                | `int[]`  | FK → TraitTable（C-05），固定 + 隨機抽取的合集                                                                                                           |
+| `factionID`               | `int`    | 陣營歸屬；隨機生成的冒險者填 `0`（neutral）                                                                                                                  |
+| `status`                  | `enum`   | `Idle` / `Dispatched` / `Wounded` / `Dead`                                                                                                   |
+| `currentMissionID`        | `int`    | 派遣中的任務 instanceID；非 `Dispatched` 狀態填 `0`。此 invariant 由 C-02 `UpdateStatus` / `SetWounded` 內部維護，上游呼叫者不需手動清除                                   |
+| `woundedUntilTimestamp`   | `long`   | Unix timestamp（秒），`Wounded` 恢復截止時間；非 Wounded 填 `0`                                                                                           |
+| `idleSinceTimestamp`      | `long`   | 進入 `Idle` 狀態時的 UTC timestamp（Unix 秒）；非 `Idle` 時為 `0`；由 C-02 內部於狀態轉移時自動設定/清除（見 §3.4）                                                          |
+| `lastAutoPickupTimestamp` | `long`   | FT-03 自主接單最近一次計算的 UTC timestamp；初始為 `0`；由 FT-03 透過 `C02.SetLastAutoPickupTimestamp(instanceID, timestamp)` 寫入，C-02 不自動管理                     |
 
 ---
 

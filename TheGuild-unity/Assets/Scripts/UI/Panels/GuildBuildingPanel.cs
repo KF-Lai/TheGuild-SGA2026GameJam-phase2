@@ -20,6 +20,7 @@ namespace TheGuild.UI.Panels
         private void Awake()
         {
             _root = new VisualElement { name = "guild-building-panel" };
+            _root.AddToClassList("p02-panel");
             _root.style.display = DisplayStyle.None;
             _list = new VisualElement { name = "guild-building-list" };
             _root.Add(new Label(Text("ui.panel.building.title", "Guild Building")));

@@ -26,6 +26,7 @@ namespace TheGuild.UI.Panels
         private void Awake()
         {
             _root = new VisualElement { name = "commission-board-panel" };
+            _root.AddToClassList("p02-panel");
             _root.style.display = DisplayStyle.None;
             _regularList = new VisualElement { name = "commission-regular-list" };
             _staticList = new VisualElement { name = "commission-static-list" };

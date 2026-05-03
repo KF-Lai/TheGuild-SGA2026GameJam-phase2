@@ -81,13 +81,13 @@ C-05 Trait System 定義冒險者個性特質的靜態資料與隨機抽取機�
 
 ### 3.3 TraitGroupTable 資料表定義
 
-| 欄位 | 型別 | 說明 |
-|------|------|------|
-| `groupID` | `int` (PK) | 從 1 起；`0` 為 null sentinel |
-| `groupName` | `string` | 群組名稱（設計用，不顯示給玩家） |
-| `traitIDs` | `int[]`（`\|` 分隔） | 此群組的可選特質 ID 池 |
-| `pickCount` | `int` | 從池中抽取的特質數量 |
-| `pickMode` | `string` | `uniform`（不重複抽取）/ `weighted`（加權，可重複，預留未來擴充） |
+| 欄位          | 型別               | 說明                                          |
+| ----------- | ---------------- | ------------------------------------------- |
+| `groupID`   | `int` (PK)       | 從 1 起；`0` 為 null sentinel                   |
+| `groupName` | `string`         | 群組名稱（設計用，不顯示給玩家）                            |
+| `traitIDs`  | `int[]`（`\|` 分隔） | 此群組的可選特質 ID 池                               |
+| `pickCount` | `int`            | 從池中抽取的特質數量                                  |
+| `pickMode`  | `string`         | `uniform`（不重複抽取）/ `weighted`（加權，可重複，預留未來擴充） |
 
 > Game Jam 版本僅使用 `uniform` 模式。術語與 F-01 DataManager 保持一致。
 

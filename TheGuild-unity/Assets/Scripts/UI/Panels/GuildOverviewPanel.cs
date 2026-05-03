@@ -28,6 +28,7 @@ namespace TheGuild.UI.Panels
         private void Awake()
         {
             _root = new VisualElement { name = "guild-overview-panel" };
+            _root.AddToClassList("p02-panel");
             _root.style.display = DisplayStyle.None;
             _summary = new Label { name = "guild-overview-summary" };
             _faction = new Label { name = "guild-overview-faction" };

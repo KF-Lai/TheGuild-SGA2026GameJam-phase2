@@ -26,14 +26,14 @@ _狀態：Phase 2 後端 18 系統實作完成（Foundation 3 + Core 6 + Feature
 
 ### Core 層（依賴 Foundation）
 
-| ID   | 系統                      | 說明                                                        | GDD 狀態  | 對應資料表                                                                                    |
-| ---- | ------------------------- | ----------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------- |
-| C-01 | **Mission Database**      | 任務模板、難度（F~SSS）、類型、報酬、時長、死亡率、陣營加分；D-02 文字 Facade | ✅ 已設計 | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `MissionDifficultyTable`（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta，由 FT-02 / FT-09 共用消費） |
-| C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊                     | ✅ 已設計 | `AdventurerTemplate`, `RecruitCostTable`                                                      |
-| C-03 | **Profession System**     | 7 種職業定義、擅長/弱點、成功率修正                         | ✅ 已設計 | `ProfessionTable`                                                                             |
-| C-04 | **Race System**           | 種族定義、屬性修正（如精靈調查+10%）                        | ✅ 已設計 | `RaceTable`（owner）；職業 → 種族池欄位 `raceIDs` / `raceWeights` 已合併入 C-03 `ProfessionTable` |
-| C-05 | **Trait System**          | 個性特質、行為/數值影響、隨機抽取群組                       | ✅ 已設計 | `TraitTable`, `TraitGroupTable`                                                               |
-| C-06 | **World Danger System**   | 5 階全局壓力、時間閘+進度閘+陣營閘、任務池偏移              | ✅ 已設計 | `WorldDangerTable`（單表整合升級閘 / 池權重 / 債務上限）                                       |
+| ID   | 系統                        | 說明                                              | GDD 狀態 | 對應資料表                                                                                                                                                                          |
+| ---- | ------------------------- | ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C-01 | **Mission Database**      | 任務模板、難度（F~SSS）、類型、報酬、時長、死亡率、陣營加分；D-02 文字 Facade | ✅ 已設計  | `MissionTemplate`, `MissionTypeTable`, `MissionCategoryTable`, `MissionDifficultyTable`（合併 baseReward / baseDuration / baseDeathRate / factionScoreDelta，由 FT-02 / FT-09 共用消費） |
+| C-02 | **Adventurer Management** | 冒險者實例、階級（F~S）、狀態管理、名冊                           | ✅ 已設計  | `AdventurerTemplate`, `RecruitCostTable`                                                                                                                                       |
+| C-03 | **Profession System**     | 7 種職業定義、擅長/弱點、成功率修正                             | ✅ 已設計  | `ProfessionTable`                                                                                                                                                              |
+| C-04 | **Race System**           | 種族定義、屬性修正（如精靈調查+10%）                            | ✅ 已設計  | `RaceTable`（owner）；職業 → 種族池欄位 `raceIDs` / `raceWeights` 已合併入 C-03 `ProfessionTable`                                                                                            |
+| C-05 | **Trait System**          | 個性特質、行為/數值影響、隨機抽取群組                             | ✅ 已設計  | `TraitTable`, `TraitGroupTable`                                                                                                                                                |
+| C-06 | **World Danger System**   | 5 階全局壓力、時間閘+進度閘+陣營閘、任務池偏移                       | ✅ 已設計  | `WorldDangerTable`（單表整合升級閘 / 池權重 / 債務上限）                                                                                                                                       |
 
 ### Feature 層（依賴 Core）
 

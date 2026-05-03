@@ -21,6 +21,7 @@ namespace TheGuild.UI.Panels
         private void Awake()
         {
             _root = new VisualElement { name = "staff-roster-panel" };
+            _root.AddToClassList("p02-panel");
             _root.style.display = DisplayStyle.None;
             _list = new VisualElement { name = "staff-roster-list" };
             _root.Add(new Label(Text("ui.panel.staff.title", "Staff Roster")));

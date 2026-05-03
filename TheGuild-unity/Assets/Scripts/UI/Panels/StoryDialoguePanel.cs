@@ -25,6 +25,7 @@ namespace TheGuild.UI.Panels
         private void Awake()
         {
             _root = new VisualElement { name = "story-dialogue-panel" };
+            _root.AddToClassList("p02-panel");
             _root.style.display = DisplayStyle.None;
             _content = new VisualElement { name = "story-dialogue-content" };
             _confirmButton = new Button(Confirm) { name = "story-dialogue-confirm" };

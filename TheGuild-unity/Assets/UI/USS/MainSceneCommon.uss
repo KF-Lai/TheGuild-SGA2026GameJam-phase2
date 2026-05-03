@@ -1,6 +1,5 @@
-/* P-02 Main UI Common USS — 透明場景 + 7 元素 + 木地板 */
-/* 設計參考：design/IconInstructions_game_elements_cutout.png */
-/* Jam scope 縮減：缺美術用 placeholder 木質框 + 文字標籤 */
+/* P-02 Main UI Common USS */
+/* 7 個場景元素已移至 SpriteRenderer GameObject；本 USS 僅管 floor / HUD / panel 樣式 */
 
 .main-scene-root {
     position: absolute;
@@ -8,11 +7,10 @@
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0); /* P-01 透明 color key 對應 */
+    background-color: rgba(0, 0, 0, 0);
 }
 
 /* ──────────── 木地板（A-14，貼底全寬） ──────────── */
-/* 視窗底邊由 P-01 windowY 對齊 WorkingArea.Bottom，故 floor 自動坐落於工作列上方 */
 .floor {
     position: absolute;
     left: 0;
@@ -21,112 +19,6 @@
     height: 30px;
     background-image: url("project://database/Assets/Art/UI/Scene/A-14_default.png");
     -unity-background-scale-mode: stretch-to-fill;
-}
-
-/* ──────────── 7 場景元素共用容器 ──────────── */
-/* 每個 scene-element 為一個絕對定位的 sprite slot；底部坐於 floor 上緣 */
-.scene-element {
-    position: absolute;
-    bottom: 30px; /* 坐於 floor 上方 */
-}
-
-/* 共用 button（嵌於 sprite slot 內，與 sprite 同尺寸） */
-.scene-button {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0);
-    border-width: 0;
-    padding: 0;
-    color: rgb(255, 235, 200);
-    -unity-font-style: bold;
-    font-size: 12px;
-    -unity-text-align: middle-center;
-    white-space: normal;
-}
-
-.scene-button:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-width: 2px;
-    border-color: rgba(255, 235, 200, 0.7);
-    border-radius: 4px;
-}
-
-.scene-button:disabled {
-    opacity: 0.4;
-}
-
-/* placeholder-frame：缺美術時顯示半透明木質框 + 文字標籤 */
-.placeholder-frame {
-    background-color: rgba(50, 35, 20, 0.85);
-    border-width: 2px;
-    border-color: rgba(180, 150, 90, 0.7);
-    border-radius: 4px;
-}
-
-.placeholder-frame:hover {
-    background-color: rgba(120, 80, 40, 0.95);
-    border-color: rgba(255, 235, 200, 0.9);
-}
-
-/* ──────────── 7 元素位置 + sprite background ──────────── */
-/* 設計參考圖 IconInstructions_game_elements_cutout.png：1920×~280 視窗，由左到右排列 */
-
-/* 1. 公會 Log 板（左上，Log host 容器） */
-.scene-log-board {
-    left: 24px;
-    width: 220px;
-    height: 130px;
-}
-
-/* 2. 委託版 */
-.scene-commission-board {
-    left: 280px;
-    width: 200px;
-    height: 130px;
-}
-
-/* 3. 公會櫃臺 */
-.scene-counter {
-    left: 510px;
-    width: 180px;
-    height: 90px;
-}
-
-/* 4. 冒險者立繪（裝飾，A-02_idle） */
-.scene-adventurer-decor {
-    left: 720px;
-    width: 90px;
-    height: 110px;
-    background-image: url("project://database/Assets/Art/UI/Scene/A-02_idle.png");
-    -unity-background-scale-mode: scale-to-fit;
-}
-
-/* 5. 保險箱（A-05_default） */
-.scene-safe {
-    left: 1140px;
-    width: 110px;
-    height: 110px;
-    background-image: url("project://database/Assets/Art/UI/Scene/A-05_default.png");
-    -unity-background-scale-mode: scale-to-fit;
-}
-
-/* 6. 公會會長辦公桌（A-07_default） */
-.scene-master-desk {
-    left: 1430px;
-    width: 200px;
-    height: 130px;
-    background-image: url("project://database/Assets/Art/UI/Scene/A-07_default.png");
-    -unity-background-scale-mode: scale-to-fit;
-}
-
-/* 7. 書櫃 */
-.scene-bookshelf {
-    left: 1700px;
-    width: 180px;
-    height: 150px;
 }
 
 /* ──────────── HUD 元素 ──────────── */
@@ -140,7 +32,7 @@
     color: rgb(220, 80, 80);
 }
 
-/* ──────────── 既有 panel modal class 保留 ──────────── */
+/* ──────────── panel modal class ──────────── */
 
 .p02-panel {
     position: absolute;

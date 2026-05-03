@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:Style src="project://database/Assets/UI/USS/MainSceneCommon.uss" />
     <ui:VisualElement name="overlay-panel-root" picking-mode="Ignore" style="flex-grow: 1; position: absolute; left: 0; right: 0; top: 0; bottom: 0;" />
 </ui:UXML>
