@@ -291,10 +291,16 @@ function buildAdventurerCard(
   }
 
   // ── wounded 額外說明（狀態細節列） ──
-  // 備註：woundedUntil 倒數因 Adventurer type 缺欄位，目前僅顯示狀態文字
   if (isWounded) {
     const woundNote = div('font-size:11px;color:#d04040;margin-top:2px')
-    woundNote.textContent = '需要休養，暫時無法派遣任務'
+    if (adv.woundedUntil !== undefined && adv.woundedUntil > Date.now()) {
+      const remainMs = adv.woundedUntil - Date.now()
+      const h = Math.floor(remainMs / 3_600_000)
+      const m = Math.ceil((remainMs % 3_600_000) / 60_000)
+      woundNote.textContent = `療傷中，${h > 0 ? `${h} 小時 ` : ''}${m} 分後恢復`
+    } else {
+      woundNote.textContent = '需要休養，暫時無法派遣任務'
+    }
     card.appendChild(woundNote)
   }
 

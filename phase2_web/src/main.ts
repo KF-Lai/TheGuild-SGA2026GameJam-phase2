@@ -233,6 +233,7 @@ async function main(): Promise<void> {
           records: [...s.outcomeState.pendingResults],
           onDismissAll: () => {
             s.outcomeState.pendingResults.length = 0
+            uiResult.refreshCurrentPanel()
           },
         })
       }
