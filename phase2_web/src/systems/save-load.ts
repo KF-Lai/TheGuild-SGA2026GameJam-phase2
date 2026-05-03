@@ -152,6 +152,11 @@ export async function loadGame(slot: string = DEFAULT_SLOT): Promise<GuildState 
  * 存檔版本遷移入口。目前為直通（v1 無需遷移）；未來版本在此加分支。
  */
 function migrate(state: GuildState): GuildState {
+  for (const record of state.activeMissions) {
+    if (!(record as any).difficulty) {
+      (record as any).difficulty = 'F'
+    }
+  }
   return state
 }
 

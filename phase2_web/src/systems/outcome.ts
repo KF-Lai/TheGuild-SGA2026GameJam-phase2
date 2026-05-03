@@ -39,7 +39,9 @@ export interface SettlementRecord {
   /** Maps to DispatchRecord.id */
   dispatchId: string
   missionId: string
+  missionName: string
   adventurerId: string
+  adventurerName: string
   outcome: import('../types').OutcomeType
   missionDifficulty: Difficulty
   baseReward: number
@@ -140,14 +142,14 @@ export function resolveOutcome(
     outcome = 'DEATH'
   }
 
-  // GDD §公式 — 預收模型：任務接受時已預收 baseReward，結算時調整差額
-  // SUCCESS/PYRRHIC: 退回 (1-COMMISSION_RATE) 比例給委託人（guild 淨賺 COMMISSION_RATE）
-  // FAILURE/DEATH:   退回預收全額 + PENALTY_RATE 罰款（guild 淨虧損 preCollectedAmount + penalty）
+  // GDD §公式 — 直接模型：dispatch 不預收，結算時直接計算淨額
+  // SUCCESS/PYRRHIC: guild 賺取 COMMISSION_RATE 傭金（正值）
+  // FAILURE/DEATH:   guild 支付 PENALTY_RATE 賠償（負值）
   const isSuccess = outcome === 'SUCCESS' || outcome === 'PYRRHIC'
   const preCollectedAmount = record.preCollectedAmount
   const goldDelta = isSuccess
-    ? -Math.floor(preCollectedAmount * (1 - COMMISSION_RATE))
-    : -(preCollectedAmount + Math.floor(preCollectedAmount * PENALTY_RATE))
+    ? Math.floor(preCollectedAmount * COMMISSION_RATE)
+    : -Math.floor(preCollectedAmount * PENALTY_RATE)
 
   // GDD §聲望更新 — PYRRHIC counts as success, DEATH counts as failure
   const reputationDelta = getReputationDelta(difficulty, isSuccess)
@@ -160,7 +162,9 @@ export function resolveOutcome(
   const settlementRecord: SettlementRecord = {
     dispatchId:         record.id,
     missionId:          record.missionId,
+    missionName:        record.missionName,
     adventurerId:       record.adventurerId,
+    adventurerName:     record.adventurerName,
     outcome,
     missionDifficulty:  difficulty,
     baseReward,

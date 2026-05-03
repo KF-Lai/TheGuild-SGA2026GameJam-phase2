@@ -68,12 +68,7 @@ export function tick(
   // 從後往前移除，避免 index 偏移
   for (let i = expiredIndices.length - 1; i >= 0; i--) {
     const record = state.guild.activeMissions[expiredIndices[i]]
-    // 找對應 mission 取 difficulty / baseReward
-    const mission =
-      state.guild.missionPool.find(m => m.id === record.missionId) ??
-      state.guild.pendingReview.find(m => m.id === record.missionId)
-
-    const difficulty = mission?.difficulty ?? 'F'
+    const difficulty = record.difficulty
     const baseReward = record.preCollectedAmount
 
     // resolveOutcome 會 emit 'mission:completed'，event-handlers.ts 負責後續處理

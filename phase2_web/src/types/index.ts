@@ -130,6 +130,7 @@ export interface DispatchRecord {
   finalSuccessRate: number
   finalDeathRate: number
   preCollectedAmount: number
+  difficulty: Difficulty
 }
 
 export type OutcomeType = 'SUCCESS' | 'FAILURE' | 'DEATH' | 'PYRRHIC'

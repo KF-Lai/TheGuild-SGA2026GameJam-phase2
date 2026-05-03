@@ -199,6 +199,7 @@ export function tryDispatch(
     finalSuccessRate,
     finalDeathRate,
     preCollectedAmount:  mission.baseReward,
+    difficulty:          mission.difficulty,
   }
 
   // Mutate adventurer state (idle → on_mission)
@@ -356,6 +357,7 @@ export function tryPartyDispatch(
     finalSuccessRate,
     finalDeathRate,
     preCollectedAmount: adjustedReward,
+    difficulty:         mission.difficulty,
   }
 
   members.forEach(m => {

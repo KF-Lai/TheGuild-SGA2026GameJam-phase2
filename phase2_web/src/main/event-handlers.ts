@@ -52,7 +52,6 @@ export function subscribeEvents(
     state.guild.activeMissions.splice(idx, 1)
     state.guild.completedMissionIds.add(dispatchRecord.missionId)
 
-    // 套用金流（路徑 A：outcome.ts 已預收 baseReward，此處套用 goldDelta）
     resource.addGold(state.guild.resources, payload.goldDelta)
     resource.changeReputation(state.guild.resources, payload.reputationDelta)
 

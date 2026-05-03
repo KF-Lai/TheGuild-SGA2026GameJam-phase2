@@ -157,6 +157,7 @@ export function simulateNpcMissions(
         finalSuccessRate,
         finalDeathRate,
         preCollectedAmount: Math.floor(mission.baseReward * NPC_GUILD_FEE_RATE),
+        difficulty: mission.difficulty,
       }
 
       newDispatchRecords.push(record)

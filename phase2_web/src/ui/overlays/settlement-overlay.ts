@@ -224,18 +224,8 @@ function buildRecordRow(record: SettlementRecord): HTMLElement {
   return row
 }
 
-/**
- * 組合任務名稱與冒險者名稱的顯示文字。
- * missionId 為 fallback，理想情況呼叫方應在 SettlementRecord 加入 missionName，
- * 但目前 SettlementRecord 只有 missionId，以 missionId 取代顯示。
- */
 function buildInfoText(record: SettlementRecord): string {
-  // SettlementRecord 只有 missionId / adventurerId，
-  // 任務名稱與冒險者名稱需由呼叫方自行嵌入（Phase 2 spec 未規定傳入方式）。
-  // Jam scope：直接顯示 id 做 fallback，main.ts 整合時可換成 name lookup。
-  const mission   = (record as any).missionName   ?? record.missionId
-  const adventurer = (record as any).adventurerName ?? record.adventurerId
-  return `${adventurer} — ${mission}`
+  return `${record.adventurerName} — ${record.missionName}`
 }
 
 /** wounded 標記（橙色，顯示預計恢復時間） */

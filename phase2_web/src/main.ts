@@ -9,7 +9,7 @@
  *   5. 存檔 / 載入 / 重置 wrapper
  *
  * 設計決策（依 spec §4 / §5）：
- *   - 金流路徑 A：outcome.ts 計算 goldDelta，mission accept 時 addGold(+baseReward) 預收
+ *   - 金流直接模型：outcome.ts 計算 goldDelta（正值=收入，負值=賠款），dispatch 不預收
  *   - Phase 1 UI（shell.ts / guild-hall-scene.ts）完全不引入，避免 ui-strings 缺檔錯誤
  *   - save-load：使用 save-wrapper.ts（獨立 IndexedDB store 'saves_ext'，不動既有 save-load.ts）
  *
