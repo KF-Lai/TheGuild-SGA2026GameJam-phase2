@@ -63,6 +63,10 @@ const RANK_DIFF_DEATH_MOD: Record<number, number> = {
   '-3': 0.25,
 }
 
+// ── Narrative flag ────────────────────────────────────────────────────────────
+// Phase 2 Jam 版：敘事系統停用，isScriptedDeath 短路不執行
+const NARRATIVE_ENABLED = false
+
 // ── NPC willingness constants ─────────────────────────────────────────────────
 // Source: mission-dispatch.md §NPC 意願常數
 
@@ -108,9 +112,9 @@ export function calcRates(
 ): { finalSuccessRate: number; finalDeathRate: number; rankDiff: number } {
   const rd = clamp(rankIndex(adv.rank) - diffIndex(mission.difficulty), -3, 3)
 
+  // Phase 2：職業不影響死亡率，deathRateModifier 已從 ProfessionTrait 移除
   const trait = PROFESSION_TRAITS[adv.professionId]
   const successMod = trait.successRateModifier[mission.type] / 100
-  const deathMod   = trait.deathRateModifier[mission.type]   / 100
 
   // Race modifiers (additive)
   const raceModifier = getRaceModifier(adv.raceId ?? 'human')
@@ -126,12 +130,17 @@ export function calcRates(
     if (effect.effectType === 'death_rate')   traitDeathMod   += effect.value
   }
 
+  // isScriptedDeath 短路（NARRATIVE_ENABLED=false 時跳過腳本死亡覆寫）
+  if (!NARRATIVE_ENABLED && (mission as any).isScriptedDeath) {
+    // narrative disabled — skip scripted death override
+  }
+
   const baseSuccess = BASE_SUCCESS_RATE[rd]
   const finalSuccessRate = clamp(baseSuccess + successMod + raceSuccessMod + traitSuccessMod, 0, 1)
 
   const baseDeathRate   = BASE_MISSION_DEATH_RATE[mission.difficulty]
   const rankDeathMod    = RANK_DIFF_DEATH_MOD[rd]
-  const finalDeathRate  = clamp(baseDeathRate + deathMod + raceDeathMod + rankDeathMod + traitDeathMod, 0, 1)
+  const finalDeathRate  = clamp(baseDeathRate + raceDeathMod + rankDeathMod + traitDeathMod, 0, 1)
 
   return { finalSuccessRate, finalDeathRate, rankDiff: rd }
 }

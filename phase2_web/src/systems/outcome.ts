@@ -17,6 +17,8 @@
 import type { Difficulty, DispatchRecord, Adventurer, OutcomeType } from '../types'
 import { getReputationDelta } from './resource'
 import { XP_PER_OUTCOME, computeNewTraits } from '../data/growth-traits'
+import { eventBus } from '../core/events'
+import { WOUNDED_RECOVERY_HOURS } from '../data/constants'
 
 // ---------------------------------------------------------------------------
 // Re-exports (OutcomeType is defined in ../types to avoid duplication)
@@ -47,6 +49,8 @@ export interface SettlementRecord {
   /** Positive = guild earned, negative = guild paid out */
   goldDelta: number
   reputationDelta: number
+  /** Unix timestamp (ms) until which the adventurer is wounded. Only set when outcome = FAILURE and wounded roll succeeds. */
+  woundedUntil?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +163,12 @@ export function resolveOutcome(
   // GDD §聲望更新 — PYRRHIC counts as success, DEATH counts as failure
   const reputationDelta = getReputationDelta(difficulty, isSuccess)
 
-  return {
+  // Phase 2: FAILURE 有 30% 機率進入 wounded 狀態
+  const woundedUntil = (outcome === 'FAILURE' && Math.random() < 0.3)
+    ? Date.now() + WOUNDED_RECOVERY_HOURS * 3_600_000
+    : undefined
+
+  const settlementRecord: SettlementRecord = {
     dispatchId:         record.id,
     missionId:          record.missionId,
     adventurerId:       record.adventurerId,
@@ -170,7 +179,25 @@ export function resolveOutcome(
     resolvedAt:         Date.now(),
     goldDelta,
     reputationDelta,
+    ...(woundedUntil !== undefined && { woundedUntil }),
   }
+
+  eventBus.emit('mission:completed', {
+    dispatchId:       record.id,
+    outcome,
+    goldDelta,
+    reputationDelta,
+  })
+
+  if (outcome === 'DEATH' || outcome === 'PYRRHIC') {
+    eventBus.emit('adventurer:died', {
+      adventurerId:   record.adventurerId,
+      adventurerName: record.adventurerName,
+      missionId:      record.missionId,
+    })
+  }
+
+  return settlementRecord
 }
 
 /**
