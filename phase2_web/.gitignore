@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.jpg
+*.jpeg
+*.snap
+guild-ui-preview.html
