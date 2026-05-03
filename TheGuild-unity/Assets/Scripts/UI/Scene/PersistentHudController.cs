@@ -115,21 +115,24 @@ namespace TheGuild.UI.Scene
             // GDD §3.3 原規格寫「嵌保險箱 / 嵌辦公桌」，但 nav row 為等寬 flex 排版無固定建築座標，
             // Jam 版簡化為四角錨點（Jam scope 縮減原則：USS styling 採極簡）。
 
-            // 金幣：右上角
+            // 金幣：嵌保險箱 (.scene-safe left=1140 width=110) 上方
             _goldLabel = new Label { name = "hud-gold-label" };
             _goldLabel.style.fontSize = GetHudFontSize();
             _goldLabel.style.position = Position.Absolute;
-            _goldLabel.style.top = 8;
-            _goldLabel.style.right = 12;
+            _goldLabel.style.left = 1140;
+            _goldLabel.style.width = 110;
+            _goldLabel.style.bottom = 145; // floor(30) + safe(110) + 5px gap
             _goldLabel.style.color = new StyleColor(new Color(1f, 0.92f, 0.78f, 1f));
+            _goldLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _goldLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             _root.Add(_goldLabel);
 
             // 劇情指示器：右上角金幣下方（NARRATIVE_ENABLED=0 時 _storyIndicator.style.display = None，本次 hidden）
             _storyIndicator = new Button(OnStoryIndicatorClicked) { name = "hud-story-indicator" };
             _storyIndicator.style.fontSize = GetHudFontSize();
             _storyIndicator.style.position = Position.Absolute;
-            _storyIndicator.style.top = 36;
-            _storyIndicator.style.right = 12;
+            _storyIndicator.style.left = 1255;
+            _storyIndicator.style.bottom = 80;
             _storyIndicator.style.display = DisplayStyle.None; // RefreshStoryIndicator 會依 queue 計數動態顯隱
             _root.Add(_storyIndicator);
 
@@ -144,12 +147,13 @@ namespace TheGuild.UI.Scene
             _root.Add(_settingsButton);
 
             // Log host：左下角，待 P-03 接入。Jam scope 縮減原則 P-03 不做 → 容器空但保留位置。
+            // Log host：嵌 Log 板 (.scene-log-board left=24 width=220 height=130 bottom=30) 內
             _logHostContainer = new VisualElement { name = "hud-log-host" };
             _logHostContainer.style.position = Position.Absolute;
-            _logHostContainer.style.bottom = 8;
-            _logHostContainer.style.left = 12;
-            _logHostContainer.style.minWidth = 200;
-            _logHostContainer.style.minHeight = 80;
+            _logHostContainer.style.left = 28;
+            _logHostContainer.style.bottom = 34;
+            _logHostContainer.style.width = 212;
+            _logHostContainer.style.height = 122;
             _root.Add(_logHostContainer);
         }
 
