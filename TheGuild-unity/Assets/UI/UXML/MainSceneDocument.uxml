@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <!-- 主場景視窗根節點。底層為公會場景 nav 入口列（6 個建築物 icon button）。 -->
+    <!-- 主場景視窗根節點。A-01 公會牆面 banner 為背景；上層為 6 個 nav button（中文標籤）。 -->
     <!-- USS 樣式：Assets/UI/USS/MainSceneCommon.uss -->
     <ui:VisualElement name="main-scene-root" class="main-scene-root" picking-mode="Ignore" style="flex-grow: 1; position: absolute; left: 0; right: 0; top: 0; bottom: 0;">
 
-        <!-- 6 個建築物 nav button（GDD §3.2 / FSD §5.4.10 場景物件互動點） -->
-        <!-- 排版：水平等寬鋪滿，每個 button click → PanelManager.OpenPanel -->
+        <!-- 6 個建築物 nav button（GDD §3.2 場景物件互動點） -->
+        <!-- Jam scope 縮減：不依賴美術 sprite 比例，改用 Unity 內建 Button + 中文文字標籤 -->
         <ui:VisualElement name="nav-row" class="nav-row" picking-mode="Ignore">
-            <ui:Button name="nav-commission-board" class="nav-icon nav-commission-board" tooltip="委託板" />
-            <ui:Button name="nav-guild-hall" class="nav-icon nav-guild-hall" tooltip="冒險者名冊" />
-            <ui:Button name="nav-construction" class="nav-icon nav-construction" tooltip="公會建設" />
-            <ui:Button name="nav-safe" class="nav-icon nav-safe" tooltip="公會總覽" />
-            <ui:Button name="nav-staff-lounge" class="nav-icon nav-staff-lounge" tooltip="職員名冊" />
-            <ui:Button name="nav-settings-desk" class="nav-icon nav-settings-desk" tooltip="設定" />
+            <ui:Button name="nav-commission-board" text="委託欄" class="nav-icon nav-commission-board" tooltip="委託板（A-01）" />
+            <ui:Button name="nav-guild-hall" text="冒險者&#10;名冊" class="nav-icon nav-guild-hall" tooltip="冒險者名冊（A-03）" />
+            <ui:Button name="nav-construction" text="建設區" class="nav-icon nav-construction" tooltip="公會建設（A-04）" />
+            <ui:Button name="nav-safe" text="預備金" class="nav-icon nav-safe" tooltip="公會總覽（A-05 保險箱）" />
+            <ui:Button name="nav-staff-lounge" text="職員&#10;休息室" class="nav-icon nav-staff-lounge" tooltip="職員名冊（A-06，需建造 L1）" />
+            <ui:Button name="nav-settings-desk" text="辦公桌" class="nav-icon nav-settings-desk" tooltip="設定（A-07）" />
         </ui:VisualElement>
 
     </ui:VisualElement>

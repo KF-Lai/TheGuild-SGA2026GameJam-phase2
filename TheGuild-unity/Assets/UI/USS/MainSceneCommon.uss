@@ -1,5 +1,5 @@
-/* P-02 Main UI Common USS — 主場景 nav row + nav icon button */
-/* 設計：6 個建築 nav button 水平等寬鋪滿視窗區。USS styling 採極簡（Jam scope 縮減）。 */
+/* P-02 Main UI Common USS — 主場景背景 + 6 nav button */
+/* Jam scope 縮減：A-01 當背景 banner，6 button 用 Unity 內建樣式 + 中文文字標籤 */
 
 .main-scene-root {
     position: absolute;
@@ -7,69 +7,56 @@
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0); /* P-01 透明 color key 對應；非 Win build 顯純黑 */
+    /* A-01 公會牆面 banner 為背景，scale-and-crop 鋪滿視窗 */
+    background-image: url("project://database/Assets/Art/UI/Scene/A-01_default.png");
+    -unity-background-scale-mode: scale-and-crop;
 }
 
-/* nav row：水平 flex 鋪滿，6 個 nav button 等寬 */
+/* nav row：底部水平 flex bar，6 button 等寬 */
 .nav-row {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    top: 0;
+    height: 84px; /* 底部 bar 高度，留出上方空間給背景 banner */
     flex-direction: row;
     align-items: stretch;
     justify-content: space-around;
+    background-color: rgba(0, 0, 0, 0.55); /* 半透明深色襯底，提升文字可讀性 */
+    padding: 4px;
 }
 
-/* 共用 nav icon button 樣式：去除 Unity 預設 Button 邊框 / hover 反白 */
+/* 共用 nav icon button 樣式：Unity 內建 Button + 暖色木質風格 */
 .nav-icon {
     flex-grow: 1;
     flex-shrink: 1;
     flex-basis: 0;
     min-width: 50px;
     margin: 4px;
-    padding: 0;
-    border-width: 0;
+    padding: 8px;
+    border-width: 2px;
     border-radius: 6px;
-    background-color: rgba(0, 0, 0, 0);
-    -unity-background-scale-mode: scale-to-fit;
-    color: rgba(0, 0, 0, 0); /* Button 預設 text 隱藏（用 background-image 顯示） */
+    border-color: rgba(180, 150, 90, 0.7);
+    background-color: rgba(50, 35, 20, 0.85);
+    color: rgb(255, 235, 200);
+    font-size: 14px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
 }
 
 .nav-icon:hover {
-    background-color: rgba(255, 255, 255, 0.10);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 0.6);
+    background-color: rgba(120, 80, 40, 0.95);
+    border-color: rgba(255, 235, 200, 0.9);
+}
+
+.nav-icon:active {
+    background-color: rgba(160, 100, 50, 1.0);
 }
 
 .nav-icon:disabled {
-    opacity: 0.4;
-}
-
-/* 6 個 nav button 個別 background-image（用 sprite 路徑） */
-.nav-commission-board {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-01_default.png");
-}
-
-.nav-guild-hall {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-03_default.png");
-}
-
-.nav-construction {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-04_default.png");
-}
-
-.nav-safe {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-05_default.png");
-}
-
-.nav-staff-lounge {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-06_default.png");
-}
-
-.nav-settings-desk {
-    background-image: url("project://database/Assets/Art/UI/Scene/A-07_default.png");
+    opacity: 0.45;
+    color: rgb(150, 140, 120);
 }
 
 /* ---------- 既有 panel/HUD class 保留 ---------- */
