@@ -67,7 +67,7 @@ export function mountSettingsPanel(
   ctx: SettingsPanelCtx,
 ): SettingsPanelHandle {
   // -------------------------------------------------------------------------
-  // 根元素
+  // 根元素（含右側書架裝飾）
   // -------------------------------------------------------------------------
   const root = document.createElement('div')
   root.style.cssText = [
@@ -78,7 +78,16 @@ export function mountSettingsPanel(
     "font-family:'Segoe UI',sans-serif",
     'color:#e8d8a0',
     'max-width:520px',
+    'position:relative',
   ].join(';')
+
+  // ── 裝飾：A-16 書架（右側絕對定位） ──
+  const settingsBookshelf = document.createElement('img')
+  settingsBookshelf.src = '/images/scene/A-16_default.png'
+  settingsBookshelf.alt = ''
+  settingsBookshelf.style.cssText = 'position:absolute;top:8px;right:8px;height:280px;object-fit:contain;opacity:0.6;pointer-events:none;z-index:0'
+  settingsBookshelf.onerror = () => { settingsBookshelf.style.display = 'none' }
+  root.appendChild(settingsBookshelf)
 
   // -------------------------------------------------------------------------
   // 訊息列（操作結果提示，共用）

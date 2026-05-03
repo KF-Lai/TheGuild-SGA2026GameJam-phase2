@@ -157,8 +157,14 @@ export function mountCommissionBoardPanel(
       'padding-bottom:8px',
     ].join(';'))
 
+    // A-02_new 切換：5 分鐘內有新任務則顯示 NEW 變體
+    const NEW_THRESHOLD_MS = 5 * 60_000
+    const guildSnapshot = ctx.getGuild()
+    const hasNewMission = guildSnapshot.missionPool.some(
+      (m) => m.postedAt !== undefined && Date.now() - m.postedAt < NEW_THRESHOLD_MS
+    )
     const heroIcon = document.createElement('img')
-    heroIcon.src = '/images/scene/A-02_idle.png'
+    heroIcon.src = hasNewMission ? '/images/scene/A-02_new.png' : '/images/scene/A-02_idle.png'
     heroIcon.alt = ''
     heroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0'
     heroIcon.onerror = () => { heroIcon.style.display = 'none' }

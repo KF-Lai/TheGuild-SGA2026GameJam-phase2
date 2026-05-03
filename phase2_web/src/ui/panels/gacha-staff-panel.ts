@@ -624,7 +624,7 @@ export function mountGachaStaffPanel(
   ctx: GachaStaffPanelCtx,
 ): GachaStaffPanelHandle {
 
-  // ── 根容器 ──
+  // ── 根容器（職員休息室語意：底部木地板 background；render 內補盆栽 deco） ──
   const root = div([
     'display:flex',
     'flex-direction:column',
@@ -633,9 +633,24 @@ export function mountGachaStaffPanel(
     `color:#e0e0e0`,
     'font-family:monospace,sans-serif',
     'overflow:hidden',
+    'position:relative',
+    'background-image:url(/images/scene/A-14_default.png)',
+    'background-repeat:repeat-x',
+    'background-position:bottom',
+    'background-size:auto 24px',
   ].join(';'))
 
   parent.appendChild(root)
+
+  /** 每次 render 後補裝飾元素（因 render 內 root.innerHTML='' 會清空 DOM） */
+  function appendDecorations(): void {
+    const plant = document.createElement('img')
+    plant.src = '/images/scene/A-17_default.png'
+    plant.alt = ''
+    plant.style.cssText = 'position:absolute;top:8px;right:8px;width:42px;height:42px;object-fit:contain;opacity:0.85;pointer-events:none;z-index:1'
+    plant.onerror = () => { plant.style.display = 'none' }
+    root.appendChild(plant)
+  }
 
   // ── 主渲染函式 ──
   function render(): void {
@@ -716,6 +731,9 @@ export function mountGachaStaffPanel(
     )
 
     root.appendChild(scrollBody)
+
+    // 補裝飾元素（root.innerHTML='' 已清空，每次 render 後 re-append）
+    appendDecorations()
   }
 
   // 初次渲染

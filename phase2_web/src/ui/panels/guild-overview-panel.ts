@@ -107,7 +107,24 @@ export function mountGuildOverviewPanel(
     'font-size:13px',
     'color:#c8b98a',
     'background:#0d0d0d',
+    'position:relative',
   ].join(';')
+
+  // ── 裝飾：A-17 盆栽（右上角絕對定位） ─────────────────────────────────────
+  const overviewPlant = document.createElement('img')
+  overviewPlant.src = '/images/scene/A-17_default.png'
+  overviewPlant.alt = ''
+  overviewPlant.style.cssText = 'position:absolute;top:8px;right:8px;width:48px;height:48px;object-fit:contain;opacity:0.8;pointer-events:none;z-index:1'
+  overviewPlant.onerror = () => { overviewPlant.style.display = 'none' }
+  root.appendChild(overviewPlant)
+
+  // ── 裝飾：guild_ledger 公會帳本（左上角小 icon，公會資訊區旁） ────────────
+  const ledgerDeco = document.createElement('img')
+  ledgerDeco.src = '/images/props/guild_ledger.png'
+  ledgerDeco.alt = ''
+  ledgerDeco.style.cssText = 'position:absolute;top:8px;left:8px;width:36px;height:36px;object-fit:contain;opacity:0.65;pointer-events:none;z-index:1'
+  ledgerDeco.onerror = () => { ledgerDeco.style.display = 'none' }
+  root.appendChild(ledgerDeco)
 
   // ── section 容器佔位（稍後 refresh 填充） ────────────────────────────────────
   const secGuild    = _createSection()
