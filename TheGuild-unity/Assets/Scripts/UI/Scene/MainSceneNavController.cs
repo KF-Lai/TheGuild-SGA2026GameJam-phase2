@@ -1,12 +1,12 @@
-// MainSceneNavController — 主場景 6 個 nav button 點擊路由（GDD §3.2）。
+// MainSceneNavController — 主場景 7 個場景元素點擊路由（design/IconInstructions_game_elements_cutout.png）。
 // 訂閱 OnUIReadyEvent 後，從 MainSceneDocument 的 rootVisualElement 取出 6 個 Button，
 // 註冊 click callback 路由到 PanelManager.OpenPanel。
 //
-// nav_staff_lounge 受 FT-07 BuildingService 解鎖閘控制（GetBuildingLevel(6) >= 1），
-// 未解鎖時 button 顯示 disabled 樣式並 LogWarning（Jam scope 縮減：不顯 P-03 toast）。
+// 7 個場景元素中冒險者立繪為純裝飾（不可點），故 controller 管理 6 個 button。
+// nav-master-desk / nav-bookshelf 為多入口物件，Jam 版暫採單入口（最常用功能），
+// sub-menu 拆分待 Post-Jam 補。
 
 using TheGuild.Core.Events;
-using TheGuild.Gameplay.Building;
 using TheGuild.UI.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,27 +14,24 @@ using UnityEngine.UIElements;
 namespace TheGuild.UI.Scene
 {
     /// <summary>
-    /// 主場景 6 個 nav button 點擊路由器。
+    /// 主場景 6 個 nav button 點擊路由器（含 1 個裝飾立繪不可點）。
     /// <para>
-    /// 規格對應：GDD §3.2 場景物件互動點（6 行固定路由表）。
+    /// 規格對應：design/IconInstructions_game_elements_cutout.png 7 元素布局。
     /// 訂閱 OnUIReadyEvent 後 cache button 與 register click callback。
     /// </para>
     /// </summary>
     [DefaultExecutionOrder(-80)]
     public sealed class MainSceneNavController : MonoBehaviour
     {
-        // 對齊 GDD §3.5.4 / FSD-B B1 解鎖閘 buildingID
-        private const int STAFF_LOUNGE_BUILDING_ID = 6;
-
         public static MainSceneNavController Instance { get; private set; }
 
         // Cached button references（OnUIReady 後填入）
+        private Button _navLogBoard;
         private Button _navCommissionBoard;
-        private Button _navGuildHall;
-        private Button _navConstruction;
+        private Button _navCounter;
         private Button _navSafe;
-        private Button _navStaffLounge;
-        private Button _navSettingsDesk;
+        private Button _navMasterDesk;
+        private Button _navBookshelf;
 
         private bool _initialized;
         private bool _eventSubscribed;
@@ -121,108 +118,92 @@ namespace TheGuild.UI.Scene
                 return;
             }
 
-            // Cache 6 個 button
+            // Cache 6 個 button（冒險者立繪為純裝飾，無 button）
+            _navLogBoard        = root.Q<Button>("nav-log-board");
             _navCommissionBoard = root.Q<Button>("nav-commission-board");
-            _navGuildHall       = root.Q<Button>("nav-guild-hall");
-            _navConstruction    = root.Q<Button>("nav-construction");
+            _navCounter         = root.Q<Button>("nav-counter");
             _navSafe            = root.Q<Button>("nav-safe");
-            _navStaffLounge     = root.Q<Button>("nav-staff-lounge");
-            _navSettingsDesk    = root.Q<Button>("nav-settings-desk");
+            _navMasterDesk      = root.Q<Button>("nav-master-desk");
+            _navBookshelf       = root.Q<Button>("nav-bookshelf");
 
             RegisterClickCallbacks();
-            RefreshStaffLoungeLockState();
-
             _initialized = true;
         }
 
         private void RegisterClickCallbacks()
         {
+            if (_navLogBoard != null)        _navLogBoard.clicked        += OnLogBoardClicked;
             if (_navCommissionBoard != null) _navCommissionBoard.clicked += OnCommissionBoardClicked;
-            if (_navGuildHall != null)       _navGuildHall.clicked       += OnGuildHallClicked;
-            if (_navConstruction != null)    _navConstruction.clicked    += OnConstructionClicked;
+            if (_navCounter != null)         _navCounter.clicked         += OnCounterClicked;
             if (_navSafe != null)            _navSafe.clicked            += OnSafeClicked;
-            if (_navStaffLounge != null)     _navStaffLounge.clicked     += OnStaffLoungeClicked;
-            if (_navSettingsDesk != null)    _navSettingsDesk.clicked    += OnSettingsDeskClicked;
+            if (_navMasterDesk != null)      _navMasterDesk.clicked      += OnMasterDeskClicked;
+            if (_navBookshelf != null)       _navBookshelf.clicked       += OnBookshelfClicked;
         }
 
         private void UnregisterClickCallbacks()
         {
+            if (_navLogBoard != null)        _navLogBoard.clicked        -= OnLogBoardClicked;
             if (_navCommissionBoard != null) _navCommissionBoard.clicked -= OnCommissionBoardClicked;
-            if (_navGuildHall != null)       _navGuildHall.clicked       -= OnGuildHallClicked;
-            if (_navConstruction != null)    _navConstruction.clicked    -= OnConstructionClicked;
+            if (_navCounter != null)         _navCounter.clicked         -= OnCounterClicked;
             if (_navSafe != null)            _navSafe.clicked            -= OnSafeClicked;
-            if (_navStaffLounge != null)     _navStaffLounge.clicked     -= OnStaffLoungeClicked;
-            if (_navSettingsDesk != null)    _navSettingsDesk.clicked    -= OnSettingsDeskClicked;
+            if (_navMasterDesk != null)      _navMasterDesk.clicked      -= OnMasterDeskClicked;
+            if (_navBookshelf != null)       _navBookshelf.clicked       -= OnBookshelfClicked;
         }
 
         // ──────────────────────────────────────────────────────
         //  Click handlers — 路由到 PanelManager.OpenPanel
         // ──────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Log 板 → P-03 LogFloatingWindow（Jam scope 縮減 P-03 不做，暫顯 placeholder log）。
+        /// </summary>
+        private void OnLogBoardClicked()
+        {
+            // TODO: P-03 LogFloatingWindow 接入後改為 toggle Log 視窗顯示
+            Debug.Log("[MainSceneNav] 公會 Log 板（P-03 LogFloatingWindow，Jam scope 縮減暫不開面板）");
+        }
+
+        /// <summary>委託版 → CommissionBoardPanel（管理委託）。</summary>
         private void OnCommissionBoardClicked()
         {
             PanelManager.Instance?.OpenPanel(PanelID.CommissionBoard);
         }
 
-        private void OnGuildHallClicked()
+        /// <summary>
+        /// 公會櫃臺 → CommissionBoardPanel（推薦委託面板）。
+        /// 推薦子面板（§3.5.1.1）為 inline 子面板，由 CommissionBoardPanel 內展開；
+        /// 暫直接開父面板，玩家手動點推薦按鈕進子面板。
+        /// </summary>
+        private void OnCounterClicked()
         {
-            PanelManager.Instance?.OpenPanel(PanelID.AdventurerRoster);
+            PanelManager.Instance?.OpenPanel(PanelID.CommissionBoard);
         }
 
-        private void OnConstructionClicked()
-        {
-            PanelManager.Instance?.OpenPanel(PanelID.GuildBuilding);
-        }
-
+        /// <summary>保險箱 → GuildOverviewPanel（顯示金幣 / 公會狀態）。</summary>
         private void OnSafeClicked()
         {
             PanelManager.Instance?.OpenPanel(PanelID.GuildOverview);
         }
 
-        private void OnStaffLoungeClicked()
+        /// <summary>
+        /// 公會會長辦公桌 → 多入口（建設 / 職員管理 / 面試 / 冒險者管理）。
+        /// Jam 版暫採單入口 AdventurerRoster（最常用），sub-menu 拆分待 Post-Jam 補。
+        /// </summary>
+        private void OnMasterDeskClicked()
         {
-            // FT-07 解鎖閘（GDD §3.2 nav_staff_lounge：FT07.GetBuildingLevel(6) >= 1）
-            if (!IsStaffLoungeUnlocked())
-            {
-                Debug.Log("[MainSceneNav] 職員休息室未解鎖（需建造 L1）");
-                return;
-            }
-
-            PanelManager.Instance?.OpenPanel(PanelID.StaffRoster);
+            // TODO: 實作辦公桌 sub-menu popup（含 GuildBuilding / StaffRoster / StaffGacha / AdventurerRoster 4 button）
+            PanelManager.Instance?.OpenPanel(PanelID.AdventurerRoster);
         }
-
-        private void OnSettingsDeskClicked()
-        {
-            PanelManager.Instance?.OpenPanel(PanelID.SettingsPanel);
-        }
-
-        // ──────────────────────────────────────────────────────
-        //  解鎖閘 / 視覺刷新
-        // ──────────────────────────────────────────────────────
 
         /// <summary>
-        /// 重新刷新 nav_staff_lounge 的解鎖視覺狀態（依 FT-07 BuildingService）。
-        /// 應在 Initialize 與 BuildingUpgraded 事件後呼叫。
+        /// 書櫃 → 多入口（公會歷史書 / 設定）。
+        /// Jam 版暫採單入口 SettingsPanel；公會歷史書面板待 Post-Jam 補。
         /// </summary>
-        public void RefreshStaffLoungeLockState()
+        private void OnBookshelfClicked()
         {
-            if (_navStaffLounge == null)
-            {
-                return;
-            }
-
-            bool unlocked = IsStaffLoungeUnlocked();
-            _navStaffLounge.SetEnabled(unlocked);
-        }
-
-        private static bool IsStaffLoungeUnlocked()
-        {
-            if (BuildingService.Instance == null)
-            {
-                return false;
-            }
-
-            return BuildingService.Instance.GetBuildingLevel(STAFF_LOUNGE_BUILDING_ID) >= 1;
+            // TODO: 實作書櫃 sub-menu popup（含 GuildHistory / Settings 2 button）；
+            //       GuildHistory panel 設計待 narrative-director 補
+            PanelManager.Instance?.OpenPanel(PanelID.SettingsPanel);
         }
     }
 }

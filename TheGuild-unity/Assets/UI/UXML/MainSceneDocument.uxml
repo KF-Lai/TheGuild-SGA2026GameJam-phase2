@@ -1,18 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <!-- 主場景視窗根節點。A-01 公會牆面 banner 為背景；上層為 6 個 nav button（中文標籤）。 -->
+    <!-- 主場景視窗。透明背景，最底層為 A-14 木地板（與 Windows 工作列自動對齊）。 -->
+    <!-- 7 個場景元素由左到右排列於 floor 上方：log板 / 委託版 / 櫃台 / 立繪 / 保險箱 / 辦公桌 / 書櫃 -->
+    <!-- 設計參考：design/IconInstructions_game_elements_cutout.png -->
     <!-- USS 樣式：Assets/UI/USS/MainSceneCommon.uss -->
     <ui:VisualElement name="main-scene-root" class="main-scene-root" picking-mode="Ignore" style="flex-grow: 1; position: absolute; left: 0; right: 0; top: 0; bottom: 0;">
 
-        <!-- 6 個建築物 nav button（GDD §3.2 場景物件互動點） -->
-        <!-- Jam scope 縮減：不依賴美術 sprite 比例，改用 Unity 內建 Button + 中文文字標籤 -->
-        <ui:VisualElement name="nav-row" class="nav-row" picking-mode="Ignore">
-            <ui:Button name="nav-commission-board" text="委託欄" class="nav-icon nav-commission-board" tooltip="委託板（A-01）" />
-            <ui:Button name="nav-guild-hall" text="冒險者&#10;名冊" class="nav-icon nav-guild-hall" tooltip="冒險者名冊（A-03）" />
-            <ui:Button name="nav-construction" text="建設區" class="nav-icon nav-construction" tooltip="公會建設（A-04）" />
-            <ui:Button name="nav-safe" text="預備金" class="nav-icon nav-safe" tooltip="公會總覽（A-05 保險箱）" />
-            <ui:Button name="nav-staff-lounge" text="職員&#10;休息室" class="nav-icon nav-staff-lounge" tooltip="職員名冊（A-06，需建造 L1）" />
-            <ui:Button name="nav-settings-desk" text="辦公桌" class="nav-icon nav-settings-desk" tooltip="設定（A-07）" />
+        <!-- A-14 木地板，貼底全寬。視窗底邊已由 P-01 對齊工作列上緣 -->
+        <ui:VisualElement name="floor" class="floor" picking-mode="Ignore" />
+
+        <!-- ──────────── 7 個場景元素（由左到右） ──────────── -->
+
+        <!-- 1. 公會訊息 Log 板（左上）—— P-03 LogFloatingWindow host 容器 -->
+        <ui:VisualElement name="scene-log-board" class="scene-element scene-log-board" picking-mode="Ignore">
+            <ui:Button name="nav-log-board" class="scene-button placeholder-frame" text="公會 Log" tooltip="公會訊息（任務狀態 / 接受委託記錄）" />
+        </ui:VisualElement>
+
+        <!-- 2. 委託版（管理委託入口） -->
+        <ui:VisualElement name="scene-commission-board" class="scene-element scene-commission-board" picking-mode="Ignore">
+            <ui:Button name="nav-commission-board" class="scene-button placeholder-frame" text="委託版" tooltip="委託管理（CommissionBoardPanel）" />
+        </ui:VisualElement>
+
+        <!-- 3. 公會櫃臺（推薦委託面板入口） -->
+        <ui:VisualElement name="scene-counter" class="scene-element scene-counter" picking-mode="Ignore">
+            <ui:Button name="nav-counter" class="scene-button placeholder-frame" text="公會櫃臺" tooltip="推薦委託（CommissionBoardPanel 推薦子面板）" />
+        </ui:VisualElement>
+
+        <!-- 4. 冒險者立繪（裝飾，不可點擊） -->
+        <ui:VisualElement name="scene-adventurer-decor" class="scene-element scene-adventurer-decor" picking-mode="Ignore" />
+
+        <!-- 5. 保險箱（顯示公會金幣，HUD label 由 PersistentHudController 嵌入） -->
+        <ui:VisualElement name="scene-safe" class="scene-element scene-safe" picking-mode="Ignore">
+            <ui:Button name="nav-safe" class="scene-button" text="" tooltip="公會總覽 / 金幣（GuildOverviewPanel）" />
+        </ui:VisualElement>
+
+        <!-- 6. 公會會長辦公桌（建設 / 職員管理 / 面試 / 冒險者管理） -->
+        <ui:VisualElement name="scene-master-desk" class="scene-element scene-master-desk" picking-mode="Ignore">
+            <ui:Button name="nav-master-desk" class="scene-button" text="" tooltip="冒險者管理（暫單入口；待 sub-menu 實作後拆分為建設 / 職員 / 面試 / 名冊）" />
+        </ui:VisualElement>
+
+        <!-- 7. 書櫃（公會歷史書 / 設定入口） -->
+        <ui:VisualElement name="scene-bookshelf" class="scene-element scene-bookshelf" picking-mode="Ignore">
+            <ui:Button name="nav-bookshelf" class="scene-button placeholder-frame" text="書櫃" tooltip="設定（暫單入口；待公會歷史書面板實作後拆分）" />
         </ui:VisualElement>
 
     </ui:VisualElement>
