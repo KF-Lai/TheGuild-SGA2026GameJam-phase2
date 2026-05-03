@@ -102,8 +102,8 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 4.1 | `src/systems/staff.ts`：FT-12 Staff System 簡化版（~350 行：單 Working 狀態、slot 指派、effect 聚合、薪水管線） | Medium | Sonnet subagent | 未開始 |
-| 4.2 | `src/systems/gacha.ts`：FT-08 Gacha System 簡化版（~300 行：單池抽卡、錄用呼叫 FT-12.HireStaff） | Medium | Sonnet subagent | 未開始 |
+| 4.1 | `src/systems/staff.ts`：FT-12 Staff System 簡化版（~350 行：單 Working 狀態、slot 指派、effect 聚合、薪水管線） | Medium | Sonnet subagent | 完成 |
+| 4.2 | `src/systems/gacha.ts`：FT-08 Gacha System 簡化版（~300 行：單池抽卡、錄用呼叫 FT-12.HireStaff） | Medium | Sonnet subagent | 完成 |
 
 ---
 

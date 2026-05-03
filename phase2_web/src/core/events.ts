@@ -68,6 +68,17 @@ export interface EventMap {
     fromLevel: number;
     toLevel: number;
   };
+  // FT-08 Gacha
+  'gacha:refreshed': {
+    /** 刷新來源 */
+    source: 'auto' | 'manual_paid' | 'initial';
+    /** 刷新後候選池大小 */
+    count: number;
+  };
+  'gacha:hired': {
+    staffID: number;
+    instanceId: string;
+  };
   // FT-05 Guild Gold Flow
   'commission:prepaid': {
     missionId: string;
