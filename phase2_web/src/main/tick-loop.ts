@@ -15,6 +15,7 @@
  */
 
 import * as outcome     from '../systems/outcome'
+import * as adventurer  from '../systems/adventurer'
 import * as npcDecision from '../systems/npc-decision'
 import * as recruitment from '../systems/recruitment'
 import * as gacha       from '../systems/gacha'
@@ -77,7 +78,16 @@ export function tick(
     // activeMissions 的移除由 event-handlers.ts 的 mission:completed 訂閱完成
   }
 
-  // 2. 自主接單 tick
+  // 2. 受傷恢復檢查
+  for (const adv of state.guild.adventurers) {
+    if (adv.status === 'wounded' && adv.woundedUntil !== undefined && now >= adv.woundedUntil) {
+      adventurer.markIdle(adv)
+      npcDecision.markIdle(state.autoPickup, adv.id, now)
+      adv.woundedUntil = undefined
+    }
+  }
+
+  // 3. 自主接單 tick
   const idleAdvs = state.guild.adventurers.filter(a => a.status === 'idle')
   const availableMissions = [...state.guild.missionPool]
 
@@ -105,19 +115,19 @@ export function tick(
     now,
   )
 
-  // 3. 補充 missionPool（任務板不足目標容量時自動填充）
+  // 4. 補充 missionPool（任務板不足目標容量時自動填充）
   replenishMissionPool(state, guildLevel)
 
-  // 4. recruitment 自動刷新檢查
+  // 5. recruitment 自動刷新檢查
   recruitment.checkAutoRefresh(state.recruitment, guildLevel)
 
-  // 5. gacha 自動刷新檢查
+  // 6. gacha 自動刷新檢查
   gacha.checkAutoRefresh(state.gacha, getHiredStaffIDs(state))
 
-  // 6. world-danger 升階檢查
+  // 7. world-danger 升階檢查
   worldDanger.checkLevelUp(state.worldDanger)
 
-  // 7. 破產 / Game Over 判定
+  // 8. 破產 / Game Over 判定
   const bankruptcyWarningSeconds = 10800 // fallback；實際由 building 注入
   if (state.guild.resources.gold < 0) {
     if (state.bankruptcyWarningStart === null) {
@@ -132,7 +142,7 @@ export function tick(
     state.bankruptcyWarningStart = null
   }
 
-  // 8. 要求 UI 重繪
+  // 9. 要求 UI 重繪
   onRefreshUI()
 }
 

@@ -123,8 +123,10 @@ export function subscribeEvents(
     woundedUntil: number
   }) => {
     const adv = state.guild.adventurers.find(a => a.id === payload.adventurerId)
-    if (adv) adv.status = 'wounded'
-    // Adventurer 型別無 woundedUntil 欄位，倒數資訊暫不記錄（Jam 延後）
+    if (adv) {
+      adv.status = 'wounded'
+      adv.woundedUntil = payload.woundedUntil
+    }
   }
 
   // ── recruit:success ────────────────────────────────────────────────────────

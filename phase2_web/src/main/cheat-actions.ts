@@ -132,15 +132,11 @@ export function createCheatActions(
       const now = Date.now()
       const toResolve = [...state.guild.activeMissions]
       for (const record of toResolve) {
-        const mission = state.guild.missionPool.find(m => m.id === record.missionId)
-        const difficulty = mission?.difficulty ?? 'F'
-        const baseReward = mission?.baseReward ?? record.preCollectedAmount
-
         record.finalSuccessRate = 1.0
         record.finalDeathRate   = 0.0
         record.endTimestamp     = now
 
-        const settlement = outcome.resolveOutcome(record, difficulty, baseReward)
+        const settlement = outcome.resolveOutcome(record, record.difficulty, record.preCollectedAmount)
         state.outcomeState.pendingResults.push(settlement)
       }
       requestRefresh()
@@ -151,15 +147,11 @@ export function createCheatActions(
       const now = Date.now()
       const toResolve = [...state.guild.activeMissions]
       for (const record of toResolve) {
-        const mission = state.guild.missionPool.find(m => m.id === record.missionId)
-        const difficulty = mission?.difficulty ?? 'F'
-        const baseReward = mission?.baseReward ?? record.preCollectedAmount
-
         record.finalSuccessRate = 0.0
         record.finalDeathRate   = 0.0
         record.endTimestamp     = now
 
-        const settlement = outcome.resolveOutcome(record, difficulty, baseReward)
+        const settlement = outcome.resolveOutcome(record, record.difficulty, record.preCollectedAmount)
         state.outcomeState.pendingResults.push(settlement)
       }
       requestRefresh()
