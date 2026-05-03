@@ -67,8 +67,8 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 1.4 | `save-load.ts` 升級 IndexedDB（取代 localStorage；單軌寫入；Backup rotation 跳過） | Medium | Sonnet subagent | 進行中 |
-| 1.5 | `guild.ts` → FT-06 Guild Core（Lv1~5 聲望門檻、可接難度上限、Game Over 流程） | Medium | Sonnet subagent | 進行中 |
+| 1.4 | `save-load.ts` 升級 IndexedDB（取代 localStorage；單軌寫入；Backup rotation 跳過） | Medium | Sonnet subagent | 完成 |
+| 1.5 | `guild.ts` → FT-06 Guild Core（Lv1~5 聲望門檻、可接難度上限、Game Over 流程） | Medium | Sonnet subagent | 完成 |
 
 ---
 

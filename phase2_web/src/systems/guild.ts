@@ -15,7 +15,8 @@
  * Designers: adjust UPGRADE_THRESHOLD, MAX_MISSIONS, MAX_COMMISSION_RANK here.
  */
 
-import type { Difficulty } from '../types'
+import type { Difficulty, GuildLevel } from '../types'
+import { eventBus } from '../core/events'
 
 // ---------------------------------------------------------------------------
 // Constants (design/gdd/guild-core.md — "公式" section)
@@ -135,4 +136,74 @@ export function getMaxMissions(guildLevel: number): number {
  */
 export function getMaxCommissionRank(guildLevel: number): Difficulty {
   return MAX_COMMISSION_RANK[guildLevel] ?? MAX_COMMISSION_RANK[1]
+}
+
+// ---------------------------------------------------------------------------
+// FT-06 Guild Core Phase 2 — 等級表、升級判斷、Game Over 判定
+// ---------------------------------------------------------------------------
+
+interface GuildLevelRow {
+  title: string
+  reputationThreshold: number
+  maxDifficulty: Difficulty
+}
+
+const GUILD_LEVEL_TABLE: Record<GuildLevel, GuildLevelRow> = {
+  1: { title: '新興公會',  reputationThreshold: 0,  maxDifficulty: 'D'  },
+  2: { title: '地區公會',  reputationThreshold: 20, maxDifficulty: 'B'  },
+  3: { title: '知名公會',  reputationThreshold: 40, maxDifficulty: 'A'  },
+  4: { title: '精英公會',  reputationThreshold: 65, maxDifficulty: 'S'  },
+  5: { title: '傳奇公會',  reputationThreshold: 90, maxDifficulty: 'SS' },
+}
+
+/** 依聲望值計算公會等級（從最高往下找第一個門檻已達到的等級）。 */
+export function getGuildLevel(reputation: number): GuildLevel {
+  for (let lv = 5 as GuildLevel; lv >= 1; lv--) {
+    if (reputation >= GUILD_LEVEL_TABLE[lv as GuildLevel].reputationThreshold) {
+      return lv as GuildLevel
+    }
+  }
+  return 1
+}
+
+/** 回傳該等級可接受的最高任務難度。 */
+export function getMaxDifficulty(level: GuildLevel): Difficulty {
+  return GUILD_LEVEL_TABLE[level].maxDifficulty
+}
+
+/** 回傳等級對應的公會稱號。 */
+export function getGuildTitle(level: GuildLevel): string {
+  return GUILD_LEVEL_TABLE[level].title
+}
+
+/**
+ * 升級檢查：若聲望已達更高等級，emit guild:level_up 並回傳新等級；否則回傳 null。
+ * 等級只增不減。
+ */
+export function checkLevelUp(currentLevel: GuildLevel, reputation: number): GuildLevel | null {
+  const newLevel = getGuildLevel(reputation)
+  if (newLevel > currentLevel) {
+    eventBus.emit('guild:level_up', { newLevel })
+    return newLevel
+  }
+  return null
+}
+
+/**
+ * Game Over 判定：金幣為負且破產警告計時已超過指定期限。
+ *
+ * @param gold                  目前金幣數
+ * @param bankruptcyWarningStart 破產警告開始的時間戳（ms），未觸發則為 null
+ * @param warningDurationMs     寬限期長度（ms）
+ */
+export function isGameOver(
+  gold: number,
+  bankruptcyWarningStart: number | null,
+  warningDurationMs: number,
+): boolean {
+  return (
+    gold < 0 &&
+    bankruptcyWarningStart !== null &&
+    Date.now() - bankruptcyWarningStart >= warningDurationMs
+  )
 }
