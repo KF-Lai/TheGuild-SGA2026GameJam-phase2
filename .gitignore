@@ -84,3 +84,15 @@ debug.log
 .claude/batch-manifests/.reports/
 # Added by code-review-graph
 .code-review-graph/
+
+#0503新增
+.claude
+.codex
+.tmp_empty_staff_diff
+.vscode
+phase1_html_demo
+production
+tmp
+tools
+Unity截圖
+面板設計範例
