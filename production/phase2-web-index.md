@@ -116,9 +116,9 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 5.1 | 委託板 panel 升級（沿用 Phase 1 dispatch UI + successRate preview，對齊 P-02） | Medium | Sonnet subagent | 未開始 |
-| 5.2 | 名冊 panel 升級（沿用 + bio 顯示、unique 角色第一格，對齊 P-02） | Medium | Sonnet subagent | 未開始 |
-| 5.3 | 公會總覽 panel（公會等級、聲望、World Danger 顯示） | Medium | Sonnet subagent | 未開始 |
+| 5.1 | 委託板 panel 升級（沿用 Phase 1 dispatch UI + successRate preview，對齊 P-02） | Medium | Sonnet subagent | 完成 |
+| 5.2 | 名冊 panel 升級（沿用 + bio 顯示、unique 角色第一格，對齊 P-02） | Medium | Sonnet subagent | 完成 |
+| 5.3 | 公會總覽 panel（公會等級、聲望、World Danger 顯示） | Medium | Sonnet subagent | 完成 |
 
 #### Wave 5B（並行 3）
 
@@ -151,13 +151,13 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 ## 三、里程碑摘要
 
-| 里程碑 | 完成條件 | 預估完成 |
-|---|---|---|
-| M0 基礎就緒 | Stage 0 全完成，`phase2_web/` 可 `npm run dev` | Stage 0 後 |
-| M1 核心可玩 | Stages 1~3 全完成，委託 → 派遣 → 結算 → 金流閉環 | Stage 3 後 |
-| M2 完整功能 | Stage 4 完成，FT-08/12 職員系統可操作 | Stage 4 後 |
-| M3 UI 完整 | Stage 5 全完成，所有 panel 可操作 | Stage 5 後 |
-| M4 可交付 | Stage 6 全完成，build 通過，美術置入，netlify 可訪問 | Stage 6 後 |
+| 里程碑      | 完成條件                                      | 預估完成      |
+| -------- | ----------------------------------------- | --------- |
+| M0 基礎就緒  | Stage 0 全完成，`phase2_web/` 可 `npm run dev` | Stage 0 後 |
+| M1 核心可玩  | Stages 1~3 全完成，委託 → 派遣 → 結算 → 金流閉環        | Stage 3 後 |
+| M2 完整功能  | Stage 4 完成，FT-08/12 職員系統可操作               | Stage 4 後 |
+| M3 UI 完整 | Stage 5 全完成，所有 panel 可操作                  | Stage 5 後 |
+| M4 可交付   | Stage 6 全完成，build 通過，美術置入，netlify 可訪問     | Stage 6 後 |
 
 ---
 
