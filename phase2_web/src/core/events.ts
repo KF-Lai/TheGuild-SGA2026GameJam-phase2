@@ -36,6 +36,15 @@ export interface EventMap {
     staffId: number;
     instanceId: string;
   };
+  'staff:fired': {
+    instanceId: string;
+    staffID: number;
+  };
+  'staff:assigned': {
+    instanceId: string;
+    oldBuildingID: number;
+    newBuildingID: number;
+  };
   'tick:minute': {
     timestamp: number;
   };
