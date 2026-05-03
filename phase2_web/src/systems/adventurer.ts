@@ -13,7 +13,7 @@
 // separately before recruiting a veteran.
 
 import type { Adventurer, Rank, RaceId } from '../types'
-import { getRandomProfession, type ProfessionId } from '../data/traits'
+import { getRandomProfessionId, type ProfessionId } from '../data/traits'
 import { getRandomRace } from '../data/races'
 import { generateBio } from '../data/bios'
 
@@ -167,7 +167,7 @@ function randomVeteranRank(): Rank {
  */
 export function createAdventurer(rank?: Rank, raceId?: RaceId): Adventurer {
   const resolvedRank = rank ?? randomNoviceRank()
-  const professionId = getRandomProfession()
+  const professionId = getRandomProfessionId()
   return {
     id: generateId(),
     name: randomName(),

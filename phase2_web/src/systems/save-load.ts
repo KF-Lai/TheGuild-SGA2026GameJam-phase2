@@ -120,13 +120,23 @@ export async function loadGame(slot: string = DEFAULT_SLOT): Promise<GuildState 
 
       const rawState = record.state
 
-      const guildState: GuildState = {
+      const guildState: GuildState = migrate({
         ...rawState,
         completedMissionIds: new Set(rawState.completedMissionIds),
         staffRoster:  Array.isArray(rawState.staffRoster)  ? rawState.staffRoster  as StaffInstance[]  : [],
         buildings:    Array.isArray(rawState.buildings)    ? rawState.buildings    as BuildingState[]  : [],
         dangerLevel:  typeof rawState.dangerLevel === 'number' ? rawState.dangerLevel : 0,
-      }
+        adventurers: Array.isArray(rawState.adventurers)
+          ? rawState.adventurers.map((adv: any) => ({
+              xp: 0,
+              growthTraits: [],
+              gender: 0,
+              ...adv,
+              raceId: adv.raceId ?? 'human',
+              bio:    adv.bio    ?? '',
+            }))
+          : [],
+      })
 
       resolve(guildState)
     }
@@ -136,6 +146,13 @@ export async function loadGame(slot: string = DEFAULT_SLOT): Promise<GuildState 
       reject((event.target as IDBRequest).error)
     }
   })
+}
+
+/**
+ * 存檔版本遷移入口。目前為直通（v1 無需遷移）；未來版本在此加分支。
+ */
+function migrate(state: GuildState): GuildState {
+  return state
 }
 
 /**

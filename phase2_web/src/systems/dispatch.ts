@@ -14,6 +14,7 @@
 
 import type { Adventurer, DispatchRecord, Mission, PartyMember } from '../types'
 import { PROFESSION_TRAITS } from '../data/traits'
+import { ACCEPTANCE_THRESHOLD, DEATH_AVERSION, WILLINGNESS_JITTER } from '../data/constants'
 import { getActiveRateEffects } from '../data/growth-traits'
 import { getRaceModifier } from '../data/races'
 import { getMaxMissions } from './guild'
@@ -67,12 +68,7 @@ const RANK_DIFF_DEATH_MOD: Record<number, number> = {
 // Phase 2 Jam 版：敘事系統停用，isScriptedDeath 短路不執行
 const NARRATIVE_ENABLED = false
 
-// ── NPC willingness constants ─────────────────────────────────────────────────
-// Source: mission-dispatch.md §NPC 意願常數
-
-const ACCEPTANCE_THRESHOLD = 0.25
-const DEATH_AVERSION       = 0.5
-const ACCEPTANCE_JITTER    = 0.10
+// NPC willingness constants imported from '../data/constants'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -114,7 +110,7 @@ export function calcRates(
 
   // Phase 2：職業不影響死亡率，deathRateModifier 已從 ProfessionTrait 移除
   const trait = PROFESSION_TRAITS[adv.professionId]
-  const successMod = trait.successRateModifier[mission.type] / 100
+  const successMod = trait.successRateModifier[mission.type]
 
   // Race modifiers (additive)
   const raceModifier = getRaceModifier(adv.raceId ?? 'human')
@@ -176,7 +172,7 @@ export function tryDispatch(
   if (!options?.forceAccept) {
     // Willingness check
     const willingnessScore = finalSuccessRate - finalDeathRate * DEATH_AVERSION
-    const jitter           = randBetween(-ACCEPTANCE_JITTER, ACCEPTANCE_JITTER)
+    const jitter           = randBetween(-WILLINGNESS_JITTER, WILLINGNESS_JITTER)
     const effectiveScore   = willingnessScore + jitter
 
     if (effectiveScore < ACCEPTANCE_THRESHOLD) {
@@ -330,7 +326,7 @@ export function tryPartyDispatch(
 
   if (!options?.forceAccept) {
     const willingnessScore = finalSuccessRate - finalDeathRate * DEATH_AVERSION
-    const jitter = randBetween(-ACCEPTANCE_JITTER, ACCEPTANCE_JITTER)
+    const jitter = randBetween(-WILLINGNESS_JITTER, WILLINGNESS_JITTER)
     if (willingnessScore + jitter < ACCEPTANCE_THRESHOLD) {
       return { accepted: false, reason: 'willingness' }
     }

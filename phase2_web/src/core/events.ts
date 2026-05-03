@@ -1,4 +1,4 @@
-import type { OutcomeType } from '../types';
+import type { OutcomeType, GuildLevel } from '../types';
 
 // ---- 事件 Payload 定義 ----
 
@@ -14,6 +14,10 @@ export interface EventMap {
     adventurerName: string;
     missionId: string;
   };
+  'adventurer:wounded': {
+    adventurerId: string;
+    woundedUntil: number;
+  };
   'gold:changed': {
     newValue: number;
     delta: number;
@@ -23,7 +27,7 @@ export interface EventMap {
     delta: number;
   };
   'guild:level_up': {
-    newLevel: number;
+    newLevel: GuildLevel;
   };
   'danger:level_changed': {
     newLevel: number;

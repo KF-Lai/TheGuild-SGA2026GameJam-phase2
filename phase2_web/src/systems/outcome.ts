@@ -18,7 +18,7 @@ import type { Difficulty, DispatchRecord, Adventurer, OutcomeType } from '../typ
 import { getReputationDelta } from './resource'
 import { XP_PER_OUTCOME, computeNewTraits } from '../data/growth-traits'
 import { eventBus } from '../core/events'
-import { WOUNDED_RECOVERY_HOURS } from '../data/constants'
+import { COMMISSION_RATE, PENALTY_RATE, WOUNDED_RECOVERY_HOURS } from '../data/constants'
 
 // ---------------------------------------------------------------------------
 // Re-exports (OutcomeType is defined in ../types to avoid duplication)
@@ -84,18 +84,7 @@ export const BASE_MISSION_DEATH_RATE: Readonly<Record<Difficulty, number>> = {
   SSS: 0.50,
 } as const
 
-/**
- * Guild's net commission rate on successful missions.
- * GDD §公式 — Commission Flow 的調整旋鈕，此處作為本地常數使用。
- * goldDelta (SUCCESS/PYRRHIC) = +floor(baseReward * COMMISSION_RATE)
- */
-const COMMISSION_RATE = 0.20
-
-/**
- * Guild's compensation rate on failed missions.
- * goldDelta (FAILURE/DEATH) = -floor(baseReward * COMPENSATION_RATE)
- */
-const COMPENSATION_RATE = 0.28
+// COMMISSION_RATE and PENALTY_RATE imported from '../data/constants'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -151,14 +140,14 @@ export function resolveOutcome(
     outcome = 'DEATH'
   }
 
-  // GDD §公式 — Commission Flow 委託結算扣款計算（預收模型）
-  // SUCCESS/PYRRHIC: deduct 80% return amount (guild keeps 20% commission)
-  // FAILURE/DEATH:   deduct full refund + 10% penalty
+  // GDD §公式 — 預收模型：任務接受時已預收 baseReward，結算時調整差額
+  // SUCCESS/PYRRHIC: 退回 (1-COMMISSION_RATE) 比例給委託人（guild 淨賺 COMMISSION_RATE）
+  // FAILURE/DEATH:   退回預收全額 + PENALTY_RATE 罰款（guild 淨虧損 preCollectedAmount + penalty）
   const isSuccess = outcome === 'SUCCESS' || outcome === 'PYRRHIC'
   const preCollectedAmount = record.preCollectedAmount
   const goldDelta = isSuccess
     ? -Math.floor(preCollectedAmount * (1 - COMMISSION_RATE))
-    : -(preCollectedAmount + Math.floor(preCollectedAmount * COMPENSATION_RATE))
+    : -(preCollectedAmount + Math.floor(preCollectedAmount * PENALTY_RATE))
 
   // GDD §聲望更新 — PYRRHIC counts as success, DEATH counts as failure
   const reputationDelta = getReputationDelta(difficulty, isSuccess)
@@ -194,6 +183,13 @@ export function resolveOutcome(
       adventurerId:   record.adventurerId,
       adventurerName: record.adventurerName,
       missionId:      record.missionId,
+    })
+  }
+
+  if (woundedUntil !== undefined) {
+    eventBus.emit('adventurer:wounded', {
+      adventurerId: record.adventurerId,
+      woundedUntil,
     })
   }
 

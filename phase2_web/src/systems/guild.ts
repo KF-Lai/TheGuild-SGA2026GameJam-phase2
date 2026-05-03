@@ -11,8 +11,8 @@
  * Guild Core does NOT enforce limits directly — it only exposes constants.
  * Enforcement is the responsibility of Mission Dispatch and Adventurer Management.
  *
- * All gameplay values are sourced from the constants below (data-driven).
- * Designers: adjust UPGRADE_THRESHOLD, MAX_MISSIONS, MAX_COMMISSION_RANK here.
+ * All gameplay values are sourced from GUILD_LEVEL_TABLE in the FT-06 section.
+ * Designers: adjust GUILD_LEVEL_TABLE entries (reputationThreshold / maxMissions / maxDifficulty).
  */
 
 import type { Difficulty, GuildLevel } from '../types'
@@ -22,55 +22,7 @@ import { eventBus } from '../core/events'
 // Constants (design/gdd/guild-core.md — "公式" section)
 // ---------------------------------------------------------------------------
 
-/**
- * Display titles per guild level.
- * Safe range: pure text, no logic impact.
- */
-export const GUILD_TITLES: Record<number, string> = {
-  1: '無名者之所',
-  2: '旅人的落腳處',
-  3: '刀劍立誓之地',
-  4: '英雄歸來之所',
-  5: '傳說尚未終結之處',
-}
-
-/**
- * Reputation required to upgrade FROM this level to the next.
- * Key = current guild level.
- * Safe range: ×0.5 ~ ×2 of current values.
- */
-export const UPGRADE_THRESHOLD: Record<number, number> = {
-  1: 50,        // Lv1 → Lv2
-  2: 100,       // Lv2 → Lv3
-  3: 175,       // Lv3 → Lv4
-  4: 275,       // Lv4 → Lv5
-  5: Infinity,  // Max level — no further upgrade
-}
-
-/**
- * Maximum concurrent active missions per guild level.
- * Safe range: 1 ~ 8.
- */
-export const MAX_MISSIONS: Record<number, number> = {
-  1: 2,
-  2: 3,
-  3: 4,
-  4: 5,
-  5: 6,
-}
-
-/**
- * Highest commission difficulty accessible per guild level.
- * Mission Dispatch must filter the mission pool against this cap.
- * Safe range: each level can be lowered by one tier.
- */
-export const MAX_COMMISSION_RANK: Record<number, Difficulty> = {
-  1: 'D',
-  2: 'C',
-  3: 'B',
-  4: 'A',
-  5: 'SSS',
-}
+// 舊常數表已移除；所有數值統一由 GUILD_LEVEL_TABLE（下方 FT-06 段落）提供。
 
 // ---------------------------------------------------------------------------
 // State
@@ -102,7 +54,8 @@ export function createGuildState(): GuildCoreState {
  *   - Level only ever increases; canUpgrade does not consider downgrade
  */
 export function canUpgrade(guildLevel: number, reputation: number): boolean {
-  return guildLevel < 5 && reputation >= UPGRADE_THRESHOLD[guildLevel]
+  if (guildLevel >= 5) return false
+  return reputation >= GUILD_LEVEL_TABLE[(guildLevel + 1) as GuildLevel].reputationThreshold
 }
 
 /**
@@ -127,7 +80,7 @@ export function upgradeGuild(state: GuildCoreState): void {
  * Used by Mission Dispatch before creating a DispatchRecord.
  */
 export function getMaxMissions(guildLevel: number): number {
-  return MAX_MISSIONS[guildLevel] ?? MAX_MISSIONS[1]
+  return GUILD_LEVEL_TABLE[(guildLevel as GuildLevel)]?.maxMissions ?? 2
 }
 
 /**
@@ -135,7 +88,7 @@ export function getMaxMissions(guildLevel: number): number {
  * Used by Mission Dispatch to filter the mission pool displayed on the board.
  */
 export function getMaxCommissionRank(guildLevel: number): Difficulty {
-  return MAX_COMMISSION_RANK[guildLevel] ?? MAX_COMMISSION_RANK[1]
+  return getMaxDifficulty((guildLevel as GuildLevel))
 }
 
 // ---------------------------------------------------------------------------
@@ -146,14 +99,15 @@ interface GuildLevelRow {
   title: string
   reputationThreshold: number
   maxDifficulty: Difficulty
+  maxMissions: number
 }
 
 const GUILD_LEVEL_TABLE: Record<GuildLevel, GuildLevelRow> = {
-  1: { title: '新興公會',  reputationThreshold: 0,  maxDifficulty: 'D'  },
-  2: { title: '地區公會',  reputationThreshold: 20, maxDifficulty: 'B'  },
-  3: { title: '知名公會',  reputationThreshold: 40, maxDifficulty: 'A'  },
-  4: { title: '精英公會',  reputationThreshold: 65, maxDifficulty: 'S'  },
-  5: { title: '傳奇公會',  reputationThreshold: 90, maxDifficulty: 'SS' },
+  1: { title: '新手冒險者公會',       reputationThreshold: 0,   maxDifficulty: 'D', maxMissions: 2 },
+  2: { title: '初階冒險者公會',       reputationThreshold: 30,  maxDifficulty: 'C', maxMissions: 3 },
+  3: { title: '中階冒險者公會',       reputationThreshold: 80,  maxDifficulty: 'B', maxMissions: 4 },
+  4: { title: '高階冒險者公會',       reputationThreshold: 200, maxDifficulty: 'A', maxMissions: 5 },
+  5: { title: '名聲顯赫的冒險者公會', reputationThreshold: 400, maxDifficulty: 'S', maxMissions: 6 },
 }
 
 /** 依聲望值計算公會等級（從最高往下找第一個門檻已達到的等級）。 */
