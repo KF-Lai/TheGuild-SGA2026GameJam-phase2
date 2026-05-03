@@ -142,10 +142,10 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
 | 6.1 | `main.ts` 整合所有 service + Bootstrap 順序協調 | Medium | Sonnet subagent | 完成 |
-| 6.2 | 美術 PNG 置入 `public/images/`（characters / ui / scene）+ CSS background-image | Small | 主體直接做 | 未開始 |
-| 6.3 | 字型 + UI styling（USS → CSS 轉寫，極簡風）| Small | Sonnet subagent | 未開始 |
+| 6.2 | 美術 PNG 置入 `public/images/`（characters / ui / scene）+ CSS background-image | Small | 主體直接做 | 完成 |
+| 6.3 | 字型 + UI styling（USS → CSS 轉寫，極簡風）| Small | Sonnet subagent | 完成（字型砍除，CSS 集中於 decorations.css） |
 | 6.4 | 整合除錯（黃金路徑 + 邊緣案例）| Medium | 主體直接做 | 未開始 |
-| 6.5 | Vite build & netlify deploy 確認 | Small | 主體直接做 | 未開始 |
+| 6.5 | Vite build & netlify deploy 確認 | Small | 主體直接做 | 驗證（build 通過 760ms / 主 bundle gzip 44KB；deploy 待 git push 觸發） |
 
 ---
 
