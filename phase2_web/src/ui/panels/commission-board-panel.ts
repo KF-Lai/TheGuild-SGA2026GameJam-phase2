@@ -157,6 +157,12 @@ export function mountCommissionBoardPanel(
       'padding-bottom:8px',
     ].join(';'))
 
+    const heroIcon = document.createElement('img')
+    heroIcon.src = '/images/scene/A-02_idle.png'
+    heroIcon.alt = ''
+    heroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0'
+    heroIcon.onerror = () => { heroIcon.style.display = 'none' }
+
     const title = el('div', [
       'font-size:16px',
       'font-weight:bold',
@@ -170,6 +176,7 @@ export function mountCommissionBoardPanel(
       `color:${activeCount >= maxSlots ? '#cc4444' : TEXT_DIM}`,
     ].join(';'), `派遣中 ${activeCount} / ${maxSlots}`)
 
+    header.appendChild(heroIcon)
     header.appendChild(title)
     header.appendChild(slotBadge)
     return header

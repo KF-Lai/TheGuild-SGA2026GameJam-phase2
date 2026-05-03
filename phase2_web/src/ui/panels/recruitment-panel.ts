@@ -596,13 +596,22 @@ export function mountRecruitmentPanel(
     'border-bottom:1px solid #3a3a3a',
   ].join(';'))
 
+  const heroIcon = document.createElement('img')
+  heroIcon.src = '/images/scene/A-07_default.png'
+  heroIcon.alt = ''
+  heroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0;margin-right:8px'
+  heroIcon.onerror = () => { heroIcon.style.display = 'none' }
+
+  const titleWrap = div('display:flex;align-items:center')
+  titleWrap.appendChild(heroIcon)
   const titleEl = span('招募', [
     'font-size:15px',
     'font-weight:bold',
     'color:#e8d8a0',
     'letter-spacing:1px',
   ].join(';'))
-  header.appendChild(titleEl)
+  titleWrap.appendChild(titleEl)
+  header.appendChild(titleWrap)
 
   const capacityEl = div('font-size:13px;color:#888')
   header.appendChild(capacityEl)

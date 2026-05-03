@@ -115,6 +115,9 @@ export function mountGuildBuildingPanel(
   // ── 標頭 ────────────────────────────────────────────────────────────────────
   const header = document.createElement('div')
   header.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
     'font-size:15px',
     'font-weight:bold',
     `color:${COLOR_GOLD}`,
@@ -123,7 +126,15 @@ export function mountGuildBuildingPanel(
     `border-bottom:1px solid ${COLOR_BORDER}`,
     'letter-spacing:1px',
   ].join(';')
-  header.textContent = '公會建設'
+  const buildingHeroIcon = document.createElement('img')
+  buildingHeroIcon.src = '/images/scene/A-04_default.png'
+  buildingHeroIcon.alt = ''
+  buildingHeroIcon.style.cssText = 'height:40px;object-fit:contain;flex-shrink:0'
+  buildingHeroIcon.onerror = () => { buildingHeroIcon.style.display = 'none' }
+  const buildingTitleSpan = document.createElement('span')
+  buildingTitleSpan.textContent = '公會建設'
+  header.appendChild(buildingHeroIcon)
+  header.appendChild(buildingTitleSpan)
   root.appendChild(header)
 
   // ── grid 容器 ───────────────────────────────────────────────────────────────

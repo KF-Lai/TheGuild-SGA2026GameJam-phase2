@@ -109,8 +109,16 @@ export function mountSettingsPanel(
 
   // 段落標題
   const sectionTitle = document.createElement('div')
-  sectionTitle.style.cssText = 'font-size:15px;font-weight:bold;color:#c8b0a0;border-bottom:1px solid #3a3a3a;padding-bottom:6px'
-  sectionTitle.textContent = '存檔管理'
+  sectionTitle.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:15px;font-weight:bold;color:#c8b0a0;border-bottom:1px solid #3a3a3a;padding-bottom:6px'
+  const settingsHeroIcon = document.createElement('img')
+  settingsHeroIcon.src = '/images/scene/A-05_default.png'
+  settingsHeroIcon.alt = ''
+  settingsHeroIcon.style.cssText = 'height:32px;object-fit:contain;flex-shrink:0'
+  settingsHeroIcon.onerror = () => { settingsHeroIcon.style.display = 'none' }
+  const settingsTitleSpan = document.createElement('span')
+  settingsTitleSpan.textContent = '存檔管理'
+  sectionTitle.appendChild(settingsHeroIcon)
+  sectionTitle.appendChild(settingsTitleSpan)
 
   root.appendChild(sectionTitle)
   root.appendChild(msgEl)

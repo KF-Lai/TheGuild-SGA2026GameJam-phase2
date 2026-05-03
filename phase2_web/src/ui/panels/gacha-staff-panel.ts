@@ -656,13 +656,22 @@ export function mountGachaStaffPanel(
       'border-bottom:1px solid #2a2a3a',
     ].join(';'))
 
+    const gachaHeroIcon = document.createElement('img')
+    gachaHeroIcon.src = '/images/scene/A-06_default.png'
+    gachaHeroIcon.alt = ''
+    gachaHeroIcon.style.cssText = 'height:36px;object-fit:contain;flex-shrink:0;margin-right:8px'
+    gachaHeroIcon.onerror = () => { gachaHeroIcon.style.display = 'none' }
+
+    const gachaTitleWrap = div('display:flex;align-items:center')
+    gachaTitleWrap.appendChild(gachaHeroIcon)
     const titleEl = div([
       'font-size:15px',
       'font-weight:bold',
       `color:${TEXT_MAIN}`,
       'letter-spacing:2px',
     ].join(';'), '面試 / 職員名冊')
-    header.appendChild(titleEl)
+    gachaTitleWrap.appendChild(titleEl)
+    header.appendChild(gachaTitleWrap)
 
     if (!isUnlocked) {
       const lockWarn = div([
