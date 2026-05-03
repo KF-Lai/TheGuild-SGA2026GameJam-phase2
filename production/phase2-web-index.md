@@ -78,9 +78,9 @@ _建立：2026-05-03 | 來源：phase1_html_demo → phase2_web/_
 
 | # | 工項 | 分級 | 執行者 | 狀態 |
 |---|---|---|---|---|
-| 2.1 | `src/systems/world-danger.ts`：C-06 World Danger System（~400 行：5 階全局壓力 + 池權重 + 債務上限推送） | Medium | Sonnet subagent | 未開始 |
-| 2.2 | `src/systems/recruitment.ts`：FT-01 Adventurer Recruitment（~500 行：自薦池 + 邀請 + 刷新邏輯） | Medium | Sonnet subagent | 未開始 |
-| 2.3 | `src/systems/npc-decision.ts`：FT-03 NPC Decision System（~400 行：willingness 公式獨立 service） | Medium | Sonnet subagent | 未開始 |
+| 2.1 | `src/systems/world-danger.ts`：C-06 World Danger System（~400 行：5 階全局壓力 + 池權重 + 債務上限推送） | Medium | Sonnet subagent | 完成 |
+| 2.2 | `src/systems/recruitment.ts`：FT-01 Adventurer Recruitment（~500 行：自薦池 + 邀請 + 刷新邏輯） | Medium | Sonnet subagent | 完成 |
+| 2.3 | `src/systems/npc-decision.ts`：FT-03 NPC Decision System（~400 行：willingness 公式獨立 service） | Medium | Sonnet subagent | 完成 |
 
 ---
 
