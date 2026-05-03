@@ -14,6 +14,9 @@ import { mountGachaStaffPanel }       from '../ui/panels/gacha-staff-panel'
 import { mountSettingsPanel }         from '../ui/panels/settings-panel'
 import { mountNotificationArea }      from '../ui/notification-area'
 import type { NotificationAreaHandle } from '../ui/notification-area'
+import { mountCheatPanel }            from '../ui/cheat-panel'
+import type { CheatPanelHandle }      from '../ui/cheat-panel'
+import { createCheatActions }         from './cheat-actions'
 
 import type { AppState } from './types'
 import {
@@ -116,6 +119,63 @@ export function mountUI(
   hudStats.id = 'hud-stats'
   hudStats.style.cssText = 'display:flex;gap:20px;font-size:13px;'
   topBar.appendChild(hudStats)
+
+  // ── Cheat 按鈕區（top-bar 右側）──────────────────────────────────────────
+  const cheatWrapper = document.createElement('div')
+  cheatWrapper.style.cssText = 'position:relative;display:inline-block;margin-left:12px'
+
+  const cheatToggleBtn = document.createElement('button')
+  cheatToggleBtn.style.cssText = [
+    'padding:4px 12px',
+    'background:transparent',
+    'color:#ff6600',
+    'border:1px solid #ff6600',
+    "font-family:'Courier New',monospace",
+    'font-size:13px',
+    'cursor:pointer',
+  ].join(';')
+  cheatToggleBtn.textContent = '[金手指]'
+  cheatWrapper.appendChild(cheatToggleBtn)
+  topBar.appendChild(cheatWrapper)
+
+  // cheat panel 狀態
+  let cheatPanelHandle: CheatPanelHandle | null = null
+
+  function openCheatPanel(): void {
+    if (cheatPanelHandle) return
+    const cheatActions = createCheatActions(state, () => {
+      refreshHUD()
+      refreshCurrentPanel()
+    })
+    cheatPanelHandle = mountCheatPanel(cheatWrapper, cheatActions)
+
+    // 點 panel 外部關閉
+    setTimeout(() => {
+      function outsideClickHandler(ev: MouseEvent): void {
+        if (!cheatWrapper.contains(ev.target as Node)) {
+          closeCheatPanel()
+          document.removeEventListener('click', outsideClickHandler)
+        }
+      }
+      document.addEventListener('click', outsideClickHandler)
+    }, 0)
+  }
+
+  function closeCheatPanel(): void {
+    if (cheatPanelHandle) {
+      cheatPanelHandle.dispose()
+      cheatPanelHandle = null
+    }
+  }
+
+  cheatToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (cheatPanelHandle) {
+      closeCheatPanel()
+    } else {
+      openCheatPanel()
+    }
+  })
 
   // 初始 HUD 內容
   function refreshHUD(): void {

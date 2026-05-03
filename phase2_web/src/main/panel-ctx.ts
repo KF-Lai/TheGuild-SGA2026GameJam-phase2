@@ -41,6 +41,7 @@ import type {
 
 import type { GuildLevel } from '../types'
 import { getHiredStaffIDs } from './bootstrap'
+import { isForceAccept } from './cheat-actions'
 
 // ── 下一階聲望門檻查表（guild.ts GUILD_LEVEL_TABLE 內部私有，故在此複製）────────
 // 對應 guild.ts 的 GUILD_LEVEL_TABLE；Jam hardcode 是安全的（雙方 hardcode 相同值）
@@ -76,7 +77,7 @@ export function makeCommissionCtx(
         mission,
         state.guild.activeMissions,
         guildLevel,
-        { forceAccept: false },
+        { forceAccept: isForceAccept() },
       )
       if (result.accepted) {
         state.guild.activeMissions.push(result.record)
